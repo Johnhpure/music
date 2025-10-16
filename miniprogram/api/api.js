@@ -72,7 +72,7 @@ export default {
 		// Banner相关接口
 		// 获取首页Banner列表
 		getBanners() {
-			return minRequest.get('/v1/banners')
+			return minRequest.get('/public/banner/list')
 		},
 		// 上传头像
 		uploadAvatar(filePath) {

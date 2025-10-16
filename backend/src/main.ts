@@ -77,9 +77,10 @@ async function bootstrap() {
   logger.log(`🔐 CORS: Enabled for all origins (development mode)`);
 
   const port = process.env.PORT || 3000;
-  await app.listen(port);
+  const host = process.env.HOST || '0.0.0.0';
+  await app.listen(port, host);
 
-  logger.log(`🚀 Application is running on: http://localhost:${port}/api`);
+  logger.log(`🚀 Application is running on: http://${host}:${port}/api`);
   logger.log(`📖 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.log(`📦 Database: ${process.env.DB_DATABASE}`);
 }

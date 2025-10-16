@@ -199,7 +199,13 @@ export const apiRequest = {
     api.patch(url, data).then(res => res.data),
     
   delete: <T = any>(url: string): Promise<ApiResponse<T>> => 
-    api.delete(url).then(res => res.data)
+    api.delete(url).then(res => {
+      // Handle 204 No Content response
+      if (res.status === 204) {
+        return { code: 200, message: 'success', data: null } as ApiResponse<T>
+      }
+      return res.data
+    })
 }
 
 // Paginated API wrapper

@@ -324,7 +324,8 @@ const loadBannerData = () => {
       startDate: (props.banner as any).startTime ? new Date((props.banner as any).startTime).toISOString().split('T')[0] : '',
       endDate: (props.banner as any).endTime ? new Date((props.banner as any).endTime).toISOString().split('T')[0] : '',
       sortOrder: props.banner.sortOrder || 1,
-      isActive: props.banner.isActive ?? true
+      // 确保isActive是布尔值（数据库返回的可能是0/1）
+      isActive: Boolean(props.banner.isActive)
     }
   }
 }
@@ -354,6 +355,16 @@ const validateForm = (): boolean => {
 }
 
 const isValidUrl = (url: string): boolean => {
+  if (!url || url.trim() === '') {
+    return true // 空URL是允许的
+  }
+  
+  // 允许相对路径（如 /pages/xxx）
+  if (url.startsWith('/')) {
+    return true
+  }
+  
+  // 允许完整URL（http:// 或 https://）
   try {
     new URL(url)
     return true
@@ -466,8 +477,8 @@ const handleSubmit = () => {
     // 后端使用startTime/endTime字段名
     startTime: form.value.startDate || undefined,
     endTime: form.value.endDate || undefined,
-    sortOrder: form.value.sortOrder,
-    isActive: form.value.isActive
+    sortOrder: Number(form.value.sortOrder), // 确保是数字类型
+    isActive: Boolean(form.value.isActive) // 确保是布尔类型
   }
   
   emit('submit', submitData)

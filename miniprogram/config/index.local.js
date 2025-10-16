@@ -1,18 +1,17 @@
 /**
- * 局域网开发环境配置
- * Ubuntu IP: 192.168.1.118
- * 用于在局域网内其他设备上编译和调试微信小程序
+ * 本地开发环境配置
+ * 仅本机访问
  */
 
 /**
  * ip地址或域名
  */
-const ipAddress = 'http://192.168.1.118:3000/api'
+const ipAddress = 'http://localhost:3000/api'
 
 /**
  * 文件访问地址
  */
-const fileAddr = 'http://192.168.1.118:3000/fileUpload/'
+const fileAddr = 'http://localhost:3000/fileUpload/'
 
 /**
  * api前缀

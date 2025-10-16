@@ -22,13 +22,16 @@ build/
 
 # 环境配置
 .env
+.env.*
+*.env
+backend/.env*
+admin/.env*
+miniprogram/.env*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 .env.backup
-backend/.env
-backend/.env.backup
 
 # Docker配置（包含敏感信息）
 backend/docker-compose.yml
@@ -64,6 +67,13 @@ temp/
 # 微信小程序临时文件
 miniprogram/node_modules/
 miniprogram/.tea/
+
+# 测试脚本（可能包含敏感配置）
+test-*.js
+**/test-*.js
+
+# 包含敏感信息的文档
+docs/DATABASE_MIGRATION_REPORT.md
 
 # 其他
 coverage/

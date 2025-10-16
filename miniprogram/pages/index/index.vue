@@ -329,8 +329,8 @@
 							id: banner.id,
 							title: banner.title,
 							description: banner.description,
-							imageUrl: banner.image_url,
-							linkUrl: banner.link_url
+							imageUrl: banner.imageUrl,
+							linkUrl: banner.linkUrl
 						}));
 					}
 				} catch (err) {

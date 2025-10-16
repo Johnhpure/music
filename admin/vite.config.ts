@@ -1,9 +1,16 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // 加载环境变量
+  const env = loadEnv(mode, process.cwd(), '')
+  
+  // 根据模式确定端口
+  const port = mode === 'test' ? 5174 : 5173
+  
+  return {
   plugins: [
     vue({
       script: {
@@ -39,15 +46,16 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: port,
     open: false,
     cors: true,
-    strictPort: true,
+    strictPort: false, // 改为false，允许端口冲突时自动使用其他端口
     proxy: {
       '/api': {
-        target: 'http://192.168.1.118:3000',
+        target: env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:3000',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        rewrite: (path) => path
       }
     }
   },
@@ -130,4 +138,4 @@ export default defineConfig({
       }
     }
   }
-})
+}})
