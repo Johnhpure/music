@@ -1,0 +1,136 @@
+{
+  "task_id": "IMPL-003",
+  "title": "Phase 3: Code Quality & Testing - TypeScript Migration, Unit Testing, Error Monitoring",
+  "description": "Improve code quality and maintainability: Migrate API layer to TypeScript with type definitions, implement unit tests (>70% coverage) for API and page logic, integrate error monitoring SDK (Sentry) for real-time exception tracking.",
+  "priority": "P1",
+  "status": "completed",
+  "estimated_time": "1 week",
+  "depends_on": ["IMPL-001", "IMPL-002"],
+  "flow_control": {
+    "pre_analysis": {
+      "objectives": [
+        "Understand current JavaScript API structure and method signatures",
+        "Identify all API response types and data structures",
+        "Review existing test setup and framework (if any)",
+        "Analyze error reporting requirements and monitoring needs"
+      ],
+      "target_files": [
+        "miniprogram/api/api.js:* (complete API client implementation)",
+        "miniprogram/pages/index/index.vue:* (business logic to test)",
+        "backend/src/modules/*/entities/*.entity.ts (backend entity types as reference)",
+        "miniprogram/package.json (dependencies and test scripts)"
+      ],
+      "key_patterns": [
+        "API methods return Promise<any> - needs specific type definitions",
+        "Response format: { code, message, data } - needs APIResponse<T> generic",
+        "6 key API methods with different response types (Credit, Banner, Prompt, etc.)",
+        "Error handling patterns using try-catch with console logging"
+      ]
+    },
+    "implementation_approach": {
+      "strategy": "TypeScript migration first (type safety), then testing (quality assurance), finally monitoring (production visibility)",
+      "phases": [
+        {
+          "phase": "3.1 - TypeScript Type Definitions",
+          "tasks": [
+            "Create miniprogram/types/api.d.ts - Define all API response interfaces",
+            "Define APIResponse<T> generic type",
+            "Define CreditBalanceData, BannerData, PromptTemplateData, HotRecommendationData interfaces",
+            "Add type definitions for request parameters (QueryHotRecommendationDto, etc.)",
+            "Document all type interfaces with JSDoc comments"
+          ]
+        },
+        {
+          "phase": "3.2 - API Layer TypeScript Migration",
+          "tasks": [
+            "Rename miniprogram/api/api.js → api.ts",
+            "Add TypeScript type annotations to all API methods",
+            "Type request/response interceptors with proper signatures",
+            "Configure tsconfig.json for miniprogram compilation",
+            "Ensure backward compatibility with existing JavaScript code",
+            "Fix all TypeScript compilation errors"
+          ]
+        },
+        {
+          "phase": "3.3 - Unit Test Setup",
+          "tasks": [
+            "Install Jest + Vue Test Utils + @vue/test-utils for Vue 3",
+            "Configure jest.config.js with proper module mapping",
+            "Create test utilities: mockMinRequest, mockStore, mockRouter",
+            "Setup test coverage reporting (jest --coverage)"
+          ]
+        },
+        {
+          "phase": "3.4 - API Layer Unit Tests",
+          "tasks": [
+            "Create miniprogram/api/__tests__/api.test.js",
+            "Test request deduplication: same calls share Promise",
+            "Test caching: cache hit prevents API call",
+            "Test error handling: network errors, 401, 5xx responses",
+            "Test token refresh: 401 triggers refresh, original request retries",
+            "Achieve >80% coverage for api.ts"
+          ]
+        },
+        {
+          "phase": "3.5 - Page Logic Unit Tests",
+          "tasks": [
+            "Create miniprogram/pages/index/__tests__/index.test.js",
+            "Test onLoad lifecycle: parallel loading, default data display",
+            "Test onShow lifecycle: smart caching with TTL checks",
+            "Test load methods: loadBanners, loadPromptTemplates, loadHotRecommendations",
+            "Test error fallback: default data used on API failure",
+            "Test image error handling: onBannerImageError fallback logic",
+            "Achieve >70% coverage for index.vue"
+          ]
+        },
+        {
+          "phase": "3.6 - Error Monitoring Integration",
+          "tasks": [
+            "Create miniprogram/utils/monitor.js - Initialize Sentry SDK",
+            "Configure Sentry DSN and environment (dev/prod)",
+            "Modify miniprogram/utils/errorHandler.js - Add Sentry.captureException()",
+            "Add breadcrumbs for API calls and user interactions",
+            "Test error reporting: trigger test error, verify Sentry receives it",
+            "Configure error sampling rate and filters"
+          ]
+        }
+      ]
+    }
+  },
+  "target_files": {
+    "new_files": [
+      "miniprogram/types/api.d.ts",
+      "miniprogram/api/__tests__/api.test.js",
+      "miniprogram/pages/index/__tests__/index.test.js",
+      "miniprogram/utils/monitor.js",
+      "miniprogram/jest.config.js",
+      "miniprogram/tsconfig.json"
+    ],
+    "modified_files": [
+      "miniprogram/api/api.js → api.ts (TypeScript migration)",
+      "miniprogram/utils/errorHandler.js:reportError (integrate Sentry)",
+      "miniprogram/package.json (add test scripts and dependencies)"
+    ]
+  },
+  "acceptance_criteria": [
+    "TypeScript compilation: No compilation errors, all types properly defined",
+    "Unit test coverage: >70% overall, >80% for API layer, >70% for page logic",
+    "All tests passing: Jest test suite runs successfully with 0 failures",
+    "Error monitoring: Sentry receives test errors, displays stack traces and context",
+    "Type safety: IDE provides autocomplete and type checking for API methods"
+  ],
+  "deliverables": [
+    "Complete TypeScript type definitions (api.d.ts)",
+    "Migrated API layer with type annotations (api.ts)",
+    "Unit test suite with >70% coverage",
+    "Jest coverage report (HTML and terminal output)",
+    "Sentry error monitoring dashboard configured",
+    "Test documentation: how to run tests, write new tests, interpret coverage"
+  ],
+  "risk_mitigation": [
+    "TypeScript compatibility: Ensure uni-app build system supports TypeScript compilation",
+    "Test flakiness: Use proper async/await and waitFor utilities to avoid timing issues",
+    "Monitoring overhead: Configure Sentry sampling rate to avoid performance impact",
+    "Type definition maintenance: Document type update process when backend API changes"
+  ]
+}

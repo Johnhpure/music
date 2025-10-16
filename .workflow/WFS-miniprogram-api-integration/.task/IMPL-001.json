@@ -1,0 +1,113 @@
+{
+  "task_id": "IMPL-001",
+  "title": "Phase 1: Core Optimization - Request Deduplication, Caching, Error Handling, Token Refresh",
+  "description": "Implement core performance optimization and user experience enhancements: RequestQueue for deduplication, CacheManager for tiered caching (5/10/2min TTL), APIErrorHandler for unified error feedback, and TokenManager for automatic token refresh. This phase resolves critical gaps in the current implementation.",
+  "priority": "P0",
+  "status": "completed",
+  "estimated_time": "2 weeks",
+  "depends_on": [],
+  "flow_control": {
+    "pre_analysis": {
+      "objectives": [
+        "Understand current API request patterns and loading lifecycle (onLoad, onShow)",
+        "Analyze existing error handling patterns and fallback mechanisms",
+        "Review JWT authentication flow and 401 response handling",
+        "Identify request duplication scenarios during page transitions"
+      ],
+      "target_files": [
+        "miniprogram/api/api.js:8-40 (Request/Response interceptors)",
+        "miniprogram/pages/index/index.vue:375-380 (onLoad parallel loading)",
+        "miniprogram/pages/index/index.vue:382-394 (onShow refresh strategy)",
+        "miniprogram/pages/index/index.vue:459-497 (loadBanners error handling pattern)"
+      ],
+      "key_patterns": [
+        "Promise.all parallel loading for 4 APIs",
+        "Loading flags (loadingBanners, etc.) prevent duplicate requests",
+        "Default data fallback mechanism on error",
+        "JWT token injection via request interceptor"
+      ]
+    },
+    "implementation_approach": {
+      "strategy": "Create utility classes first, then integrate into existing code incrementally",
+      "phases": [
+        {
+          "phase": "1.1 - Create Utility Classes",
+          "tasks": [
+            "Create miniprogram/utils/requestQueue.js - Request deduplication with Map-based queue",
+            "Create miniprogram/utils/cacheManager.js - Tiered caching with TTL (banner:5min, promptTemplate:10min, hotRecommendation:2min)",
+            "Create miniprogram/utils/errorHandler.js - Unified error handling (network/401/5xx with user-friendly messages)",
+            "Create miniprogram/utils/tokenManager.js - Token lifecycle management with refresh queue"
+          ]
+        },
+        {
+          "phase": "1.2 - Integrate RequestQueue into API Layer",
+          "tasks": [
+            "Modify miniprogram/api/api.js - Wrap API calls with requestQueue.enqueue()",
+            "Test request deduplication: rapid page switches should share Promise results"
+          ]
+        },
+        {
+          "phase": "1.3 - Integrate CacheManager into Page Lifecycle",
+          "tasks": [
+            "Modify miniprogram/pages/index/index.vue:onShow - Add shouldRefresh() logic with cache TTL checks",
+            "Modify loadBanners/loadPromptTemplates/loadHotRecommendations - Check cache before API call",
+            "Add lastRefreshTime tracking for each data type"
+          ]
+        },
+        {
+          "phase": "1.4 - Integrate APIErrorHandler",
+          "tasks": [
+            "Modify miniprogram/api/api.js:response interceptor - Use errorHandler.handle() for all errors",
+            "Modify page load methods - Replace console.log with user-friendly Toast messages",
+            "Test error scenarios: network failure, 401 unauthorized, 5xx server error"
+          ]
+        },
+        {
+          "phase": "1.5 - Implement Token Refresh Mechanism",
+          "tasks": [
+            "Modify backend/src/modules/auth/auth.controller.ts - Add POST /auth/refresh-token endpoint",
+            "Modify miniprogram/api/api.js:response interceptor - Handle 401 with tokenManager.refreshToken()",
+            "Add refresh queue to prevent concurrent token refresh conflicts",
+            "Test token refresh: expire token manually, verify auto-refresh and original request retry"
+          ]
+        }
+      ]
+    }
+  },
+  "target_files": {
+    "new_files": [
+      "miniprogram/utils/requestQueue.js",
+      "miniprogram/utils/cacheManager.js",
+      "miniprogram/utils/errorHandler.js",
+      "miniprogram/utils/tokenManager.js"
+    ],
+    "modified_files": [
+      "miniprogram/api/api.js:8-40 (integrate RequestQueue, ErrorHandler, TokenManager)",
+      "miniprogram/pages/index/index.vue:382-394 (integrate CacheManager in onShow)",
+      "miniprogram/pages/index/index.vue:407-432 (add error handling in loadUserCreditBalance)",
+      "miniprogram/pages/index/index.vue:459-497 (add caching in loadBanners)",
+      "miniprogram/pages/index/index.vue:554-594 (add caching in loadPromptTemplates)",
+      "miniprogram/pages/index/index.vue:598-663 (add caching in loadHotRecommendations)",
+      "backend/src/modules/auth/auth.controller.ts:* (add refreshToken endpoint)"
+    ]
+  },
+  "acceptance_criteria": [
+    "Request deduplication: Same API call within 1 second shares Promise result (verified via network panel)",
+    "Caching: Banner not refetched within 5min, PromptTemplate within 10min, HotRecommendation within 2min",
+    "Error feedback: Network errors show '网络连接失败，请检查网络设置', 401 shows '登录已过期，请重新登录', 5xx shows '服务暂时不可用，请稍后重试'",
+    "Token refresh: 401 response triggers auto-refresh, original request retries successfully after refresh",
+    "Performance: Homepage refresh time reduced from 180ms to <100ms (measured via Chrome DevTools)"
+  ],
+  "deliverables": [
+    "4 utility classes (RequestQueue, CacheManager, APIErrorHandler, TokenManager)",
+    "Modified API layer with integrated utilities",
+    "Modified page lifecycle with intelligent caching",
+    "Backend refresh token endpoint",
+    "Test report: request deduplication rate >60%, cache hit rate >70%, error feedback 100% visible"
+  ],
+  "risk_mitigation": [
+    "Token refresh concurrency: Use refreshing flag and queue to prevent multiple simultaneous refreshes",
+    "Cache staleness: Provide manual pull-to-refresh for users to force latest data",
+    "Memory leak: Implement cleanup() in RequestQueue to remove expired Promises after 60s"
+  ]
+}

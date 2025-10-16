@@ -1,0 +1,322 @@
+{
+  "metadata": {
+    "task_description": "实现微信小程序首页核心功能接口封装和联调 - 音乐点数显示、banner图管理、创作提示词管理、热门推荐音乐功能",
+    "timestamp": "2025-10-15T21:30:00Z",
+    "keywords": ["miniprogram", "api", "credit", "banner", "prompt-template", "hot-recommendation", "uni-app", "NestJS", "API integration"],
+    "complexity": "medium",
+    "tech_stack": {
+      "frontend": ["uni-app", "Vue 3", "Vuex"],
+      "backend": ["NestJS", "TypeScript", "TypeORM", "MySQL"],
+      "communication": ["HTTP/REST", "JWT Auth"]
+    },
+    "session_id": "WFS-miniprogram-api-integration"
+  },
+  "assets": [
+    {
+      "type": "frontend_api_client",
+      "path": "miniprogram/api/api.js",
+      "relevance": "小程序API封装主文件，包含所有接口定义和拦截器配置",
+      "priority": "highest",
+      "key_apis": [
+        "getCreditBalance() - 获取点数余额 (Line 175)",
+        "getBanners() - 获取Banner列表 (Line 231)",
+        "getActivePromptTemplates() - 获取启用的提示词模板 (Line 261)",
+        "getHotRecommendations() - 获取热门推荐音乐列表 (Line 360)",
+        "trackPromptTemplateUsage() - 记录提示词使用统计 (Line 310)",
+        "trackMusicPlay() - 记录音乐播放统计 (Line 400)"
+      ]
+    },
+    {
+      "type": "frontend_page",
+      "path": "miniprogram/pages/index/index.vue",
+      "relevance": "小程序首页主文件，实现音乐点数、Banner、提示词、热门推荐4个核心功能模块",
+      "priority": "highest",
+      "key_features": [
+        "userCreditBalance - 音乐点数显示 (Line 153)",
+        "loadUserCreditBalance() - 点数加载方法 (Line 407)",
+        "banners - Banner数据 (Line 157)",
+        "loadBanners() - Banner加载方法 (Line 459)",
+        "promptTemplates - 提示词模板数据 (Line 190)",
+        "loadPromptTemplates() - 提示词加载方法 (Line 554)",
+        "hotRecommendations - 热门推荐数据 (Line 251)",
+        "loadHotRecommendations() - 热门推荐加载方法 (Line 598)",
+        "trackPromptTemplateUsage() - 提示词统计 (Line 808)",
+        "trackMusicPlay() - 音乐播放统计 (Line 911)"
+      ]
+    },
+    {
+      "type": "frontend_config",
+      "path": "miniprogram/config/index.js",
+      "relevance": "小程序配置文件，定义API baseUrl和环境配置",
+      "priority": "high",
+      "config": {
+        "devApiAddress": "http://192.168.1.118:3000",
+        "apiPrefix": "/api",
+        "current_env": "development"
+      }
+    },
+    {
+      "type": "backend_controller",
+      "path": "backend/src/modules/credit/credit.controller.ts",
+      "relevance": "点数系统后端控制器，提供点数查询、消费、奖励等API",
+      "priority": "highest",
+      "endpoints": [
+        "GET /user/credit/balance - 获取用户点数余额 (Line 48)",
+        "GET /user/credit/logs - 获取点数记录 (Line 32)",
+        "GET /user/credit/packages - 获取点数套餐 (Line 43)",
+        "POST /user/credit/consume - 消费点数 (Line 22)",
+        "POST /user/credit/reward - 奖励点数 (Line 27)"
+      ]
+    },
+    {
+      "type": "backend_controller",
+      "path": "backend/src/modules/banner/public-banner.controller.ts",
+      "relevance": "Banner轮播图后端控制器，提供公开的Banner查询API",
+      "priority": "highest",
+      "endpoints": [
+        "GET /public/banner/list - 获取启用状态的Banner列表 (Line 10-13)"
+      ]
+    },
+    {
+      "type": "backend_controller",
+      "path": "backend/src/modules/prompt-template/public-prompt-template.controller.ts",
+      "relevance": "提示词模板后端控制器，提供公开的模板查询和使用统计API",
+      "priority": "highest",
+      "endpoints": [
+        "GET /public/prompt-template/list - 获取启用的模板列表 (Line 20-23)",
+        "POST /public/prompt-template/usage - 记录模板使用统计 (Line 25-33)",
+        "GET /public/prompt-template/categories - 获取分类列表 (Line 36-39)"
+      ]
+    },
+    {
+      "type": "backend_controller",
+      "path": "backend/src/modules/hot-recommendation/hot-recommendation.controller.ts",
+      "relevance": "热门推荐后端控制器，提供音乐推荐查询和播放统计API",
+      "priority": "highest",
+      "endpoints": [
+        "GET /public/hot-recommendation/list - 获取推荐音乐列表 (Line 29-32)",
+        "GET /public/hot-recommendation/categories - 获取分类标签 (Line 35-38)",
+        "POST /public/hot-recommendation/play - 记录音乐播放统计 (Line 53-62)",
+        "POST /public/hot-recommendation/:id/toggle-like - 点赞音乐 (Line 64-68)"
+      ]
+    },
+    {
+      "type": "backend_entity",
+      "path": "backend/src/modules/credit/entities/credit-log.entity.ts",
+      "relevance": "点数记录实体定义，描述点数变动日志表结构",
+      "priority": "medium",
+      "table_name": "credit_logs",
+      "key_fields": [
+        "id - 主键",
+        "user_id - 用户ID",
+        "type - 类型(consume/reward/purchase/refund)",
+        "amount - 点数金额",
+        "balance_after - 变动后余额",
+        "description - 描述",
+        "created_at - 创建时间"
+      ]
+    },
+    {
+      "type": "backend_entity",
+      "path": "backend/src/modules/banner/entities/banner.entity.ts",
+      "relevance": "Banner实体定义，描述轮播图表结构",
+      "priority": "medium",
+      "table_name": "t_banners",
+      "key_fields": [
+        "id - BannerID",
+        "title - 标题",
+        "imageUrl - 图片URL",
+        "linkUrl - 跳转链接",
+        "linkType - 链接类型(none/internal/external/miniprogram)",
+        "sortOrder - 排序",
+        "isActive - 是否启用",
+        "startTime - 开始时间",
+        "endTime - 结束时间"
+      ]
+    },
+    {
+      "type": "backend_entity",
+      "path": "backend/src/modules/prompt-template/entities/prompt-template.entity.ts",
+      "relevance": "提示词模板实体定义，描述创作提示词表结构",
+      "priority": "medium",
+      "table_name": "t_prompt_templates",
+      "key_fields": [
+        "id - 模板ID",
+        "category - 分类(风格/情绪/主题)",
+        "title - 标题",
+        "content - 模板内容",
+        "tags - 标签(逗号分隔)",
+        "usageCount - 使用次数",
+        "isActive - 是否启用",
+        "sortOrder - 排序"
+      ]
+    },
+    {
+      "type": "backend_entity",
+      "path": "backend/src/modules/hot-recommendation/entities/hot-recommendation.entity.ts",
+      "relevance": "热门推荐实体定义，描述推荐音乐表结构",
+      "priority": "medium",
+      "table_name": "t_hot_recommendations",
+      "key_fields": [
+        "id - 推荐ID",
+        "category - 分类",
+        "title - 标题",
+        "coverUrl - 封面URL",
+        "audioUrl - 音频URL",
+        "artist - 艺术家",
+        "duration - 时长",
+        "description - 描述",
+        "playCount - 播放次数",
+        "likeCount - 点赞数",
+        "isActive - 是否启用",
+        "sortOrder - 排序"
+      ]
+    },
+    {
+      "type": "documentation",
+      "path": "README.md",
+      "relevance": "项目总览文档",
+      "priority": "medium"
+    },
+    {
+      "type": "documentation",
+      "path": "backend/README.md",
+      "relevance": "后端项目说明文档",
+      "priority": "medium"
+    },
+    {
+      "type": "config",
+      "path": "backend/package.json",
+      "relevance": "后端依赖配置，包含NestJS、TypeORM等关键库版本",
+      "priority": "low"
+    },
+    {
+      "type": "config",
+      "path": "miniprogram/package.json",
+      "relevance": "小程序依赖配置",
+      "priority": "low"
+    }
+  ],
+  "api_integration_mapping": {
+    "credit_balance": {
+      "frontend": "miniprogram/api/api.js:getCreditBalance() → miniprogram/pages/index/index.vue:loadUserCreditBalance()",
+      "backend": "GET /api/user/credit/balance → backend/src/modules/credit/credit.controller.ts:getBalance()",
+      "status": "已实现，需联调测试"
+    },
+    "banner_list": {
+      "frontend": "miniprogram/api/api.js:getBanners() → miniprogram/pages/index/index.vue:loadBanners()",
+      "backend": "GET /api/public/banner/list → backend/src/modules/banner/public-banner.controller.ts:getActiveBanners()",
+      "status": "已实现，需联调测试"
+    },
+    "prompt_templates": {
+      "frontend": "miniprogram/api/api.js:getActivePromptTemplates() → miniprogram/pages/index/index.vue:loadPromptTemplates()",
+      "backend": "GET /api/public/prompt-template/list → backend/src/modules/prompt-template/public-prompt-template.controller.ts:getActiveTemplates()",
+      "status": "已实现，需联调测试"
+    },
+    "prompt_usage_tracking": {
+      "frontend": "miniprogram/api/api.js:trackPromptTemplateUsage() → miniprogram/pages/index/index.vue:trackPromptTemplateUsage()",
+      "backend": "POST /api/public/prompt-template/usage → backend/src/modules/prompt-template/public-prompt-template.controller.ts:recordUsage()",
+      "status": "已实现，需联调测试"
+    },
+    "hot_recommendations": {
+      "frontend": "miniprogram/api/api.js:getHotRecommendations() → miniprogram/pages/index/index.vue:loadHotRecommendations()",
+      "backend": "GET /api/public/hot-recommendation/list → backend/src/modules/hot-recommendation/hot-recommendation.controller.ts:getRecommendations()",
+      "status": "已实现，需联调测试"
+    },
+    "music_play_tracking": {
+      "frontend": "miniprogram/api/api.js:trackMusicPlay() → miniprogram/pages/index/index.vue:trackMusicPlay()",
+      "backend": "POST /api/public/hot-recommendation/play → backend/src/modules/hot-recommendation/hot-recommendation.controller.ts:trackPlay()",
+      "status": "已实现，需联调测试"
+    }
+  },
+  "data_flow": {
+    "onLoad_sequence": [
+      "1. checkAutoLogin() - 检查登录状态",
+      "2. 设置默认数据（banners, promptTemplates, hotRecommendations）",
+      "3. Promise.all并行加载：loadUserCreditBalance(), loadBanners(), loadPromptTemplates(), loadHotRecommendations()"
+    ],
+    "onShow_sequence": [
+      "1. 从store获取userCreditBalance",
+      "2. Promise.all并行刷新：loadUserCreditBalance(), loadBanners(), loadPromptTemplates(), loadHotRecommendations()"
+    ],
+    "error_handling": [
+      "所有API调用都有try-catch错误处理",
+      "失败时使用默认数据（defaultBanners, defaultPromptTemplates, defaultHotRecommendations）",
+      "网络错误不影响用户体验，显示默认内容"
+    ],
+    "authentication": [
+      "使用JWT Bearer Token认证",
+      "请求拦截器自动添加Authorization头部",
+      "响应拦截器处理401未授权响应"
+    ]
+  },
+  "integration_challenges": [
+    {
+      "challenge": "跨域CORS配置",
+      "impact": "开发环境小程序访问后端API可能遇到跨域问题",
+      "solution": "后端已配置CORS，baseUrl配置为局域网地址(http://192.168.1.118:3000)"
+    },
+    {
+      "challenge": "图片HTTP协议限制",
+      "impact": "小程序要求HTTPS协议，HTTP图片可能无法显示",
+      "solution": "前端已实现图片加载错误处理，使用本地静态图片作为fallback"
+    },
+    {
+      "challenge": "认证状态管理",
+      "impact": "点数余额需要登录状态才能查询",
+      "solution": "前端已实现登录状态检查，未登录时显示默认值或'--'"
+    },
+    {
+      "challenge": "数据缓存和刷新策略",
+      "impact": "首页数据加载性能和实时性平衡",
+      "solution": "onLoad立即显示默认数据，然后异步更新；onShow刷新最新数据"
+    }
+  ],
+  "testing_checklist": [
+    {
+      "module": "音乐点数",
+      "tests": [
+        "登录状态下显示实际点数余额",
+        "未登录状态显示默认值或提示",
+        "点击点数跳转到点数页面",
+        "点数更新后前端实时刷新"
+      ]
+    },
+    {
+      "module": "Banner轮播图",
+      "tests": [
+        "自动轮播功能正常",
+        "点击Banner正确跳转",
+        "图片加载错误时显示默认图片",
+        "支持内部页面和外部链接跳转"
+      ]
+    },
+    {
+      "module": "创作提示词",
+      "tests": [
+        "横向滚动显示所有模板",
+        "点击模板跳转到AI创作页面并传递参数",
+        "记录提示词使用统计",
+        "显示模板分类和标签"
+      ]
+    },
+    {
+      "module": "热门推荐",
+      "tests": [
+        "显示推荐音乐列表",
+        "点击音乐查看详情",
+        "点击播放按钮触发播放统计",
+        "播放次数格式化显示(k/M)",
+        "音乐封面图片加载错误处理"
+      ]
+    }
+  ],
+  "statistics": {
+    "total_files": 15,
+    "source_files": 11,
+    "config_files": 2,
+    "docs_files": 2,
+    "key_apis": 6,
+    "database_tables": 4
+  }
+}

@@ -1,0 +1,227 @@
+{
+  "metadata": {
+    "task_description": "分析和记录完整项目状态 - 目录结构、技术栈、代码关系、启动部署方式、功能模块、开发进度",
+    "timestamp": "2025-10-15T13:30:00Z",
+    "keywords": ["项目分析", "技术栈", "目录结构", "部署", "功能模块", "开发进度"],
+    "complexity": "high",
+    "tech_stack": ["NestJS", "TypeScript", "Vue3", "uni-app", "MySQL", "Redis", "JWT"],
+    "session_id": "WFS-music-platform-analysis"
+  },
+  "assets": [
+    {
+      "type": "documentation",
+      "path": "README.md",
+      "relevance": "项目整体概述和结构说明",
+      "priority": "high"
+    },
+    {
+      "type": "documentation",
+      "path": "backend/README.md",
+      "relevance": "后端NestJS框架说明",
+      "priority": "high"
+    },
+    {
+      "type": "documentation",
+      "path": "docs/AI_MODELS_QUICK_START.md",
+      "relevance": "AI模型快速入门指南",
+      "priority": "medium"
+    },
+    {
+      "type": "documentation",
+      "path": "docs/TESTING_GUIDE.md",
+      "relevance": "测试指南",
+      "priority": "medium"
+    },
+    {
+      "type": "documentation",
+      "path": "docs/API_ROUTES_REFERENCE.md",
+      "relevance": "API路由参考文档",
+      "priority": "high"
+    },
+    {
+      "type": "documentation",
+      "path": "docs/BACKEND_API_COMPLETION_REPORT.md",
+      "relevance": "后端API完成报告",
+      "priority": "high"
+    },
+    {
+      "type": "config",
+      "path": "backend/package.json",
+      "relevance": "后端依赖和脚本配置",
+      "priority": "high"
+    },
+    {
+      "type": "config",
+      "path": "admin/package.json",
+      "relevance": "管理后台依赖配置",
+      "priority": "high"
+    },
+    {
+      "type": "config",
+      "path": "miniprogram/package.json",
+      "relevance": "小程序依赖配置",
+      "priority": "high"
+    },
+    {
+      "type": "config",
+      "path": "backend/tsconfig.json",
+      "relevance": "TypeScript配置",
+      "priority": "medium"
+    },
+    {
+      "type": "config",
+      "path": "backend/.env.example",
+      "relevance": "环境变量配置示例",
+      "priority": "high"
+    },
+    {
+      "type": "source_code",
+      "path": "backend/src/main.ts",
+      "relevance": "后端应用入口文件",
+      "priority": "high"
+    },
+    {
+      "type": "source_code",
+      "path": "backend/src/app.module.ts",
+      "relevance": "后端主模块配置",
+      "priority": "high"
+    },
+    {
+      "type": "source_code",
+      "path": "backend/src/modules/",
+      "relevance": "后端功能模块目录",
+      "priority": "high",
+      "subdirectories": [
+        "ai",
+        "ai-models",
+        "auth",
+        "banner",
+        "credit",
+        "file",
+        "hot-recommendation",
+        "music",
+        "payment",
+        "prompt-template",
+        "user"
+      ]
+    },
+    {
+      "type": "source_code",
+      "path": "admin/src/main.ts",
+      "relevance": "管理后台入口文件",
+      "priority": "high"
+    },
+    {
+      "type": "source_code",
+      "path": "admin/src/api/index.ts",
+      "relevance": "管理后台API配置",
+      "priority": "high"
+    },
+    {
+      "type": "source_code",
+      "path": "miniprogram/pages/",
+      "relevance": "小程序页面目录",
+      "priority": "high",
+      "subdirectories": [
+        "creation",
+        "index",
+        "login",
+        "recommendations",
+        "user"
+      ]
+    }
+  ],
+  "tech_stack": {
+    "backend": {
+      "framework": "NestJS 10.x",
+      "language": "TypeScript 5.x",
+      "runtime": "Node.js",
+      "database": "MySQL 2 (mysql2 driver)",
+      "cache": "Redis (ioredis)",
+      "queue": "Bull",
+      "authentication": "JWT + Passport",
+      "ai_integration": [
+        "@anthropic-ai/sdk",
+        "@google/generative-ai",
+        "openai"
+      ],
+      "key_libraries": [
+        "TypeORM",
+        "class-validator",
+        "class-transformer",
+        "bcrypt",
+        "axios",
+        "winston"
+      ]
+    },
+    "admin_frontend": {
+      "framework": "Vue 3.4.x",
+      "build_tool": "Vite 5.x",
+      "language": "TypeScript 5.x",
+      "state_management": "Pinia",
+      "router": "Vue Router 4.x",
+      "ui_framework": "Tailwind CSS",
+      "utilities": [
+        "@vueuse/core",
+        "@headlessui/vue",
+        "echarts",
+        "axios"
+      ]
+    },
+    "miniprogram": {
+      "framework": "uni-app",
+      "ui_library": "ColorUI",
+      "state_management": "Vuex",
+      "i18n": "vue-i18n"
+    }
+  },
+  "project_structure": {
+    "root_directories": [
+      "backend/",
+      "admin/",
+      "miniprogram/",
+      "docs/",
+      ".workflow/",
+      ".claude/"
+    ],
+    "backend_modules": [
+      "ai - AI服务集成",
+      "ai-models - AI模型管理",
+      "auth - 用户认证",
+      "banner - 横幅管理",
+      "credit - 积分系统",
+      "file - 文件管理",
+      "hot-recommendation - 热门推荐",
+      "music - 音乐生成",
+      "payment - 支付系统",
+      "prompt-template - 提示词模板",
+      "user - 用户管理"
+    ]
+  },
+  "deployment": {
+    "backend": {
+      "start_dev": "npm run start:dev",
+      "start_prod": "npm run start:prod",
+      "build": "npm run build",
+      "port": "配置在.env文件中",
+      "env_file": ".env.example提供环境变量模板"
+    },
+    "admin": {
+      "dev": "npm run dev",
+      "build": "npm run build",
+      "preview": "npm run preview"
+    },
+    "miniprogram": {
+      "platform": "uni-app",
+      "build": "HBuilderX或CLI构建"
+    }
+  },
+  "statistics": {
+    "total_modules": 14,
+    "backend_modules": 14,
+    "admin_pages": "多个视图页面",
+    "miniprogram_pages": 5,
+    "documentation_files": 14,
+    "config_files": 8
+  }
+}

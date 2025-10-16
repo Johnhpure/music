@@ -1,0 +1,52 @@
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="blueToViolet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B67EC" />
+      <stop offset="100%" stop-color="#7342CC" />
+    </linearGradient>
+  </defs>
+  <rect x="5" y="15" width="4" height="10" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="10;30;10" dur="1.2s" repeatCount="indefinite" begin="0s" />
+    <animate attributeName="y" values="15;5;15" dur="1.2s" repeatCount="indefinite" begin="0s" />
+  </rect>
+  <rect x="15" y="10" width="4" height="20" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="20;35;20" dur="1.2s" repeatCount="indefinite" begin="0.1s" />
+    <animate attributeName="y" values="10;2.5;10" dur="1.2s" repeatCount="indefinite" begin="0.1s" />
+  </rect>
+  <rect x="25" y="5" width="4" height="30" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="30;15;30" dur="1.2s" repeatCount="indefinite" begin="0.2s" />
+    <animate attributeName="y" values="5;12.5;5" dur="1.2s" repeatCount="indefinite" begin="0.2s" />
+  </rect>
+  <rect x="35" y="10" width="4" height="20" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="20;35;20" dur="1.2s" repeatCount="indefinite" begin="0.3s" />
+    <animate attributeName="y" values="10;2.5;10" dur="1.2s" repeatCount="indefinite" begin="0.3s" />
+  </rect>
+  <rect x="45" y="15" width="4" height="10" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="10;25;10" dur="1.2s" repeatCount="indefinite" begin="0.4s" />
+    <animate attributeName="y" values="15;7.5;15" dur="1.2s" repeatCount="indefinite" begin="0.4s" />
+  </rect>
+  <rect x="55" y="5" width="4" height="30" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="30;10;30" dur="1.2s" repeatCount="indefinite" begin="0.5s" />
+    <animate attributeName="y" values="5;15;5" dur="1.2s" repeatCount="indefinite" begin="0.5s" />
+  </rect>
+  <rect x="65" y="10" width="4" height="20" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="20;30;20" dur="1.2s" repeatCount="indefinite" begin="0.6s" />
+    <animate attributeName="y" values="10;5;10" dur="1.2s" repeatCount="indefinite" begin="0.6s" />
+  </rect>
+  <rect x="75" y="15" width="4" height="10" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="10;20;10" dur="1.2s" repeatCount="indefinite" begin="0.7s" />
+    <animate attributeName="y" values="15;10;15" dur="1.2s" repeatCount="indefinite" begin="0.7s" />
+  </rect>
+  <rect x="85" y="5" width="4" height="30" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="30;15;30" dur="1.2s" repeatCount="indefinite" begin="0.8s" />
+    <animate attributeName="y" values="5;12.5;5" dur="1.2s" repeatCount="indefinite" begin="0.8s" />
+  </rect>
+  <rect x="95" y="10" width="4" height="20" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="20;35;20" dur="1.2s" repeatCount="indefinite" begin="0.9s" />
+    <animate attributeName="y" values="10;2.5;10" dur="1.2s" repeatCount="indefinite" begin="0.9s" />
+  </rect>
+  <rect x="105" y="15" width="4" height="10" rx="2" fill="url(#blueToViolet)">
+    <animate attributeName="height" values="10;30;10" dur="1.2s" repeatCount="indefinite" begin="1.0s" />
+    <animate attributeName="y" values="15;5;15" dur="1.2s" repeatCount="indefinite" begin="1.0s" />
+  </rect>
+</svg>

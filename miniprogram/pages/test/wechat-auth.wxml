@@ -1,0 +1,116 @@
+<view class="container">
+  <view class="header">
+    <text class="title">微信授权登录测试</text>
+    <text class="subtitle">测试新版微信登录功能</text>
+  </view>
+
+  <!-- 登录状态显示 -->
+  <view class="status-card">
+    <view class="status-header">
+      <text class="status-title">登录状态</text>
+      <text class="status-badge {{isLoggedIn ? 'status-success' : 'status-warning'}}">
+        {{isLoggedIn ? '已登录' : '未登录'}}
+      </text>
+    </view>
+    
+    <view wx:if="{{isLoggedIn && userInfo}}" class="user-info">
+      <view class="user-avatar">
+        <image src="{{userInfo.avatar || '/static/img/profile.svg'}}" mode="aspectFill" />
+      </view>
+      <view class="user-details">
+        <view class="user-name">{{userInfo.nickname}}</view>
+        <view class="user-meta">ID: {{userInfo.userId}}</view>
+        <view class="user-meta">点数: {{userInfo.creditBalance}}</view>
+        <view wx:if="{{userInfo.phone}}" class="user-phone">📱 {{userInfo.phone}}</view>
+        <view wx:else class="user-phone-empty">📱 未绑定手机号</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 授权测试按钮 -->
+  <view class="button-group">
+    <view class="section-title">基础授权测试</view>
+    
+    <!-- 基础登录 -->
+    <button 
+      class="test-button primary" 
+      bindtap="testBasicLogin"
+      loading="{{loading.basic}}"
+    >
+      {{loading.basic ? '登录中...' : '基础登录测试'}}
+    </button>
+    
+    <!-- 完整授权 (用户信息) -->
+    <button 
+      class="test-button primary" 
+      bindtap="testFullAuth"
+      loading="{{loading.full}}"
+    >
+      {{loading.full ? '授权中...' : '完整授权测试 (昵称+头像)'}}
+    </button>
+  </view>
+
+  <!-- 手机号授权测试 -->
+  <view class="button-group">
+    <view class="section-title">手机号授权测试</view>
+    <view class="section-note">需要点击按钮触发手机号授权</view>
+    
+    <!-- 手机号授权按钮 -->
+    <button 
+      class="test-button phone-button"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="onGetPhoneNumber"
+      loading="{{loading.phone}}"
+    >
+      {{loading.phone ? '获取中...' : '获取手机号'}}
+    </button>
+    
+    <!-- 完整授权 (用户信息 + 手机号) -->
+    <button 
+      class="test-button primary" 
+      bindtap="testCompleteAuth"
+      loading="{{loading.complete}}"
+    >
+      {{loading.complete ? '授权中...' : '完整授权 (昵称+头像+手机号)'}}
+    </button>
+  </view>
+
+  <!-- 工具按钮 -->
+  <view class="button-group">
+    <view class="section-title">工具操作</view>
+    
+    <button class="test-button danger" bindtap="logout" wx:if="{{isLoggedIn}}">
+      退出登录
+    </button>
+    
+    <button class="test-button secondary" bindtap="clearLogs">
+      清空日志
+    </button>
+  </view>
+
+  <!-- 日志显示 -->
+  <view class="logs-section">
+    <view class="logs-header">
+      <text class="logs-title">执行日志</text>
+      <text class="logs-count">({{logs.length}}条)</text>
+    </view>
+    <scroll-view 
+      class="logs-content" 
+      scroll-y 
+      scroll-top="{{scrollTop}}"
+      scroll-with-animation
+    >
+      <view 
+        wx:for="{{logs}}" 
+        wx:key="index"
+        class="log-item log-{{item.type}}"
+      >
+        <text class="log-time">{{item.time}}</text>
+        <text class="log-message">{{item.message}}</text>
+      </view>
+      <view wx:if="{{logs.length === 0}}" class="logs-empty">
+        暂无日志记录
+      </view>
+    </scroll-view>
+  </view>
+</view>

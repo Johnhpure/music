@@ -1,0 +1,148 @@
+{
+  "task_id": "IMPL-004",
+  "title": "Phase 4: E2E Testing & Release - Integration Testing, Performance Verification, Production Deployment",
+  "description": "Final integration testing and production release: E2E testing on real devices (iOS + Android) for 4 core features, performance verification (load time <500ms, cache hit >70%), user acceptance testing, and production deployment preparation.",
+  "priority": "P0",
+  "status": "pending",
+  "estimated_time": "1 week",
+  "depends_on": ["IMPL-001", "IMPL-002", "IMPL-003"],
+  "flow_control": {
+    "pre_analysis": {
+      "objectives": [
+        "Review all implemented features from Phase 1-3",
+        "Identify critical user flows for E2E testing",
+        "Define performance benchmarks and measurement tools",
+        "Prepare production environment configuration"
+      ],
+      "target_files": [
+        "miniprogram/pages/index/index.vue:* (all 4 core features)",
+        "miniprogram/config/index.js:12 (production baseUrl configuration)",
+        "backend/.env.example (production environment variables)",
+        "README.md (deployment documentation)"
+      ],
+      "key_patterns": [
+        "4 core features: Credit Balance, Banner, Prompt Templates, Hot Recommendations",
+        "6 API integration points to test end-to-end",
+        "Performance targets: <500ms load, >70% cache hit, >60% deduplication",
+        "Error scenarios: network failure, 401, 5xx, image errors"
+      ]
+    },
+    "implementation_approach": {
+      "strategy": "Comprehensive E2E testing first, then performance verification, finally production deployment with rollback plan",
+      "phases": [
+        {
+          "phase": "4.1 - E2E Test Planning",
+          "tasks": [
+            "Define test scenarios for 4 core features (happy path + error scenarios)",
+            "Prepare test data: mock users, banner images, prompt templates, music recommendations",
+            "Setup test devices: iOS (iPhone 12+), Android (mainstream models)",
+            "Install miniprogram on test devices using development/test version",
+            "Document test procedures and expected results"
+          ]
+        },
+        {
+          "phase": "4.2 - Core Feature E2E Testing",
+          "tasks": [
+            "Test Credit Balance: Login state shows real balance, logout shows '--', click navigates to points page",
+            "Test Banner Carousel: Auto-rotate every 5s, click navigation works (internal/external), images display correctly (100%)",
+            "Test Prompt Templates: Horizontal scroll, click navigates to AI creation with parameters, usage tracking works silently",
+            "Test Hot Recommendations: List displays with pagination, click navigates to detail, play tracking works, cover images display (100%)",
+            "Test all features in offline mode: default data displays, error messages show, graceful degradation"
+          ]
+        },
+        {
+          "phase": "4.3 - Error Scenario Testing",
+          "tasks": [
+            "Test network failure: Disconnect network, verify error Toast shows '网络连接失败，请检查网络设置'",
+            "Test 401 unauthorized: Expire token manually, verify auto-refresh triggers and original request retries",
+            "Test 5xx server error: Simulate backend error, verify error Toast shows '服务暂时不可用，请稍后重试'",
+            "Test image load failure: Block image URLs, verify fallback to local images",
+            "Verify all error scenarios use default data, no white screen or crash"
+          ]
+        },
+        {
+          "phase": "4.4 - Performance Verification",
+          "tasks": [
+            "Measure homepage initial load time: Target <500ms (P0 threshold: <600ms)",
+            "Measure homepage refresh time (onShow): Target <100ms (P0 threshold: <150ms)",
+            "Measure request deduplication rate: Target >60% (P0 threshold: >40%)",
+            "Measure cache hit rate: Target >70% (P0 threshold: >50%)",
+            "Measure image load success rate: Target >95% (P0 threshold: >85%)",
+            "Use Chrome DevTools + uni-app performance panel for measurements",
+            "Document all performance metrics in test report"
+          ]
+        },
+        {
+          "phase": "4.5 - User Acceptance Testing (UAT)",
+          "tasks": [
+            "Recruit 5-10 internal users for UAT",
+            "Provide test account and test version miniprogram",
+            "Collect feedback: UI/UX, performance perception, error handling, feature completeness",
+            "Prioritize feedback: P0 blockers must fix before release, P1 enhancements for next iteration",
+            "Iterate based on feedback, retest critical issues"
+          ]
+        },
+        {
+          "phase": "4.6 - Production Deployment Preparation",
+          "tasks": [
+            "Update miniprogram/config/index.js - Set production HTTPS baseUrl",
+            "Update backend .env - Configure production database, Redis, JWT secret",
+            "Verify CORS configuration: whitelist production domain only",
+            "Configure CDN if Phase 2B implemented",
+            "Backup production database before deployment",
+            "Prepare rollback plan: database restore script, previous miniprogram version"
+          ]
+        },
+        {
+          "phase": "4.7 - Production Release",
+          "tasks": [
+            "Deploy backend to production server",
+            "Run database migrations (image path updates from Phase 2)",
+            "Upload miniprogram to WeChat platform for review",
+            "Submit for WeChat review with release notes",
+            "Monitor review status, respond to reviewer questions",
+            "After approval: Release to production incrementally (10% → 50% → 100%)",
+            "Monitor production logs and Sentry for errors",
+            "Verify performance metrics in production match test environment"
+          ]
+        }
+      ]
+    }
+  },
+  "target_files": {
+    "new_files": [
+      "docs/E2E_TEST_REPORT.md (E2E test results and evidence)",
+      "docs/PERFORMANCE_REPORT.md (performance metrics and analysis)",
+      "docs/UAT_FEEDBACK.md (user acceptance testing feedback)",
+      "docs/DEPLOYMENT_CHECKLIST.md (production deployment steps)"
+    ],
+    "modified_files": [
+      "miniprogram/config/index.js:12 (production HTTPS baseUrl)",
+      "backend/.env (production environment configuration)",
+      "README.md (update deployment and testing documentation)"
+    ]
+  },
+  "acceptance_criteria": [
+    "E2E tests: All 4 core features work correctly on iOS and Android devices",
+    "Error handling: All error scenarios display user-friendly messages, no crashes",
+    "Performance: Homepage load <500ms (P0: <600ms), cache hit >70% (P0: >50%), deduplication >60% (P0: >40%)",
+    "UAT: >80% user satisfaction, all P0 feedback items resolved",
+    "Production release: Miniprogram passes WeChat review, successfully released to 100% users",
+    "Monitoring: No critical errors in production Sentry dashboard within 24h post-release"
+  ],
+  "deliverables": [
+    "E2E test report with screenshots and video evidence",
+    "Performance verification report with metrics and charts",
+    "UAT feedback summary and resolution plan",
+    "Production deployment checklist and rollback plan",
+    "Released miniprogram version on WeChat platform",
+    "Post-release monitoring report (24h, 7d)"
+  ],
+  "risk_mitigation": [
+    "WeChat review rejection: Prepare compliance documentation, respond quickly to reviewer questions",
+    "Production performance regression: Monitor key metrics, rollback if load time >800ms or error rate >5%",
+    "Database migration failure: Test migration script on staging first, keep backup for quick rollback",
+    "Incremental release issues: Use 10% → 50% → 100% rollout strategy, monitor error rates at each stage",
+    "Critical production bug: Have hotfix process ready, can release urgent fix within 2 hours"
+  ]
+}

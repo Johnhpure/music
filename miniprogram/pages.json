@@ -1,0 +1,170 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "AI音乐创作助手"
+			}
+		},
+		{
+			"path": "pages/tutorial/index",
+			"style": {
+				"navigationBarTitleText": "自主创作完整指南"
+			}
+		},
+		{
+			"path": "pages/tutorial/ai",
+			"style": {
+				"navigationBarTitleText": "AI辅助创作完整指南"
+			}
+		},
+		{
+			"path": "pages/tutorial/self",
+			"style": {
+				"navigationBarTitleText": "自主创作完整指南"
+			}
+		},
+		{
+			"path": "pages/creation/select",
+			"style": {
+				"navigationBarTitleText": "创作歌曲"
+			}
+		},
+		{
+			"path": "pages/creation/ai",
+			"style": {
+				"navigationBarTitleText": "创作歌曲"
+			}
+		},
+		{
+			"path": "pages/creation/manual",
+			"style": {
+				"navigationBarTitleText": "自主创作"
+			}
+		},
+		{
+			"path": "pages/creation/style",
+			"style": {
+				"navigationBarTitleText": "风格设置"
+			}
+		},
+		{
+			"path": "pages/creation/preview",
+			"style": {
+				"navigationBarTitleText": "生成音乐"
+			}
+		},
+		{
+			"path": "pages/user/index",
+			"style": {
+				"navigationBarTitleText": "个人中心"
+			}
+		},
+		{
+			"path": "pages/user/works",
+			"style": {
+				"navigationBarTitleText": "我的作品"
+			}
+		},
+		{
+			"path": "pages/user/work-detail",
+			"style": {
+				"navigationBarTitleText": "音乐详情"
+			}
+		},
+		{
+			"path": "pages/user/points",
+			"style": {
+				"navigationBarTitleText": "音乐点数中心"
+			}
+		},
+		{
+			"path": "pages/user/settings",
+			"style": {
+				"navigationBarTitleText": "系统设置"
+			}
+		},
+		{
+			"path": "pages/user/agreement",
+			"style": {
+				"navigationBarTitleText": "用户协议"
+			}
+		},
+		{
+			"path": "pages/user/privacy",
+			"style": {
+				"navigationBarTitleText": "隐私政策"
+			}
+		},
+		{
+			"path": "pages/user/copyright",
+			"style": {
+				"navigationBarTitleText": "版权说明"
+			}
+		},
+		{
+			"path": "pages/user/help",
+			"style": {
+				"navigationBarTitleText": "帮助中心"
+			}
+		},
+		{
+			"path": "pages/user/feedback",
+			"style": {
+				"navigationBarTitleText": "意见反馈"
+			}
+		},
+		{
+			"path": "pages/user/about",
+			"style": {
+				"navigationBarTitleText": "关于我们"
+			}
+		},
+		{
+			"path": "pages/user/purchase",
+			"style": {
+				"navigationBarTitleText": "购买点数"
+			}
+		},
+		{
+			"path": "pages/user/checkin",
+			"style": {
+				"navigationBarTitleText": "每日签到"
+			}
+		},
+		{
+			"path": "pages/recommendations/index",
+			"style": {
+				"navigationBarTitleText": "热门推荐"
+			}
+		}
+    ],
+	"tabBar": {
+		"color": "#8a8a8a",
+		"selectedColor": "#3B7EFF",
+		"backgroundColor": "#121212",
+		"borderStyle": "black",
+		"list": [{
+			"pagePath": "pages/index/index",
+			"iconPath": "static/img/tabbar/home.png",
+			"selectedIconPath": "static/img/tabbar/homeHL.png",
+			"text": "首页"
+		}, {
+			"pagePath": "pages/creation/select",
+			"iconPath": "static/img/tabbar/project.png",
+			"selectedIconPath": "static/img/tabbar/projectHL.png",
+			"text": "创作"
+		}, {
+			"pagePath": "pages/user/index",
+			"iconPath": "static/img/tabbar/user.png",
+			"selectedIconPath": "static/img/tabbar/userHL.png",
+			"text": "我的"
+		}]
+	},
+	"globalStyle": {
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "AI音乐创作助手",
+		"navigationBarBackgroundColor": "#121212",
+		"backgroundColor": "#121212"
+	}
+}

@@ -1,0 +1,54 @@
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@/components': resolve(__dirname, 'src/components'),
+      '@/views': resolve(__dirname, 'src/views'),
+      '@/stores': resolve(__dirname, 'src/stores'),
+      '@/utils': resolve(__dirname, 'src/utils'),
+      '@/api': resolve(__dirname, 'src/api'),
+      '@/types': resolve(__dirname, 'src/types'),
+      '@/assets': resolve(__dirname, 'src/assets')
+    }
+  },
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    open: false,
+    cors: true,
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'http://192.168.1.118:3000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
+  },
+  build: {
+    target: 'es2015',
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    minify: 'terser',
+    chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      output: {
+        chunkFileNames: 'js/[name]-[hash].js',
+        entryFileNames: 'js/[name]-[hash].js',
+        assetFileNames: '[ext]/[name]-[hash].[ext]',
+        manualChunks: {
+          'vue-vendor': ['vue', 'vue-router', 'pinia'],
+          'ui-vendor': ['@headlessui/vue', '@vueuse/core'],
+          'chart-vendor': ['echarts', 'echarts-gl']
+        }
+      }
+    }
+  }
+})

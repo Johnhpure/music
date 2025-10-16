@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUNO API 管理 - AI音乐创作助手</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+        }
+        
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 1rem 1.5rem;
+            margin: 0.2rem 0;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.5rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1rem 2rem rgba(0,0,0,0.12);
+        }
+        
+        .stat-card {
+            padding: 1.5rem;
+            border-left: 4px solid;
+        }
+        
+        .stat-card.primary { border-color: #667eea; }
+        .stat-card.success { border-color: #28a745; }
+        .stat-card.warning { border-color: #ffc107; }
+        .stat-card.danger { border-color: #dc3545; }
+        .stat-card.info { border-color: #17a2b8; }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .status-badge {
+            padding: 0.35rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-healthy {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-unhealthy {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .log-table {
+            font-size: 0.9rem;
+        }
+        
+        .log-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .api-key-display {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #dee2e6;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <nav class="col-md-2 col-lg-2 d-md-block sidebar px-0">
+                <div class="position-sticky pt-4">
+                    <div class="text-center mb-4">
+                        <h4 class="text-white fw-bold">
+                            <i class="bi bi-music-note-beamed"></i> SUNO 管理
+                        </h4>
+                    </div>
+                    
+                    <ul class="nav flex-column px-3">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#dashboard" data-tab="dashboard">
+                                <i class="bi bi-speedometer2"></i> 仪表板
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#statistics" data-tab="statistics">
+                                <i class="bi bi-bar-chart"></i> 统计分析
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#logs" data-tab="logs">
+                                <i class="bi bi-list-ul"></i> 调用日志
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#config" data-tab="config">
+                                <i class="bi bi-gear"></i> API配置
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#users" data-tab="users">
+                                <i class="bi bi-people"></i> 用户统计
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-5 px-3">
+                        <button class="btn btn-light w-100" onclick="refreshData()">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新数据
+                        </button>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- 主内容区 -->
+            <main class="col-md-10 col-lg-10 ms-sm-auto px-md-4 py-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="fw-bold">SUNO API 管理控制台</h2>
+                    <div>
+                        <span class="text-muted me-3">
+                            <i class="bi bi-clock"></i> <span id="currentTime"></span>
+                        </span>
+                        <button class="btn btn-outline-secondary" onclick="testConnection()">
+                            <i class="bi bi-shield-check"></i> 测试连接
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 仪表板页面 -->
+                <div id="dashboard-content" class="tab-content">
+                    <!-- 健康状态 -->
+                    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+                        <i class="bi bi-info-circle-fill me-2" style="font-size: 1.5rem;"></i>
+                        <div>
+                            <strong>系统状态: </strong>
+                            <span id="health-status" class="status-badge status-healthy">健康运行</span>
+                            <span class="ms-3">最后检查: <span id="last-check-time">--</span></span>
+                        </div>
+                    </div>
+                    
+                    <!-- 统计卡片 -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card stat-card primary">
+                                <div class="stat-label">
+                                    <i class="bi bi-lightning-charge"></i> SUNO剩余积分
+                                </div>
+                                <div class="stat-value text-primary" id="suno-credits">--</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card success">
+                                <div class="stat-label">
+                                    <i class="bi bi-check-circle"></i> 总调用次数
+                                </div>
+                                <div class="stat-value text-success" id="total-calls">--</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card warning">
+                                <div class="stat-label">
+                                    <i class="bi bi-hourglass-split"></i> 队列任务
+                                </div>
+                                <div class="stat-value text-warning" id="queue-length">--</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card info">
+                                <div class="stat-label">
+                                    <i class="bi bi-percent"></i> 成功率
+                                </div>
+                                <div class="stat-value text-info" id="success-rate">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 图表区域 -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-pie-chart"></i> 模型使用分布
+                                    </h5>
+                                    <div class="chart-container">
+                                        <canvas id="modelChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-graph-up"></i> 最近30天调用趋势
+                                    </h5>
+                                    <div class="chart-container">
+                                        <canvas id="trendChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 最近任务 -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-clock-history"></i> 最近任务
+                            </h5>
+                            <div class="table-responsive">
+                                <table class="table log-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>标题</th>
+                                            <th>用户</th>
+                                            <th>模型</th>
+                                            <th>状态</th>
+                                            <th>创建时间</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-tasks">
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">加载中...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 统计分析页面 -->
+                <div id="statistics-content" class="tab-content" style="display: none;">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">
+                                        <i class="bi bi-calendar-range"></i> 时间范围筛选
+                                    </h5>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">开始日期</label>
+                                            <input type="date" class="form-control" id="stats-start-date">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">结束日期</label>
+                                            <input type="date" class="form-control" id="stats-end-date">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button class="btn btn-primary w-100" onclick="loadStatistics()">
+                                                <i class="bi bi-search"></i> 查询
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-lg-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">详细统计数据</h5>
+                                    <div id="stats-detail-content">
+                                        <p class="text-muted">请选择时间范围并点击查询</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 调用日志页面 -->
+                <div id="logs-content" class="tab-content" style="display: none;">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">
+                                <i class="bi bi-funnel"></i> 日志筛选
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label">用户ID</label>
+                                    <input type="number" class="form-control" id="log-user-id" placeholder="输入用户ID">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">开始日期</label>
+                                    <input type="date" class="form-control" id="log-start-date">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">结束日期</label>
+                                    <input type="date" class="form-control" id="log-end-date">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button class="btn btn-primary w-100" onclick="loadLogs(1)">
+                                        <i class="bi bi-search"></i> 查询
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">调用日志列表</h5>
+                            <div class="table-responsive">
+                                <table class="table log-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>用户</th>
+                                            <th>标题</th>
+                                            <th>模型</th>
+                                            <th>状态</th>
+                                            <th>积分消耗</th>
+                                            <th>创建时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="logs-table">
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted">加载中...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <nav>
+                                <ul class="pagination justify-content-center" id="logs-pagination">
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- API配置页面 -->
+                <div id="config-content" class="tab-content" style="display: none;">
+                    <div class="row g-3">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-key"></i> API密钥配置
+                                    </h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">当前API Key</label>
+                                        <div class="api-key-display" id="current-api-key">
+                                            加载中...
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Base URL</label>
+                                        <div class="api-key-display" id="current-base-url">
+                                            https://api.sunoapi.org
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <strong>注意：</strong>修改API Key需要在.env文件中更新SUNO_API_KEY配置并重启服务生效。
+                                    </div>
+                                    <button class="btn btn-primary" onclick="testConnection()">
+                                        <i class="bi bi-shield-check"></i> 测试当前配置
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-info-circle"></i> 配置说明
+                                    </h5>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success"></i>
+                                            API Key需要从SUNO官网获取
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success"></i>
+                                            确保Key有足够的积分余额
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success"></i>
+                                            定期检查积分消耗情况
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success"></i>
+                                            建议配置回调URL
+                                        </li>
+                                    </ul>
+                                    <a href="https://sunoapi.org/api-key" target="_blank" class="btn btn-outline-primary w-100">
+                                        <i class="bi bi-box-arrow-up-right"></i> 获取API Key
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 用户统计页面 -->
+                <div id="users-content" class="tab-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-people"></i> 用户使用统计 (Top 20)
+                            </h5>
+                            <div class="table-responsive">
+                                <table class="table log-table">
+                                    <thead>
+                                        <tr>
+                                            <th>排名</th>
+                                            <th>用户</th>
+                                            <th>总任务数</th>
+                                            <th>成功任务</th>
+                                            <th>总积分消耗</th>
+                                            <th>最后使用</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-table">
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">加载中...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // API Base URL - 根据实际环境修改
+        const API_BASE_URL = 'http://localhost:3000/admin/suno';
+        
+        // JWT Token - 需要从登录获取
+        let authToken = localStorage.getItem('admin_token') || '';
+        
+        // 图表实例
+        let modelChart = null;
+        let trendChart = null;
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置当前时间
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            
+            // 加载仪表板数据
+            loadDashboard();
+            
+            // 绑定标签切换
+            document.querySelectorAll('[data-tab]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tab = this.getAttribute('data-tab');
+                    switchTab(tab);
+                });
+            });
+        });
+        
+        // 更新当前时间
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString('zh-CN');
+        }
+        
+        // API请求封装
+        async function apiRequest(endpoint, options = {}) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                ...options.headers
+            };
+            
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('未授权，请先登录');
+                        // 跳转到登录页
+                        return null;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API请求失败:', error);
+                alert('请求失败: ' + error.message);
+                return null;
+            }
+        }
+        
+        // 加载仪表板数据
+        async function loadDashboard() {
+            const data = await apiRequest('/dashboard');
+            if (!data || data.code !== 200) return;
+            
+            const dashboard = data.data;
+            
+            // 更新统计卡片
+            document.getElementById('suno-credits').textContent = dashboard.overview.sunoCredits || 'N/A';
+            document.getElementById('total-calls').textContent = dashboard.overview.totalCalls.toLocaleString();
+            document.getElementById('queue-length').textContent = dashboard.overview.queueLength;
+            document.getElementById('success-rate').textContent = dashboard.overview.successRate + '%';
+            
+            // 更新健康状态
+            const healthBadge = document.getElementById('health-status');
+            healthBadge.textContent = dashboard.health.status === 'healthy' ? '健康运行' : '异常';
+            healthBadge.className = dashboard.health.status === 'healthy' ? 'status-badge status-healthy' : 'status-badge status-unhealthy';
+            document.getElementById('last-check-time').textContent = new Date(dashboard.health.lastCheck).toLocaleTimeString('zh-CN');
+            
+            // 更新图表
+            updateModelChart(dashboard.charts.byType);
+            updateTrendChart(dashboard.charts.byDate);
+            
+            // 更新最近任务
+            updateRecentTasks(dashboard.recentTasks);
+        }
+        
+        // 更新模型使用图表
+        function updateModelChart(data) {
+            const ctx = document.getElementById('modelChart');
+            
+            if (modelChart) {
+                modelChart.destroy();
+            }
+            
+            modelChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(data),
+                    datasets: [{
+                        data: Object.values(data),
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#f093fb',
+                            '#4facfe',
+                            '#00f2fe'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新趋势图表
+        function updateTrendChart(data) {
+            const ctx = document.getElementById('trendChart');
+            
+            if (trendChart) {
+                trendChart.destroy();
+            }
+            
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{
+                        label: '调用次数',
+                        data: data.map(d => d.calls),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新最近任务列表
+        function updateRecentTasks(tasks) {
+            const tbody = document.getElementById('recent-tasks');
+            if (!tasks || tasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">暂无数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = tasks.map(task => `
+                <tr>
+                    <td>${task.id}</td>
+                    <td>${task.title || '-'}</td>
+                    <td>${task.userName}</td>
+                    <td><span class="badge bg-secondary">${task.model}</span></td>
+                    <td>${getStatusBadge(task.status)}</td>
+                    <td>${new Date(task.createdAt).toLocaleString('zh-CN')}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // 获取状态徽章
+        function getStatusBadge(status) {
+            const badges = {
+                'pending': '<span class="badge bg-secondary">待处理</span>',
+                'generating': '<span class="badge bg-primary">生成中</span>',
+                'success': '<span class="badge bg-success">成功</span>',
+                'failed': '<span class="badge bg-danger">失败</span>'
+            };
+            return badges[status] || status;
+        }
+        
+        // 加载日志
+        async function loadLogs(page = 1) {
+            const userId = document.getElementById('log-user-id').value;
+            const startDate = document.getElementById('log-start-date').value;
+            const endDate = document.getElementById('log-end-date').value;
+            
+            let query = `?page=${page}&limit=20`;
+            if (userId) query += `&userId=${userId}`;
+            if (startDate) query += `&startDate=${startDate}`;
+            if (endDate) query += `&endDate=${endDate}`;
+            
+            const data = await apiRequest(`/logs${query}`);
+            if (!data || data.code !== 200) return;
+            
+            const logs = data.data;
+            const tbody = document.getElementById('logs-table');
+            
+            if (!logs.items || logs.items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">暂无数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = logs.items.map(log => `
+                <tr>
+                    <td>${log.id}</td>
+                    <td>${log.userName}</td>
+                    <td>${log.title || '-'}</td>
+                    <td><span class="badge bg-secondary">${log.model}</span></td>
+                    <td>${getStatusBadge(log.status)}</td>
+                    <td>${log.creditsUsed}</td>
+                    <td>${new Date(log.createdAt).toLocaleString('zh-CN')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewLogDetail(${log.id})">
+                            详情
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // 更新分页
+            updatePagination(logs, page, 'loadLogs');
+        }
+        
+        // 更新分页
+        function updatePagination(data, currentPage, funcName) {
+            const pagination = document.getElementById('logs-pagination');
+            if (!data.totalPages) {
+                pagination.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= data.totalPages; i++) {
+                html += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="${funcName}(${i}); return false;">${i}</a>
+                    </li>
+                `;
+            }
+            pagination.innerHTML = html;
+        }
+        
+        // 查看日志详情
+        async function viewLogDetail(id) {
+            const data = await apiRequest(`/logs?id=${id}`);
+            if (!data || data.code !== 200) return;
+            
+            alert(JSON.stringify(data.data, null, 2));
+        }
+        
+        // 加载用户统计
+        async function loadUsers() {
+            const data = await apiRequest('/statistics/by-user?page=1&limit=20');
+            if (!data || data.code !== 200) return;
+            
+            const stats = data.data;
+            const tbody = document.getElementById('users-table');
+            
+            if (!stats.items || stats.items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">暂无数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = stats.items.map((user, index) => `
+                <tr>
+                    <td><strong>${index + 1}</strong></td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${user.userAvatar || '/default-avatar.png'}" 
+                                 class="rounded-circle me-2" width="30" height="30" alt="">
+                            <div>
+                                <div>${user.userName}</div>
+                                <small class="text-muted">ID: ${user.userId}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${user.totalTasks}</td>
+                    <td>${user.successTasks}</td>
+                    <td>${user.totalCredits}</td>
+                    <td>${new Date(user.lastUsed).toLocaleDateString('zh-CN')}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // 加载配置
+        async function loadConfig() {
+            const data = await apiRequest('/config');
+            if (!data || data.code !== 200) return;
+            
+            document.getElementById('current-api-key').textContent = data.data.apiKey || '未配置';
+            document.getElementById('current-base-url').textContent = data.data.baseUrl;
+        }
+        
+        // 测试连接
+        async function testConnection() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>测试中...';
+            
+            const data = await apiRequest('/test-connection', { method: 'POST' });
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-shield-check"></i> 测试连接';
+            
+            if (!data || data.code !== 200) {
+                alert('测试失败');
+                return;
+            }
+            
+            const result = data.data;
+            const message = `
+                连接状态: ${result.connected ? '✅ 成功' : '❌ 失败'}
+                剩余积分: ${result.credits || 'N/A'}
+                响应延迟: ${result.latency}ms
+                ${result.message}
+            `;
+            
+            alert(message);
+        }
+        
+        // 切换标签页
+        function switchTab(tab) {
+            // 更新导航激活状态
+            document.querySelectorAll('[data-tab]').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            
+            // 隐藏所有内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // 显示对应内容
+            document.getElementById(`${tab}-content`).style.display = 'block';
+            
+            // 加载对应数据
+            switch(tab) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'logs':
+                    loadLogs(1);
+                    break;
+                case 'config':
+                    loadConfig();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+            }
+        }
+        
+        // 刷新数据
+        function refreshData() {
+            const activeTab = document.querySelector('.nav-link.active').getAttribute('data-tab');
+            switchTab(activeTab);
+        }
+    </script>
+</body>
+</html>

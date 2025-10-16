@@ -1,0 +1,118 @@
+{
+  "task_id": "IMPL-002",
+  "title": "Phase 2: Image HTTPS Migration - Local Image Preloading & CDN Preparation",
+  "description": "Resolve miniprogram HTTPS image protocol restriction. Phase 2A (required): Download all Banner and HotRecommendation cover images to miniprogram static directory, update database imageUrl to local paths. Phase 2B (optional): Prepare CDN service integration for long-term solution.",
+  "priority": "P0",
+  "status": "completed",
+  "estimated_time": "1 week",
+  "actual_time": "Already completed (pre-existing implementation)",
+  "completion_date": "2025-10-15",
+  "depends_on": ["IMPL-001"],
+  "flow_control": {
+    "pre_analysis": {
+      "objectives": [
+        "Identify all Banner and HotRecommendation images currently using HTTP URLs",
+        "Review existing image error handling (onBannerImageError fallback mechanism)",
+        "Understand database schema for imageUrl/coverUrl fields",
+        "Analyze miniprogram static directory structure and packaging constraints"
+      ],
+      "target_files": [
+        "miniprogram/pages/index/index.vue:700-738 (onBannerImageError fallback logic)",
+        "backend/src/modules/banner/entities/banner.entity.ts (imageUrl field definition)",
+        "backend/src/modules/hot-recommendation/entities/hot-recommendation.entity.ts (coverUrl field)",
+        "miniprogram/static/img/ (existing static image directory structure)"
+      ],
+      "key_patterns": [
+        "Current fallback: HTTP image error → local static image pool (banner1.jpg, banner2.jpg, banner3.jpg)",
+        "Vue $set for reactive image URL updates",
+        "Database stores full URL paths (HTTP or local relative paths)"
+      ]
+    },
+    "implementation_approach": {
+      "strategy": "Phase 2A (本地图片预置) as immediate solution, Phase 2B (CDN迁移) as long-term enhancement",
+      "phases": [
+        {
+          "phase": "2A.1 - Image Collection & Download",
+          "tasks": [
+            "Query database for all active banners and hot recommendations",
+            "Download all HTTP images from database URLs",
+            "Save to miniprogram/static/img/banner/ and miniprogram/static/img/covers/",
+            "Verify image integrity and format compatibility (jpg/png)",
+            "Document mapping: old HTTP URL → new local path"
+          ]
+        },
+        {
+          "phase": "2A.2 - Database Migration",
+          "tasks": [
+            "Create migration script to update imageUrl/coverUrl to local paths",
+            "Update t_banners table: imageUrl = '/static/img/banner/xxx.jpg'",
+            "Update t_hot_recommendations table: coverUrl = '/static/img/covers/xxx.jpg'",
+            "Backup database before migration",
+            "Run migration and verify all records updated"
+          ]
+        },
+        {
+          "phase": "2A.3 - Backend Service Update",
+          "tasks": [
+            "Modify backend/src/modules/banner/banner.service.ts - Support both HTTP and local path returns",
+            "Modify backend/src/modules/hot-recommendation/hot-recommendation.service.ts - Support local paths",
+            "Add path validation: ensure local paths start with '/static/'",
+            "Test API responses return correct local paths"
+          ]
+        },
+        {
+          "phase": "2A.4 - Miniprogram Testing",
+          "tasks": [
+            "Build and deploy miniprogram with new static images",
+            "Test Banner carousel: verify all images display correctly",
+            "Test HotRecommendation covers: verify all covers display",
+            "Test fallback mechanism still works for missing images",
+            "Measure package size increase (expected: +500KB-1MB)"
+          ]
+        },
+        {
+          "phase": "2B - CDN Preparation (Optional)",
+          "tasks": [
+            "Research CDN service options (七牛云, 阿里云OSS, 腾讯云COS)",
+            "Create backend/src/modules/file/cdn.service.ts - CDN upload service scaffold",
+            "Design migration strategy: local → CDN HTTPS URLs",
+            "Document CDN cost estimation and operational requirements"
+          ]
+        }
+      ]
+    }
+  },
+  "target_files": {
+    "new_files": [
+      "miniprogram/static/img/banner/*.jpg (downloaded banner images)",
+      "miniprogram/static/img/covers/*.jpg (downloaded cover images)",
+      "backend/scripts/migrate-images-to-local.js (database migration script)",
+      "backend/src/modules/file/cdn.service.ts (Phase 2B optional)"
+    ],
+    "modified_files": [
+      "backend/src/modules/banner/banner.service.ts:* (support local path returns)",
+      "backend/src/modules/hot-recommendation/hot-recommendation.service.ts:* (support local paths)",
+      "miniprogram/pages/index/index.vue:700-738 (update fallback paths if needed)"
+    ]
+  },
+  "acceptance_criteria": [
+    "Image display: 100% of Banner and HotRecommendation images display correctly in miniprogram",
+    "No HTTP protocol errors: All images loaded via local paths (/static/...)",
+    "Fallback still works: Missing images gracefully fall back to default images",
+    "Package size: Miniprogram package size increase within acceptable range (<2MB total)",
+    "Database consistency: All imageUrl/coverUrl fields updated to local paths or HTTPS URLs"
+  ],
+  "deliverables": [
+    "All Banner images in miniprogram/static/img/banner/",
+    "All cover images in miniprogram/static/img/covers/",
+    "Database migration script with rollback capability",
+    "Updated backend services supporting local paths",
+    "Test report: 100% image display success rate, package size analysis"
+  ],
+  "risk_mitigation": [
+    "Package size limit: Monitor miniprogram package size (WeChat limit: 2MB main package, 20MB subpackages)",
+    "Image quality: Compress images before adding to static directory (optimize for web)",
+    "Database rollback: Keep backup before migration, implement rollback script",
+    "CDN fallback: If Phase 2B implemented, maintain local path fallback chain"
+  ]
+}
