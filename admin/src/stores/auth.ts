@@ -37,11 +37,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const logout = () => {
-    user.value = null
-    token.value = null
-    removeToken()
-    console.log('👋 已登出')
+  const logout = async () => {
+    try {
+      // 调用后端退出登录接口
+      await authAPI.logout()
+      console.log('✅ 后端退出登录成功')
+    } catch (error) {
+      console.warn('⚠️  后端退出登录失败，但继续清理本地状态:', error)
+    } finally {
+      // 无论后端是否成功，都清理本地状态
+      user.value = null
+      token.value = null
+      removeToken()
+      console.log('👋 已登出')
+    }
   }
 
   const checkAuth = async () => {

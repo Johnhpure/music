@@ -51,7 +51,7 @@
           <div 
             class="h-full transition-all duration-1000 ease-out rounded-full"
             :class="healthBarClass"
-            :style="{ width: `${animatedHealth}%` }"
+            :style="{ width: `${healthPercentage}%` }"
           ></div>
         </div>
       </div>
@@ -105,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
 
 interface Service {
@@ -131,7 +131,8 @@ const emit = defineEmits<{
 }>()
 
 const refreshing = ref(false)
-const animatedHealth = ref(0)
+
+import { ref } from 'vue'
 
 const statusText = computed(() => {
   const statusMap = {
@@ -201,29 +202,7 @@ const restart = () => {
   emit('restart', props.service)
 }
 
-// Animate health bar on mount
-onMounted(() => {
-  setTimeout(() => {
-    const target = healthPercentage.value
-    const duration = 1500
-    const steps = 60
-    const stepValue = target / steps
-    let currentValue = 0
-    let step = 0
-
-    const timer = setInterval(() => {
-      currentValue += stepValue
-      step++
-
-      if (step >= steps) {
-        currentValue = target
-        clearInterval(timer)
-      }
-
-      animatedHealth.value = currentValue
-    }, duration / steps)
-  }, props.delay)
-})
+// 移除所有 setInterval 动画，使用 CSS transition
 </script>
 
 <style scoped>

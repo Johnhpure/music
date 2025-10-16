@@ -38,12 +38,7 @@
           <Icon icon="mdi:play-circle" class="w-8 h-8 text-white" />
         </button>
         
-        <!-- Hot Badge -->
-        <div v-if="recommendation.isHot" class="absolute -top-2 -right-2">
-          <div class="w-6 h-6 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center animate-pulse">
-            <Icon icon="mdi:fire" class="w-3 h-3 text-white" />
-          </div>
-        </div>
+
         
         <!-- Status Indicator -->
         <div 
@@ -68,7 +63,7 @@
             <div class="flex items-center space-x-4 text-xs text-gray-500 mb-3">
               <div class="flex items-center space-x-1">
                 <Icon icon="mdi:music-clef-treble" class="w-3 h-3" />
-                <span>{{ recommendation.genre }}</span>
+                <span>{{ recommendation.category }}</span>
               </div>
               
               <div class="flex items-center space-x-1">
@@ -87,22 +82,7 @@
               </div>
             </div>
             
-            <!-- Tags -->
-            <div v-if="recommendation.tags && recommendation.tags.length > 0" class="flex items-center space-x-2 mb-3">
-              <span
-                v-for="tag in recommendation.tags.slice(0, 3)"
-                :key="tag"
-                class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-gray-700/50 text-gray-300 border border-gray-600/30"
-              >
-                {{ tag }}
-              </span>
-              <span
-                v-if="recommendation.tags.length > 3"
-                class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-gray-700/50 text-gray-400 border border-gray-600/30"
-              >
-                +{{ recommendation.tags.length - 3 }}
-              </span>
-            </div>
+
             
             <!-- Created Date -->
             <div class="text-xs text-gray-500">
@@ -112,23 +92,6 @@
           
           <!-- Action Buttons -->
           <div class="flex items-center space-x-2 ml-4">
-            <!-- Hot Toggle -->
-            <button
-              @click="$emit('toggleHot', recommendation)"
-              class="p-2 rounded-lg transition-all duration-200"
-              :class="[
-                recommendation.isHot 
-                  ? 'text-red-400 hover:bg-red-500/20' 
-                  : 'text-gray-500 hover:bg-gray-500/20'
-              ]"
-              :title="recommendation.isHot ? '取消热门' : '设为热门'"
-            >
-              <Icon 
-                :icon="recommendation.isHot ? 'mdi:fire' : 'mdi:fire-off'" 
-                class="w-5 h-5"
-              />
-            </button>
-            
             <!-- Status Toggle -->
             <button
               @click="$emit('toggleStatus', recommendation)"
@@ -221,11 +184,10 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  select: [id: string, selected: boolean]
+  select: [id: number, selected: boolean]
   edit: [recommendation: HotRecommendation]
   delete: [recommendation: HotRecommendation]
   toggleStatus: [recommendation: HotRecommendation]
-  toggleHot: [recommendation: HotRecommendation]
   preview: [recommendation: HotRecommendation]
   play: [recommendation: HotRecommendation]
 }>()

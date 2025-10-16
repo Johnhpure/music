@@ -16,11 +16,20 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
-  openid: string;
+  @Column({ unique: true, nullable: true })
+  openid?: string;
 
   @Column({ nullable: true })
   unionid?: string;
+
+  @Column({ unique: true, nullable: true })
+  username?: string;
+
+  @Column({ unique: true, nullable: true })
+  email?: string;
+
+  @Column({ nullable: true, select: false })
+  password?: string;
 
   @Column({ nullable: true })
   phone?: string;

@@ -1,28 +1,76 @@
 <template>
 	<view class="container">
+		<!-- 登录授权弹窗 -->
+		<AuthModal 
+			:show.sync="showAuthModal" 
+			@success="handleAuthSuccess"
+		/>
+		
 		<!-- 用户信息展示 -->
 		<view class="user-info">
-			<view class="avatar-container">
-				<image class="user-avatar" :src="userAvatar" @click="handleAvatarClick"></image>
-				<view v-if="!isLoggedIn" class="auth-badge">点击授权</view>
+			<!-- 头像点击区域 - 点击后先检查登录 -->
+			<view class="avatar-wrapper" @click="handleAvatarClick">
+				<image class="user-avatar" :src="userImage"></image>
+				<view class="avatar-edit-hint">
+					<text class="edit-icon">✏️</text>
+				</view>
 			</view>
+			
 			<view class="user-details">
-				<view class="user-name-row">
-					<text class="user-name">{{ userNickname }}</text>
-					<view v-if="isLoggedIn" class="auth-status">
-						<text v-if="userHasPhone" class="status-badge verified">✅</text>
-						<text v-else class="status-badge pending" @click="showPhoneAuthPrompt">📱</text>
-					</view>
-				</view>
-				<view class="user-info-row" v-if="isLoggedIn && userHasPhone">
-					<text class="user-phone">{{ maskedUserPhone }}</text>
-				</view>
+				<!-- 点击昵称弹出编辑框 -->
+				<text class="user-name" @click="showNicknameModal">{{ userName }}</text>
 				<view class="points-info">
-					<view class="works-badge" @click="navigateTo('/pages/user/works')">
-						<text class="music-icon">🎼</text>
-						<text class="works-number">已创作{{ userWorksCount }}首</text>
+					<view class="points-badge">
+						<text class="music-icon">🎵</text>
+						<text class="points-number">320点</text>
 					</view>
-					<text class="view-details" @click="navigateTo('/pages/user/works')">查看作品</text>
+					<text class="view-details" @click="navigateTo('/pages/user/points?activeTab=history')">查看明细</text>
+				</view>
+			</view>
+		</view>
+		
+		<!-- 头像昵称编辑弹窗 -->
+		<view v-if="profileEditVisible" class="modal-overlay" @click="hideProfileEdit">
+			<view class="profile-edit-modal" @click.stop>
+				<view class="modal-header">
+					<text class="modal-title">编辑个人信息</text>
+					<text class="modal-close" @click="hideProfileEdit">✕</text>
+				</view>
+				<view class="modal-body">
+					<!-- 头像选择 -->
+					<view class="avatar-edit-section">
+						<text class="section-label">头像</text>
+						<view class="avatar-selector">
+							<button 
+								class="avatar-select-btn" 
+								open-type="chooseAvatar" 
+								@chooseavatar="onChooseAvatar"
+							>
+								<image class="preview-avatar" :src="tempAvatarPath || userImage"></image>
+								<view class="avatar-edit-badge">
+									<text class="edit-icon-small">✏️</text>
+								</view>
+							</button>
+							<text class="avatar-hint">点击更换头像</text>
+						</view>
+					</view>
+					
+					<!-- 昵称输入 -->
+					<view class="nickname-edit-section">
+						<text class="section-label">昵称</text>
+						<input 
+							class="nickname-input" 
+							type="nickname"
+							v-model="tempNickname"
+							placeholder="请输入昵称"
+							placeholder-style="color: #787878;"
+							maxlength="20"
+						/>
+					</view>
+				</view>
+				<view class="modal-footer">
+					<button class="modal-button cancel" @click="hideProfileEdit">取消</button>
+					<button class="modal-button confirm" @click="saveProfile">保存</button>
 				</view>
 			</view>
 		</view>
@@ -121,7 +169,7 @@
 					</view>
 				</view>
 				
-				<button class="purchase-button" @click="navigateTo('/pages/user/points?activeTab=free')">购买点数</button>
+				<button class="purchase-button" @click="checkLoginForPurchase">购买点数</button>
 				
 				<view class="points-rule">
 					<text class="rule-text">创建一首歌曲消耗20点</text>
@@ -186,50 +234,18 @@
 	import { mapGetters } from 'vuex'
 	import uniIcons from '@/components/uni-icons/uni-icons.vue'
 	import uniNavBar from '@/components/uni-nav-bar/uni-nav-bar.vue'
+	import AuthModal from '@/components/auth-modal/auth-modal.vue'
+	import authMixin from '@/mixins/authMixin.js'
 	import globalConfig from '@/config'
-	import WeChatAuth from '@/utils/wechatAuth'
-import WeChatAuthComplete from '@/utils/wechatAuthComplete'
-	
 	export default {
+		mixins: [authMixin],
 		components: {
 			uniIcons,
-			uniNavBar
+			uniNavBar,
+			AuthModal
 		},
 		computed: {
-			...mapGetters(['user','themeBgColor', 'darkMode', 'isLoggedIn', 'userAvatar', 'userNickname']),
-			
-			// 用户点数
-			userPoints() {
-				if (this.user && this.user.points !== undefined) {
-					return this.user.points
-				}
-				return 320 // 默认值，实际应从后端获取
-			},
-
-			// 用户是否有手机号
-			userHasPhone() {
-				return this.user && this.user.phone && this.user.phone !== '';
-			},
-
-			// 脱敏显示的手机号
-			maskedUserPhone() {
-				if (!this.userHasPhone) return '';
-				const phone = this.user.phone;
-				if (phone.length >= 11) {
-					return phone.substring(0, 3) + '****' + phone.substring(7);
-				}
-				return phone;
-			},
-
-			// 用户作品数量
-			userWorksCount() {
-				return this.user?.worksCount || this.worksCount || 0;
-			},
-
-			// 用户点数余额
-			userCreditBalance() {
-				return this.user?.creditBalance || this.user?.points || 0;
-			}
+			...mapGetters(['user','themeBgColor', 'darkMode']),
 		},
 		data() {
 			return {
@@ -241,11 +257,14 @@ import WeChatAuthComplete from '@/utils/wechatAuthComplete'
 				userImage: '/static/img/profile.svg', // 用户头像
 				userName: '音乐创作者', // 用户名称
 				userEmail: 'user@example.com', // 用户邮箱
-				worksCount: 0, // 用户作品数量
 				works: [
 					{ id: 1, title: '夏日晚风', date: '2023-06-15', status: '已下载', genre: '流行' },
 					{ id: 2, title: '城市霓虹', date: '2023-06-10', status: '云端', genre: '电子' }
-				] // 作品列表
+				], // 作品列表
+				// 个人信息编辑相关
+				profileEditVisible: false, // 头像昵称编辑弹窗是否显示
+				tempNickname: '', // 临时昵称
+				tempAvatarPath: '' // 临时头像路径
 			}
 		},
 		onReady() {
@@ -254,24 +273,20 @@ import WeChatAuthComplete from '@/utils/wechatAuthComplete'
 			})
 			this.setNavBarColor()
 		},
-
-		async onLoad() {
+		onShow() {
+			this.setNavBarColor()
+		},
+		onLoad() {
 			//  高度自适应
-			uni.getSystemInfo({
+			uni.getWindowInfo({
 				success: res => {
 					this.winHeight = res.windowHeight
 				}
 			})
 			this.baseUrl = globalConfig.baseUrl.replace("/api","");
 			
-			// 检查登录状态并加载用户数据
-			await this.checkAutoLogin();
-		},
-		
-		async onShow() {
-			this.setNavBarColor();
-			// 页面显示时刷新用户数据
-			await this.loadUserData();
+			// 加载用户信息
+			this.loadUserInfo()
 		},
 		// 监听页面滚动到底部
 		onReachBottom() {
@@ -280,6 +295,275 @@ import WeChatAuthComplete from '@/utils/wechatAuthComplete'
 			}
 		},
 		methods: {
+			/**
+			 * 加载用户信息
+			 */
+			loadUserInfo() {
+				const userInfo = uni.getStorageSync('userInfo')
+				if (userInfo) {
+					this.userImage = userInfo.avatar || '/static/img/profile.svg'
+					this.userName = userInfo.nickname || '音乐创作者'
+				}
+			},
+			
+			/**
+			 * 点击头像 - 先检查登录，登录后显示编辑弹窗
+			 */
+			handleAvatarClick() {
+				this.requireAuth(() => {
+					// 已登录，显示头像昵称编辑弹窗
+					this.showProfileEdit()
+				})
+			},
+			
+			/**
+			 * 点击昵称 - 先检查登录，登录后显示编辑弹窗
+			 */
+			showNicknameModal() {
+				this.requireAuth(() => {
+					// 已登录，显示头像昵称编辑弹窗
+					this.showProfileEdit()
+				})
+			},
+			
+			/**
+			 * 显示个人信息编辑弹窗
+			 */
+			showProfileEdit() {
+				// 初始化临时数据
+				this.tempNickname = this.userName === '音乐创作者' ? '' : this.userName
+				this.tempAvatarPath = this.userImage
+				this.profileEditVisible = true
+			},
+			
+			/**
+			 * 隐藏个人信息编辑弹窗
+			 */
+			hideProfileEdit() {
+				this.profileEditVisible = false
+				this.tempNickname = ''
+				this.tempAvatarPath = ''
+			},
+			
+			/**
+			 * 处理登录成功回调
+			 */
+			handleAuthSuccess(data) {
+				console.log('登录成功回调:', data)
+				
+				// 执行通用的登录成功回调
+				if (this._authCallback && typeof this._authCallback === 'function') {
+					this._authCallback(data)
+					this._authCallback = null
+				}
+				
+				// 重新加载用户信息
+				this.loadUserInfo()
+			},
+			
+			/**
+			 * 检查登录 - 购买点数
+			 */
+			checkLoginForPurchase() {
+				this.requireAuth(() => {
+					// 登录后跳转到购买页面
+					this.navigateTo('/pages/user/points?activeTab=free')
+				})
+			},
+			
+			/**
+			 * 选择头像回调（在编辑弹窗中）
+			 */
+			onChooseAvatar(e) {
+				console.log('选择头像:', e)
+				const { avatarUrl } = e.detail
+				
+				if (!avatarUrl) {
+					uni.showToast({
+						title: '未选择头像',
+						icon: 'none',
+						duration: 2000
+					})
+					return
+				}
+				
+				// 保存到临时变量，等待用户点击"保存"按钮
+				this.tempAvatarPath = avatarUrl
+				
+				uni.showToast({
+					title: '头像已选择',
+					icon: 'success',
+					duration: 1500
+				})
+			},
+			
+			/**
+			 * 上传并保存头像
+			 */
+			async saveAvatar(avatarUrl) {
+				try {
+					uni.showLoading({
+						title: '保存头像中...'
+					})
+					
+					// 方式1: 直接使用临时路径（简单快速）
+					// 如果后端支持，可以直接保存临时路径
+					let finalAvatarUrl = avatarUrl
+					
+					// 方式2: 上传到服务器（推荐）
+					// 取消下面的注释以启用上传功能
+					/*
+					try {
+						const uploadResult = await this.$minApi.uploadAvatar(avatarUrl)
+						finalAvatarUrl = uploadResult.data.url
+					} catch (uploadError) {
+						console.error('上传头像失败:', uploadError)
+						// 上传失败时也可以使用临时路径
+					}
+					*/
+					
+					// 调用后端API保存头像
+					const result = await this.$minApi.updateUserProfile({
+						avatar: finalAvatarUrl
+					})
+					
+					uni.hideLoading()
+					
+					if (result && result.code === 200) {
+						// 更新本地存储
+						const userInfo = uni.getStorageSync('userInfo') || {}
+						userInfo.avatar = finalAvatarUrl
+						uni.setStorageSync('userInfo', userInfo)
+						
+						// 更新页面显示
+						this.userImage = finalAvatarUrl
+						
+						uni.showToast({
+							title: '头像更新成功',
+							icon: 'success',
+							duration: 2000
+						})
+					} else {
+						throw new Error(result.msg || '保存失败')
+					}
+				} catch (error) {
+					uni.hideLoading()
+					console.error('保存头像失败:', error)
+					
+					uni.showToast({
+						title: error.message || '保存头像失败',
+						icon: 'none',
+						duration: 2000
+					})
+					
+					// 恢复原头像
+					this.loadUserInfo()
+				}
+			},
+			
+			/**
+			 * 保存个人信息（头像和昵称）
+			 */
+			async saveProfile() {
+				// 验证输入
+				if (!this.tempNickname || !this.tempNickname.trim()) {
+					uni.showToast({
+						title: '请输入昵称',
+						icon: 'none',
+						duration: 2000
+					})
+					return
+				}
+				
+				const nickname = this.tempNickname.trim()
+				const avatarPath = this.tempAvatarPath
+				
+				try {
+					uni.showLoading({
+						title: '保存中...'
+					})
+					
+					// 构建更新数据
+					const updateData = {
+						nickname: nickname
+					}
+					
+					// 如果头像有变化，先上传到服务器
+					if (avatarPath && avatarPath !== this.userImage) {
+						try {
+							uni.showLoading({
+								title: '上传头像中...'
+							})
+							
+							// 上传头像到服务器
+							const uploadResult = await this.$minApi.uploadAvatar(avatarPath)
+							
+							if (uploadResult && uploadResult.code === 200 && uploadResult.data) {
+								// 使用服务器返回的头像URL
+								updateData.avatar = uploadResult.data.url || uploadResult.data.avatarUrl || uploadResult.data
+								console.log('头像上传成功:', updateData.avatar)
+							} else {
+								throw new Error('头像上传失败')
+							}
+						} catch (uploadError) {
+							console.error('上传头像失败:', uploadError)
+							uni.hideLoading()
+							uni.showToast({
+								title: uploadError.message || '头像上传失败',
+								icon: 'none',
+								duration: 2000
+							})
+							return
+						}
+					}
+					
+					uni.showLoading({
+						title: '保存中...'
+					})
+					
+					// 调用后端API保存个人信息
+					const result = await this.$minApi.updateUserProfile(updateData)
+					
+					uni.hideLoading()
+					
+					if (result && result.code === 200) {
+						// 更新本地存储
+						const userInfo = uni.getStorageSync('userInfo') || {}
+						userInfo.nickname = nickname
+						if (updateData.avatar) {
+							userInfo.avatar = updateData.avatar
+						}
+						uni.setStorageSync('userInfo', userInfo)
+						
+						// 更新页面显示
+						this.userName = nickname
+						if (updateData.avatar) {
+							this.userImage = updateData.avatar
+						}
+						
+						// 关闭弹窗
+						this.hideProfileEdit()
+						
+						uni.showToast({
+							title: '个人信息更新成功',
+							icon: 'success',
+							duration: 2000
+						})
+					} else {
+						throw new Error(result.msg || '保存失败')
+					}
+				} catch (error) {
+					uni.hideLoading()
+					console.error('保存个人信息失败:', error)
+					
+					uni.showToast({
+						title: error.message || '保存失败，请重试',
+						icon: 'none',
+						duration: 2000
+					})
+				}
+			},
+			
 			navigateTo(url) {
 				uni.navigateTo({
 					url: url
@@ -295,329 +579,6 @@ import WeChatAuthComplete from '@/utils/wechatAuthComplete'
 				        timingFunc: 'easeIn'
 				    }
 				})
-			},
-			
-			// 处理头像点击事件
-			async handleAvatarClick() {
-				console.log('🎯 点击了用户头像，开始授权检查...');
-				
-				// 如果已登录，显示用户菜单或完善信息选项
-				if (this.isLoggedIn) {
-					await this.showLoggedInOptions();
-					return;
-				}
-				
-				// 如果未登录，触发完整的微信授权流程
-				await this.handleCompleteAuth();
-			},
-
-			// 显示已登录用户的选项
-			async showLoggedInOptions() {
-				const user = this.user || {};
-				const hasPhone = user.phone && user.phone !== '';
-				const hasCompleteInfo = user.nickname && user.avatar;
-				
-				let itemList = ['个人资料', '我的作品'];
-				
-				// 如果用户信息不完整，提供完善信息选项
-				if (!hasPhone || !hasCompleteInfo) {
-					itemList.unshift('完善个人信息');
-				}
-				
-				itemList.push('设置', '退出登录');
-				
-				uni.showActionSheet({
-					itemList: itemList,
-					success: async (res) => {
-						const selectedItem = itemList[res.tapIndex];
-						
-						switch(selectedItem) {
-							case '完善个人信息':
-								await this.handleCompleteProfile();
-								break;
-							case '个人资料':
-								this.showUserProfile();
-								break;
-							case '我的作品':
-								this.navigateTo('/pages/user/works');
-								break;
-							case '设置':
-								this.navigateTo('/pages/user/settings');
-								break;
-							case '退出登录':
-								this.handleLogout();
-								break;
-						}
-					}
-				});
-			},
-
-			// 处理完整的微信授权流程
-			async handleCompleteAuth() {
-				console.log('🔐 开始完整微信授权流程（新用户）...');
-				
-				uni.showLoading({
-					title: '正在授权...'
-				});
-				
-				try {
-					// 使用智能授权，适配个人中心场景
-					const authResult = await WeChatAuthComplete.smartAuth('profile');
-					
-					// 先隐藏loading
-					uni.hideLoading();
-					
-					if (authResult.success) {
-						console.log('✅ 完整授权成功!', authResult.userInfo);
-						
-						// 显示授权成功提示
-						uni.showToast({
-							title: '授权成功！',
-							icon: 'success',
-							duration: 2000
-						});
-						
-						// 刷新页面数据
-						await this.refreshUserData();
-						
-						// 检查是否需要手机号授权
-						if (!authResult.userInfo.hasPhone) {
-							setTimeout(() => {
-								this.showPhoneAuthPrompt();
-							}, 2500);
-						}
-						
-					} else {
-						console.log('❌ 授权失败:', authResult.message);
-						uni.showToast({
-							title: authResult.message || '授权失败',
-							icon: 'none',
-							duration: 2000
-						});
-					}
-				} catch (error) {
-					// 确保隐藏loading
-					uni.hideLoading();
-					
-					console.error('❌ 授权异常:', error);
-					uni.showToast({
-						title: '授权失败，请重试',
-						icon: 'none',
-						duration: 2000
-					});
-				}
-			},
-
-			// 完善个人信息
-			async handleCompleteProfile() {
-				console.log('📝 开始完善个人信息...');
-				
-				const user = this.user || {};
-				const needsPhone = !user.phone;
-				const needsUserInfo = !user.nickname || !user.avatar;
-				
-				if (needsPhone) {
-					this.showPhoneAuthPrompt();
-				} else if (needsUserInfo) {
-					// 重新获取用户信息
-					try {
-						const result = await WeChatAuthComplete.login({
-							needUserInfo: true,
-							needPhone: false,
-							desc: '完善您的个人资料'
-						});
-						
-						if (result.success) {
-							uni.showToast({
-								title: '信息更新成功',
-								icon: 'success'
-							});
-							await this.refreshUserData();
-						}
-					} catch (error) {
-						uni.showToast({
-							title: '更新失败，请重试',
-							icon: 'none'
-						});
-					}
-				} else {
-					uni.showToast({
-						title: '您的信息已完善',
-						icon: 'success'
-					});
-				}
-			},
-
-			// 显示手机号授权提示
-			showPhoneAuthPrompt() {
-				uni.showModal({
-					title: '绑定手机号',
-					content: '为了提供更好的服务和账户安全，建议您绑定手机号。是否现在绑定？',
-					confirmText: '立即绑定',
-					cancelText: '暂时跳过',
-					success: (res) => {
-						if (res.confirm) {
-							// 跳转到手机号授权页面
-							uni.navigateTo({
-								url: '/pages/user/phone-auth'
-							});
-						}
-					}
-				});
-			},
-			
-			// 显示用户菜单
-			showUserMenu() {
-				uni.showActionSheet({
-					itemList: ['个人资料', '设置', '退出登录'],
-					success: (res) => {
-						switch(res.tapIndex) {
-							case 0:
-								// 个人资料
-								this.showUserProfile();
-								break;
-							case 1:
-								// 设置
-								this.navigateTo('/pages/user/settings');
-								break;
-							case 2:
-								// 退出登录
-								this.handleLogout();
-								break;
-						}
-					}
-				});
-			},
-			
-			// 显示用户资料
-			showUserProfile() {
-				const user = this.user || {};
-				uni.showModal({
-					title: '个人资料',
-					content: `昵称: ${user.nickName || '音乐创作者'}\n已创作作品: ${this.userWorksCount}首\n点数余额: ${this.userCreditBalance || 0}点\n注册时间: ${user.createdAt || '未知'}`,
-					showCancel: false,
-					confirmText: '确定'
-				});
-			},
-			
-			// 退出登录
-			handleLogout() {
-				uni.showModal({
-					title: '确认退出',
-					content: '确定要退出登录吗？',
-					success: (res) => {
-						if (res.confirm) {
-							this.$store.dispatch('logout');
-							uni.showToast({
-								title: '已退出登录',
-								icon: 'success'
-							});
-							// 刷新页面数据
-							this.refreshUserData();
-						}
-					}
-				});
-			},
-			
-			// 检查自动登录
-			async checkAutoLogin() {
-				try {
-					// 首先检查Vuex中是否已有用户信息
-					if (this.isLoggedIn) {
-						console.log('✅ 用户已登录 (Vuex)');
-						await this.loadUserData();
-						return;
-					}
-					
-					// 检查本地存储中的登录状态
-					const isLoggedIn = WeChatAuth.isLoggedIn();
-					
-					if (isLoggedIn) {
-						// 如果本地有登录信息但Vuex没有，更新Vuex状态
-						const userInfo = WeChatAuth.getUserInfo();
-						const token = uni.getStorageSync('token');
-						
-						this.$store.commit('login', {
-							...userInfo,
-							token: token,
-							ApiToken: token
-						});
-						
-						console.log('✅ 从本地存储恢复登录状态');
-						await this.loadUserData();
-					} else {
-						console.log('ℹ️ 用户未登录');
-					}
-				} catch (error) {
-					console.error('❌ 自动登录检查失败:', error);
-				}
-			},
-			
-			// 加载用户数据（优化容错处理）
-			async loadUserData() {
-				if (!this.isLoggedIn) {
-					this.worksCount = 0;
-					return;
-				}
-				
-				try {
-					// 获取用户点数余额（这个接口正常工作）
-					await this.$store.dispatch('getCreditBalance');
-					console.log('✅ 用户点数余额获取成功');
-				} catch (error) {
-					console.log('⚠️ 获取用户点数余额失败:', error.message);
-				}
-				
-				try {
-					// 获取用户作品数量（可能404，但不影响主要功能）
-					await this.loadUserWorksCount();
-				} catch (error) {
-					console.log('⚠️ 获取用户作品数量失败:', error.message);
-					this.worksCount = 0;
-				}
-				
-				console.log('✅ 个人中心页面数据更新完成（部分接口可能未实现）');
-			},
-			
-			// 获取用户作品数量（优化容错处理）
-			async loadUserWorksCount() {
-				try {
-					// 方法1: 先尝试获取用户统计信息
-					const statsResponse = await this.$minApi.getUserStats();
-					if (statsResponse.code === 200) {
-						this.worksCount = statsResponse.data.totalWorks || 0;
-						console.log('✅ 从用户统计获取作品数量:', this.worksCount);
-						return;
-					}
-				} catch (error) {
-					console.log('⚠️ 用户统计接口暂未实现 (404)，跳过');
-				}
-				
-				try {
-					// 方法2: 如果统计接口失败，通过作品列表获取
-					const worksResponse = await this.$minApi.getUserWorks({
-						page: 1,
-						pageSize: 1 // 只获取第一页来获取总数
-					});
-					
-					if (worksResponse.code === 200) {
-						this.worksCount = worksResponse.data.total || 0;
-						console.log('✅ 从作品列表获取作品数量:', this.worksCount);
-					} else {
-						console.log('⚠️ 作品列表接口返回失败，使用默认值');
-						this.worksCount = 0;
-					}
-				} catch (error) {
-					console.log('⚠️ 作品列表接口暂未实现 (404)，使用默认值');
-					this.worksCount = 0;
-				}
-			},
-			
-			// 刷新用户数据
-			async refreshUserData() {
-				await this.loadUserData();
-				// 触发页面重新计算computed属性
-				this.$forceUpdate();
 			}
 		}
 	}
@@ -641,41 +602,37 @@ import WeChatAuthComplete from '@/utils/wechatAuthComplete'
 		margin-bottom: 20rpx;
 	}
 
-	.avatar-container {
+	// 头像区域样式
+	.avatar-wrapper {
 		position: relative;
+		cursor: pointer;
 		margin-right: 20rpx;
 	}
-
+	
 	.user-avatar {
 		width: 120rpx;
 		height: 120rpx;
 		border-radius: 50%;
 		border: 2rpx solid #0B67EC;
-		cursor: pointer;
-		transition: all 0.2s ease;
+		display: block;
 	}
-
-	.user-avatar:hover {
-		transform: scale(1.05);
-		border-color: #36D1A6;
-	}
-
-	.auth-badge {
+	
+	.avatar-edit-hint {
 		position: absolute;
-		bottom: -5rpx;
-		right: -5rpx;
-		background: linear-gradient(135deg, #36D1A6 0%, #0B67EC 100%);
-		color: white;
-		font-size: 20rpx;
-		padding: 4rpx 8rpx;
-		border-radius: 12rpx;
-		border: 2rpx solid #1E1E1E;
-		animation: pulse 2s infinite;
+		bottom: 0;
+		right: 0;
+		width: 36rpx;
+		height: 36rpx;
+		background: linear-gradient(135deg, #0B67EC 0%, #7342CC 100%);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 3rpx solid #121212;
 	}
-
-	@keyframes pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.7; }
+	
+	.avatar-edit-hint .edit-icon {
+		font-size: 18rpx;
 	}
 
 	.user-details {
@@ -683,59 +640,11 @@ import WeChatAuthComplete from '@/utils/wechatAuthComplete'
 		flex-direction: column;
 	}
 
-	.user-name-row {
-		display: flex;
-		align-items: center;
-		margin-bottom: 8rpx;
-	}
-
 	.user-name {
 		font-size: 36rpx;
 		font-weight: bold;
 		color: #FFFFFF;
-		margin-right: 10rpx;
-	}
-
-	.auth-status {
-		display: flex;
-		align-items: center;
-	}
-
-	.status-badge {
-		font-size: 24rpx;
-		padding: 4rpx 8rpx;
-		border-radius: 12rpx;
-		cursor: pointer;
-		transition: all 0.2s ease;
-	}
-
-	.status-badge.verified {
-		background: rgba(54, 209, 166, 0.2);
-		color: #36D1A6;
-		border: 1rpx solid #36D1A6;
-	}
-
-	.status-badge.pending {
-		background: rgba(250, 173, 20, 0.2);
-		color: #FAAD14;
-		border: 1rpx solid #FAAD14;
-		animation: shake 3s infinite;
-	}
-
-	@keyframes shake {
-		0%, 100% { transform: translateX(0); }
-		25%, 75% { transform: translateX(-2rpx); }
-		50% { transform: translateX(2rpx); }
-	}
-
-	.user-info-row {
-		margin-bottom: 6rpx;
-	}
-
-	.user-phone {
-		font-size: 26rpx;
-		color: #36D1A6;
-		font-weight: 500;
+		margin-bottom: 10rpx;
 	}
 
 	.points-info {
@@ -744,20 +653,13 @@ import WeChatAuthComplete from '@/utils/wechatAuthComplete'
 		margin-top: 10rpx;
 	}
 
-	.works-badge {
+	.points-badge {
 		display: flex;
 		align-items: center;
-		background: linear-gradient(135deg, #36D1A6 0%, #0B67EC 100%);
+		background: linear-gradient(135deg, #0B67EC 0%, #7342CC 100%);
 		border-radius: 30rpx;
 		padding: 6rpx 14rpx;
 		margin-right: 15rpx;
-		cursor: pointer;
-		transition: all 0.2s ease;
-	}
-	
-	.works-badge:hover {
-		transform: scale(1.02);
-		box-shadow: 0 4rpx 12rpx rgba(54, 209, 166, 0.3);
 	}
 
 	.music-icon {
@@ -765,21 +667,15 @@ import WeChatAuthComplete from '@/utils/wechatAuthComplete'
 		margin-right: 4rpx;
 	}
 
-	.works-number {
+	.points-number {
 		font-size: 24rpx;
 		color: #FFFFFF;
-		font-weight: 500;
 	}
 
 	.view-details {
 		font-size: 24rpx;
-		color: #36D1A6;
+		color: #3B7EFF;
 		text-decoration: underline;
-		cursor: pointer;
-	}
-	
-	.view-details:hover {
-		color: #0B67EC;
 	}
 
 	// 云存储提示样式
@@ -1091,5 +987,164 @@ import WeChatAuthComplete from '@/utils/wechatAuthComplete'
 	.item-text {
 		font-size: 28rpx;
 		color: #FFFFFF;
+	}
+	
+	/* 昵称编辑弹窗样式 */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.7);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 9999;
+	}
+	
+	.modal-content {
+		width: 600rpx;
+		background-color: #1E1E1E;
+		border-radius: 20rpx;
+		overflow: hidden;
+	}
+	
+	.profile-edit-modal {
+		width: 600rpx;
+		background-color: #1E1E1E;
+		border-radius: 24rpx;
+		overflow: hidden;
+	}
+	
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 30rpx;
+		border-bottom: 1px solid #2D2D2D;
+	}
+	
+	.modal-title {
+		font-size: 32rpx;
+		font-weight: bold;
+		color: #FFFFFF;
+	}
+	
+	.modal-close {
+		font-size: 40rpx;
+		color: #787878;
+		line-height: 1;
+		padding: 0 10rpx;
+	}
+	
+	.modal-body {
+		padding: 40rpx 30rpx;
+	}
+	
+	.nickname-input {
+		width: 100%;
+		height: 80rpx;
+		background-color: #2D2D2D;
+		border-radius: 10rpx;
+		padding: 0 20rpx;
+		font-size: 28rpx;
+		color: #FFFFFF;
+	}
+	
+	/* 新增：个人信息编辑弹窗专用样式 */
+	.avatar-edit-section {
+		margin-bottom: 40rpx;
+	}
+	
+	.section-label {
+		font-size: 28rpx;
+		color: #ACACAC;
+		display: block;
+		margin-bottom: 20rpx;
+	}
+	
+	.avatar-selector {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16rpx;
+	}
+	
+	.avatar-select-btn {
+		position: relative;
+		padding: 0;
+		margin: 0;
+		border: none;
+		background: transparent;
+	}
+	
+	.avatar-select-btn::after {
+		border: none;
+	}
+	
+	.preview-avatar {
+		width: 160rpx;
+		height: 160rpx;
+		border-radius: 50%;
+		object-fit: cover;
+		border: 4rpx solid #2D2D2D;
+	}
+	
+	.avatar-edit-badge {
+		position: absolute;
+		bottom: 8rpx;
+		right: 8rpx;
+		width: 44rpx;
+		height: 44rpx;
+		background: linear-gradient(135deg, #0B67EC 0%, #7342CC 100%);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 3rpx solid #1E1E1E;
+	}
+	
+	.avatar-edit-badge .edit-icon-small {
+		font-size: 20rpx;
+	}
+	
+	.avatar-hint {
+		font-size: 24rpx;
+		color: #787878;
+	}
+	
+	.nickname-edit-section {
+		margin-bottom: 20rpx;
+	}
+	
+	.modal-footer {
+		display: flex;
+		border-top: 1px solid #2D2D2D;
+	}
+	
+	.modal-button {
+		flex: 1;
+		height: 90rpx;
+		line-height: 90rpx;
+		text-align: center;
+		font-size: 30rpx;
+		border: none;
+		border-radius: 0;
+		
+		&::after {
+			border: none;
+		}
+		
+		&.cancel {
+			background-color: #2D2D2D;
+			color: #ACACAC;
+		}
+		
+		&.confirm {
+			background: linear-gradient(135deg, #0B67EC 0%, #7342CC 100%);
+			color: #FFFFFF;
+			font-weight: bold;
+		}
 	}
 </style>

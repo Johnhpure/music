@@ -16,6 +16,7 @@
       <div
         v-if="leftIcon"
         class="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
+        v-once
       >
         <Icon :icon="leftIcon" class="w-5 h-5 text-gray-400" />
       </div>
@@ -82,20 +83,16 @@
     </div>
     
     <!-- Helper Text / Error -->
-    <Transition
-      enter-active-class="transition-all duration-200"
-      leave-active-class="transition-all duration-200"
-      enter-from-class="opacity-0 translate-y-1"
-      leave-to-class="opacity-0 translate-y-1"
+    <p
+      v-show="helperText || error"
+      class="mt-2 text-sm transition-opacity duration-200"
+      :class="[
+        error ? 'text-red-400' : 'text-gray-400',
+        helperText || error ? 'opacity-100' : 'opacity-0'
+      ]"
     >
-      <p
-        v-if="helperText || error"
-        class="mt-2 text-sm"
-        :class="error ? 'text-red-400' : 'text-gray-400'"
-      >
-        {{ error || helperText }}
-      </p>
-    </Transition>
+      {{ error || helperText }}
+    </p>
     
     <!-- Character Count -->
     <div
@@ -177,74 +174,75 @@ const containerClass = computed(() => {
   ].filter(Boolean).join(' ')
 })
 
-const inputClass = computed(() => {
-  const baseClass = [
-    'w-full bg-glass-white/10 backdrop-blur-xl border rounded-lg',
-    'text-white placeholder-gray-400 transition-all duration-300',
-    'focus:outline-none focus:ring-2 focus:ring-offset-0'
-  ]
+// 缓存基础类，避免重复构建
+const baseInputClasses = 'w-full bg-glass-white/10 backdrop-blur-xl border rounded-lg text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-0'
 
+// 预计算静态类名（不依赖响应式状态）
+const staticClasses = computed(() => {
+  const classes = [baseInputClasses]
+  
   // Size classes
-  const sizeClasses = {
-    sm: props.multiline ? 'px-3 py-2 text-sm' : 'px-3 py-2 text-sm h-9',
-    md: props.multiline ? 'px-4 py-3 text-base' : 'px-4 py-3 text-base h-11',
-    lg: props.multiline ? 'px-5 py-4 text-lg' : 'px-5 py-4 text-lg h-13'
+  if (props.size === 'sm') {
+    classes.push(props.multiline ? 'px-3 py-2 text-sm' : 'px-3 py-2 text-sm h-9')
+  } else if (props.size === 'lg') {
+    classes.push(props.multiline ? 'px-5 py-4 text-lg' : 'px-5 py-4 text-lg h-13')
+  } else {
+    classes.push(props.multiline ? 'px-4 py-3 text-base' : 'px-4 py-3 text-base h-11')
   }
-
-  // Variant classes
-  const variantClasses = {
-    default: [
-      'border-gray-700/30',
-      isFocused.value 
-        ? 'border-cyber-purple bg-glass-white/20' 
-        : 'hover:border-gray-600/50',
-      'focus:border-cyber-purple focus:ring-cyber-purple/20'
-    ],
-    outline: [
-      'border-2 border-cyber-purple/50 bg-transparent',
-      isFocused.value 
-        ? 'border-cyber-purple bg-cyber-purple/5' 
-        : 'hover:border-cyber-purple/70',
-      'focus:border-cyber-purple focus:ring-cyber-purple/20'
-    ],
-    filled: [
-      'border-transparent bg-gray-700/30',
-      isFocused.value 
-        ? 'bg-gray-700/50 ring-2 ring-cyber-purple' 
-        : 'hover:bg-gray-700/40',
-      'focus:ring-cyber-purple'
-    ]
-  }
-
-  // Error state
-  const errorClass = props.error ? [
-    'border-red-500 bg-red-500/5',
-    'focus:border-red-500 focus:ring-red-500/20'
-  ] : []
-
-  // Padding adjustments for icons
-  const paddingClass = []
-  if (props.leftIcon) {
-    paddingClass.push('pl-10')
-  }
+  
+  // Icon padding
+  if (props.leftIcon) classes.push('pl-10')
   if (props.rightIcon || props.clearable || showPassword.value || props.loading) {
-    paddingClass.push('pr-10')
+    classes.push('pr-10')
   }
-
+  
   // Disabled state
-  const disabledClass = props.disabled ? [
-    'cursor-not-allowed opacity-50'
-  ] : []
-
-  return [
-    ...baseClass,
-    sizeClasses[props.size],
-    ...variantClasses[props.variant],
-    ...errorClass,
-    ...paddingClass,
-    ...disabledClass
-  ].filter(Boolean).join(' ')
+  if (props.disabled) {
+    classes.push('cursor-not-allowed opacity-50')
+  }
+  
+  return classes.join(' ')
 })
+
+// 动态类名（依赖响应式状态）- 只计算变化的部分
+const dynamicClasses = computed(() => {
+  const classes = []
+  
+  // Error state优先
+  if (props.error) {
+    classes.push('border-red-500 bg-red-500/5 focus:border-red-500 focus:ring-red-500/20')
+    return classes.join(' ')
+  }
+  
+  // Variant classes
+  if (props.variant === 'outline') {
+    classes.push('border-2 border-cyber-purple/50 bg-transparent hover:border-cyber-purple/70 focus:border-cyber-purple focus:ring-cyber-purple/20')
+    if (isFocused.value) {
+      classes.push('!border-cyber-purple !bg-cyber-purple/5')
+    }
+  } else if (props.variant === 'filled') {
+    classes.push('border-transparent bg-gray-700/30 hover:bg-gray-700/40 focus:ring-cyber-purple')
+    if (isFocused.value) {
+      classes.push('!bg-gray-700/50 ring-2 ring-cyber-purple')
+    }
+  } else {
+    // default variant
+    classes.push('border-gray-700/30 hover:border-gray-600/50 focus:border-cyber-purple focus:ring-cyber-purple/20')
+    if (isFocused.value) {
+      classes.push('!border-cyber-purple !bg-glass-white/20')
+    }
+  }
+  
+  return classes.join(' ')
+})
+
+// 合并类名
+const inputClass = computed(() => {
+  return `${staticClasses.value} ${dynamicClasses.value}`
+})
+
+// 使用requestAnimationFrame优化输入性能
+let rafId: number | null = null
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement | HTMLTextAreaElement
@@ -261,7 +259,16 @@ const handleInput = (event: Event) => {
     target.value = String(value)
   }
 
-  emit('update:modelValue', value)
+  // 使用requestAnimationFrame批量更新，减少重绘
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+  }
+  
+  const localValue = value
+  rafId = requestAnimationFrame(() => {
+    emit('update:modelValue', localValue)
+    rafId = null
+  })
 }
 
 const handleFocus = (event: FocusEvent) => {

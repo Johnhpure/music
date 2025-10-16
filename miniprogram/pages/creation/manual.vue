@@ -226,12 +226,12 @@
 			},
 			// 设置自动保存
 			setupAutoSave() {
-				// 每30秒自动保存一次
+				// 优化: 从30秒改为60秒自动保存，减少性能消耗
 				this.autoSaveTimer = setInterval(() => {
 					if(this.isDirty) {
 						this.saveDraft(true);
 					}
-				}, 30000);
+				}, 60000); // 优化: 从30秒改为60秒，降低保存频率
 				
 				// 监听输入变化
 				this.$watch('songTitle', () => {

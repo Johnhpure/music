@@ -141,6 +141,18 @@ export const checkLogin = (response) => {
  * @returns
  */
 export const checkResult = (result) => {
+	if (typeof result === 'string') {
+		showErrorMsg('服务器返回异常数据')
+		return {
+			code: 500,
+			msg: '服务器返回异常数据',
+			data: null,
+			ok: function() {
+				return false
+			}
+		}
+	}
+	
 	if (!result.isOk) {
 		showErrorMsg(result.errMsg)
 	}

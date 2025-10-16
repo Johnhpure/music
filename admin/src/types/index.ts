@@ -61,36 +61,39 @@ export interface PromptTemplate {
 }
 
 export interface Banner {
-  id: string
+  id: string | number
   title: string
-  description: string
+  description?: string  // 前端显示用，后端无此字段
   imageUrl: string
   linkUrl?: string
+  linkType?: 'none' | 'internal' | 'external' | 'miniprogram'
   isActive: boolean
   sortOrder: number
-  startDate?: string
-  endDate?: string
-  clickCount: number
-  tags?: string[]
+  startTime?: string  // 后端使用startTime而非startDate
+  endTime?: string    // 后端使用endTime而非endDate
+  clickCount?: number  // 前端显示用，后端无此字段
+  tags?: string[]      // 前端显示用，后端无此字段
   createdAt: string
   updatedAt: string
+  deletedAt?: string
 }
 
 export interface HotRecommendation {
-  id: string
+  id: number
+  category: string
   title: string
   artist: string
-  genre: string
   duration: string
   coverUrl: string
   audioUrl: string
-  isHot: boolean
-  tags: string[]
+  description?: string
   playCount: number
+  likeCount: number
   sortOrder: number
   isActive: boolean
   createdAt: string
   updatedAt: string
+  deletedAt?: string
 }
 
 export interface CreditTransaction {

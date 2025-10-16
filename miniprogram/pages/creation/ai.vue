@@ -58,84 +58,30 @@
 								v-model="customPrompt" 
 								placeholder="例如：一首关于夏日海边回忆的轻快歌曲"
 								placeholder-style="color: #8E8E8E;"
-								maxlength="500"
-								:disabled="isExpandingInspiration"
-								class="inspiration-textarea"
+								maxlength="100"
+								auto-height
 							></textarea>
-							
-							<!-- AI灵感扩展按钮 -->
-							<view class="ai-expand-btn" @click="expandInspiration" :class="{ 'generating': isExpandingInspiration, 'disabled': isExpandingInspiration }">
-								<view class="ai-btn-content">
-									<view class="ai-icon" :class="{ 'spinning': isExpandingInspiration }">
-										<text v-if="!isExpandingInspiration">🤖</text>
-										<view v-else class="loading-spinner"></view>
-									</view>
-									<text class="ai-text" v-if="!isExpandingInspiration">AI扩展灵感</text>
-									<text class="ai-text" v-else>生成中...</text>
-								</view>
-								<view class="ai-glow" v-if="!isExpandingInspiration"></view>
-							</view>
-							
-							<text class="char-count">{{customPrompt.length}}/500</text>
-							
-							<!-- 免费次数提示 -->
-							<view class="inspiration-tips" v-if="showInspirationTips">
-								<text class="tips-text">
-									{{freeInspirationCount > 0 ? `剩余${freeInspirationCount}次免费AI灵感扩展` : '每次AI灵感扩展需要10点数'}}
-								</text>
-							</view>
+							<text class="char-count">{{customPrompt.length}}/100</text>
 						</view>
 					</view>
 
 					<!-- 选择创作模板 -->
-					<view class="template-section">
-						<view class="section-title">选择创作模版</view>
-						
-						<!-- 分类标签 -->
-						<view class="category-tabs">
+					<view class="template">
+					<view class="section-title">选择创作模版</view>
+					<scroll-view class="scroll-view-x" scroll-x enable-flex>
+						<view class="template-cards">
 							<view 
-								class="category-tab" 
-								v-for="(category, index) in visibleCategories" 
+								class="template-card" 
+								v-for="(template, index) in filteredTemplates" 
 								:key="index"
-								@click="selectCategory(index)"
-								:class="{'active': activeCategory === index}"
-							>
-								<text class="category-name">{{category.name}}</text>
-							</view>
-						</view>
-						
-						<!-- 模板网格 -->
-						<view class="template-grid">
-							<view 
-								class="template-item" 
-								v-for="(template, index) in visibleTemplates" 
-								:key="template.id"
 								@click="selectTemplate(template)"
-								:class="{'selected': selectedTemplate === template}"
+								:class="{'active': selectedTemplate === template}"
 							>
-								<view class="template-header">
-									<view class="template-icon">
-										<text class="icon-emoji">{{getCategoryIcon(template.category)}}</text>
-									</view>
-									<view class="template-category-badge">{{template.category}}</view>
-								</view>
 								<view class="template-content">{{template.content}}</view>
-								<view class="template-footer">
-									<view class="select-indicator" v-if="selectedTemplate === template">
-										<text class="check-icon">✓</text>
-									</view>
-								</view>
+								<view class="template-category">#{{template.category}}</view>
 							</view>
 						</view>
-						
-						<!-- 换一批按钮 -->
-						<view class="change-batch-container" v-if="hasMoreTemplates">
-							<view class="change-batch-btn" @click="changeTemplateBatch">
-								<view class="batch-icon">🔄</view>
-								<text class="batch-text">换一批</text>
-								<text class="batch-info">({{currentBatchIndex + 1}}/{{totalBatches}})</text>
-							</view>
-						</view>
+					</scroll-view>
 					</view>
 
 					<!-- 生成按钮 -->
@@ -147,7 +93,7 @@
 						>
 							生成歌词
 						</button>
-						<view class="tips">将消耗10音乐点数（生成2个版本）</view>
+						<view class="tips">将消耗10音乐点数</view>
 					</view>
 				</view>
 			</block>
@@ -237,37 +183,67 @@
 				activeVersion: 0, // 当前选中的版本
 				isEditing: false, // 是否正在编辑歌词
 				showGuide: true, // 是否显示新手指引
-				currentRequestId: null, // 当前生成记录的ID
-				
-				// AI灵感扩展相关
-				isExpandingInspiration: false, // 是否正在扩展灵感
-				freeInspirationCount: 3, // 剩余免费次数
-				showInspirationTips: true, // 是否显示免费次数提示
-				inspirationCostPerTime: 10, // 每次扩展消耗的点数
-				
-				// 模板分页相关
-				currentBatchIndex: 0, // 当前批次索引
-				templatesPerBatch: 4, // 每批显示的模板数量
-				categoriesPerPage: 6, // 每页显示的分类数量
 				
 				// 提示词分类
 				promptCategories: [
-					{name: '全部', id: 'all'}
+					{name: '全部', id: 'all'},
+					{name: '爱情', id: 'love'},
+					{name: '友情', id: 'friendship'},
+					{name: '励志', id: 'inspiration'},
+					{name: '思念', id: 'missing'},
+					{name: '青春', id: 'youth'},
+					{name: '情感', id: 'emotion'}
 				],
 				
 				// 提示词模板
-				promptTemplates: [],
+				promptTemplates: [
+					{
+						id: 1,
+						category: '爱情',
+						content: '写一首关于初次见面就心动的爱情歌曲'
+					},
+					{
+						id: 2,
+						category: '爱情',
+						content: '写一首表达对爱人思念的歌曲'
+					},
+					{
+						id: 3,
+						category: '友情',
+						content: '写一首关于多年老友重逢的歌曲'
+					},
+					{
+						id: 4,
+						category: '励志',
+						content: '写一首关于追逐梦想永不放弃的歌曲'
+					},
+					{
+						id: 5,
+						category: '思念',
+						content: '写一首关于思念远方亲人的歌曲'
+					},
+					{
+						id: 6,
+						category: '青春',
+						content: '写一首关于青春校园回忆的歌曲'
+					},
+					{
+						id: 7,
+						category: '情感',
+						content: '写一首关于生活中小确幸的歌曲'
+					},
+					{
+						id: 8,
+						category: '情感',
+						content: '写一首表达对生活感悟的歌曲'
+					}
+				],
 				
 				// 生成的版本
 				generatedVersions: []
 			}
 		},
 		computed: {
-			// 显示的分类（只显示前6个）
-			visibleCategories() {
-				return this.promptCategories.slice(0, this.categoriesPerPage);
-			},
-			
 			// 根据分类过滤的提示词模板
 			filteredTemplates() {
 				if (this.activeCategory === 0) {
@@ -277,24 +253,6 @@
 					return this.promptTemplates.filter(item => item.category === category);
 				}
 			},
-			
-			// 显示的模板（当前批次的4个）
-			visibleTemplates() {
-				const startIndex = this.currentBatchIndex * this.templatesPerBatch;
-				const endIndex = startIndex + this.templatesPerBatch;
-				return this.filteredTemplates.slice(startIndex, endIndex);
-			},
-			
-			// 总批次数
-			totalBatches() {
-				return Math.ceil(this.filteredTemplates.length / this.templatesPerBatch);
-			},
-			
-			// 是否有更多模板（显示换一批按钮）
-			hasMoreTemplates() {
-				return this.totalBatches > 1;
-			},
-			
 			// 当前选中的版本
 			currentVersion() {
 				return this.generatedVersions[this.activeVersion] || {title: '', content: ''};
@@ -304,99 +262,13 @@
 				return this.selectedTemplate !== null || this.customPrompt.trim().length > 0;
 			}
 		},
-		async onLoad(options) {
+		onLoad(options) {
 			// 如果有主题ID参数，自动设置提示词
 			if(options.themeId && options.themeName) {
 				this.setThemePrompt(options.themeId, options.themeName);
 			}
-			
-			// 加载创作模板数据
-			await this.loadPromptData();
-			
-			// 加载用户免费AI扩展次数
-			this.loadUserInspirationCount();
 		},
 		methods: {
-			// 加载用户免费AI扩展次数
-			async loadUserInspirationCount() {
-				try {
-					// 从本地存储获取用户免费次数
-					const today = new Date().toDateString();
-					const lastUseDate = uni.getStorageSync('inspiration_last_use_date');
-					const storedCount = uni.getStorageSync('inspiration_free_count');
-					
-					// 如果是新的一天，重置免费次数
-					if (lastUseDate !== today) {
-						this.freeInspirationCount = 3;
-						uni.setStorageSync('inspiration_last_use_date', today);
-						uni.setStorageSync('inspiration_free_count', 3);
-					} else {
-						// 使用存储的次数
-						this.freeInspirationCount = storedCount || 3;
-					}
-					
-					console.log('🎯 用户免费AI扩展次数:', this.freeInspirationCount);
-				} catch (error) {
-					console.error('加载用户免费次数失败:', error);
-					// 默认给3次免费机会
-					this.freeInspirationCount = 3;
-				}
-			},
-
-			// 加载创作模板数据
-			async loadPromptData() {
-				try {
-					// 加载分类
-					const categoriesResponse = await this.$api.getPromptCategories();
-					if (categoriesResponse.code === 200 && categoriesResponse.data) {
-						// 保留"全部"分类，添加后端返回的分类
-						this.promptCategories = [
-							{name: '全部', id: 'all'},
-							...categoriesResponse.data.map(category => ({
-								name: category,
-								id: category.toLowerCase()
-							}))
-						];
-					}
-
-					// 加载模板
-					const templatesResponse = await this.$api.getPromptTemplates();
-					if (templatesResponse.code === 200 && templatesResponse.data) {
-						this.promptTemplates = templatesResponse.data.map(template => ({
-							id: template.id,
-							title: template.title,
-							category: template.category,
-							content: template.content,
-							icon: template.icon,
-							sortOrder: template.sortOrder,
-							usageCount: template.usageCount
-						}));
-					}
-
-					console.log('🎵 加载创作模板成功:', {
-						categories: this.promptCategories.length,
-						templates: this.promptTemplates.length
-					});
-				} catch (error) {
-					console.error('❌ 加载创作模板失败:', error);
-					// 使用默认的分类图标映射
-					this.promptCategories = [
-						{name: '全部', id: 'all'},
-						{name: '爱情', id: 'love'},
-						{name: '友情', id: 'friendship'},
-						{name: '励志', id: 'inspiration'},
-						{name: '思念', id: 'missing'},
-						{name: '青春', id: 'youth'},
-						{name: '情感', id: 'emotion'}
-					];
-					
-					// 提示用户
-					uni.showToast({
-						title: '模板加载失败，使用默认模板',
-						icon: 'none'
-					});
-				}
-			},
 			// 返回上一页
 			goBack() {
 				uni.navigateBack();
@@ -413,193 +285,12 @@
 			// 选择提示词分类
 			selectCategory(index) {
 				this.activeCategory = index;
-				// 切换分类时重置到第一批
-				this.currentBatchIndex = 0;
 			},
-			
-			// 换一批模板
-			changeTemplateBatch() {
-				this.currentBatchIndex = (this.currentBatchIndex + 1) % this.totalBatches;
-			},
-			// AI灵感扩展功能
-			async expandInspiration() {
-				try {
-					// 检查用户输入是否为空
-					if (!this.customPrompt.trim()) {
-						uni.showToast({
-							title: '请先输入创作主题',
-							icon: 'none'
-						});
-						return;
-					}
-
-					// 检查登录状态
-					const isLoggedIn = this.$store.getters.isLoggedIn;
-					if (!isLoggedIn) {
-						uni.showModal({
-							title: '请先登录',
-							content: '需要登录后才能使用AI灵感扩展功能',
-							showCancel: false,
-							success: () => {
-								uni.navigateTo({
-									url: '/pages/login/index'
-								});
-							}
-						});
-						return;
-					}
-
-					// 如果没有免费次数，提示用户需要消耗点数
-					if (this.freeInspirationCount <= 0) {
-						const confirmResult = await this.showConfirmDialog(
-							'确认消费',
-							`AI灵感扩展需要消耗${this.inspirationCostPerTime}点数，是否继续？`
-						);
-						if (!confirmResult) {
-							return;
-						}
-					}
-
-					// 开始扩展
-					this.isExpandingInspiration = true;
-					
-					// 调用后端AI扩展API
-					const response = await this.$api.expandInspiration({
-						originalPrompt: this.customPrompt.trim()
-					});
-
-					if (response.code === 200 && response.data) {
-						// 成功获取扩展内容
-						const { expandedContent, remainingFreeCount, costCredits } = response.data;
-						
-						// 更新文本框内容
-						this.customPrompt = expandedContent;
-						
-						// 更新免费次数（使用后端返回的值）
-						this.freeInspirationCount = remainingFreeCount;
-						
-						// 更新本地存储
-						const today = new Date().toDateString();
-						uni.setStorageSync('inspiration_last_use_date', today);
-						uni.setStorageSync('inspiration_free_count', remainingFreeCount);
-						
-						// 显示成功提示
-						let toastMsg = 'AI灵感扩展成功！';
-						if (costCredits > 0) {
-							toastMsg += `（消耗${costCredits}点数）`;
-						} else if (remainingFreeCount > 0) {
-							toastMsg += `（剩余${remainingFreeCount}次免费）`;
-						}
-						
-						uni.showToast({
-							title: toastMsg,
-							icon: 'success',
-							duration: 2000
-						});
-						
-					} else {
-						// API返回错误
-						let errorMsg = response.message || 'AI扩展失败，请重试';
-						
-						// 特殊处理点数不足错误
-						if (response.code === 402 || errorMsg.includes('点数不足')) {
-							uni.showModal({
-								title: '点数不足',
-								content: '您的点数余额不足，请先充值',
-								showCancel: true,
-								cancelText: '取消',
-								confirmText: '去充值',
-								success: (res) => {
-									if (res.confirm) {
-										uni.navigateTo({
-											url: '/pages/credit/index'
-										});
-									}
-								}
-							});
-							return;
-						}
-						
-						uni.showToast({
-							title: errorMsg,
-							icon: 'none'
-						});
-					}
-
-				} catch (error) {
-					console.error('AI灵感扩展失败:', error);
-					uni.showToast({
-						title: '网络错误，请重试',
-						icon: 'none'
-					});
-				} finally {
-					this.isExpandingInspiration = false;
-				}
-			},
-
-			// 获取用户积分
-			async getUserPoints() {
-				try {
-					// 这里应该调用获取用户信息的API
-					// 暂时返回模拟数据
-					return 320; // 模拟用户有320点数
-				} catch (error) {
-					console.error('获取用户积分失败:', error);
-					return 0;
-				}
-			},
-
-			// 获取用户ID
-			getUserId() {
-				// 这里应该从存储或状态管理中获取用户ID
-				// 暂时返回模拟ID
-				return 'user_12345';
-			},
-
-			// 显示确认对话框
-			showConfirmDialog(title, content) {
-				return new Promise((resolve) => {
-					uni.showModal({
-						title: title,
-						content: content,
-						success: (res) => {
-							resolve(res.confirm);
-						},
-						fail: () => {
-							resolve(false);
-						}
-					});
-				});
-			},
-
-			// 获取分类图标
-			getCategoryIcon(category) {
-				const iconMap = {
-					'爱情': '💕',
-					'友情': '🤝',
-					'励志': '🌟',
-					'思念': '🌙',
-					'青春': '🌸',
-					'情感': '💭',
-					'全部': '🎵'
-				};
-				return iconMap[category] || '🎼';
-			},
-
-						// 选择提示词模板
-			async selectTemplate(template) {
+			// 选择提示词模板
+			selectTemplate(template) {
 				this.selectedTemplate = template;
 				// 将模板内容设置到自定义输入框，方便用户进一步修改
 				this.customPrompt = template.content;
-				
-				// 记录模板使用
-				try {
-					await this.$api.recordTemplateUsage(template.id);
-					console.log('✅ 模板使用记录成功:', template.id);
-				} catch (error) {
-					console.log('⚠️ 模板使用记录失败:', error);
-					// 不影响用户体验，静默失败
-				}
 			},
 			// 设置主题提示词
 			setThemePrompt(themeId, themeName) {
@@ -622,30 +313,8 @@
 				}
 			},
 			// 生成歌词
-			async generateLyrics() {
+			generateLyrics() {
 				if(!this.canGenerate) return;
-				
-				// 检查登录状态
-				const user = this.$store.getters.user;
-				const isLoggedIn = this.$store.getters.isLoggedIn;
-				console.log('🔐 登录状态检查:');
-				console.log('  - user:', user);
-				console.log('  - isLoggedIn:', isLoggedIn);
-				console.log('  - token:', user?.token || user?.ApiToken);
-				
-				if(!isLoggedIn) {
-					uni.showModal({
-						title: '请先登录',
-						content: '需要登录后才能使用AI歌词生成功能',
-						showCancel: false,
-						success: () => {
-							uni.navigateTo({
-								url: '/pages/login/index'
-							});
-						}
-					});
-					return;
-				}
 				
 				// 设置生成状态
 				this.isGenerating = true;
@@ -653,72 +322,25 @@
 				// 获取提示词
 				const prompt = this.customPrompt.trim();
 				
-				// 准备API请求参数
-				const params = {
-					theme: prompt,
-					style: 'pop',
-					mood: 'happy',
-					language: 'chinese',
-					versionsCount: 2,
-					additionalRequirements: '请创作一首完整的歌曲，包含主歌和副歌结构'
-				};
-				
-				try {
-					// 检查API对象是否存在
-					console.log('🔍 API对象检查:', this.$api);
-					console.log('🎵 开始调用歌词生成API，参数:', params);
-					
-					// 调用后端AI歌词生成API
-					const response = await this.$api.generateLyrics(params);
-					
-					if(response.code === 200 && response.data) {
-						// 转换API返回的数据格式为前端需要的格式
-						this.generatedVersions = response.data.versions.map(version => ({
-							title: version.title,
-							content: version.lyrics
-						}));
-						
-						// 保存生成记录ID，用于后续操作
-						this.currentRequestId = response.data.requestId;
-						
-						// 更新状态
-						this.isGenerated = true;
-						this.currentStep = 1;
-						
-						// 显示成功提示
-						uni.showToast({
-							title: '歌词生成成功',
-							icon: 'success'
-						});
-					} else {
-						// 处理API返回的错误
-						let errorMessage = '歌词生成失败，请稍后重试';
-						
-						if(response.code === 402) {
-							errorMessage = '点数不足，请先充值';
-						} else if(response.message) {
-							errorMessage = response.message;
+				// 模拟生成过程（实际项目中应调用AI服务）
+				setTimeout(() => {
+					// 生成两个版本的歌词
+					this.generatedVersions = [
+						{
+							title: '心动瞬间',
+							content: `[Verse 1]\n初见你的那个瞬间\n时光仿佛凝固了画面\n你的微笑如此美丽\n让我心跳加速难以平静\n\n[Chorus]\n心动的感觉\n像春风吹过心田\n忍不住想靠近你身边\n无论风雨走多远\n始终有你陪在身边\n\n[Verse 2]\n回忆中的每一天\n都因为有你而温暖\n牵着你的手一起走\n看遍这世界的美丽风景线\n\n[Chorus]\n心动的感觉\n像春风吹过心田\n忍不住想靠近你身边\n无论风雨走多远\n始终有你陪在身边`
+						},
+						{
+							title: '第一眼的心动',
+							content: `[Verse 1]\n人海中看到你的第一眼\n像是命中注定的相见\n你的笑容如此灿烂\n照亮了我所有的世界\n\n[Pre-Chorus]\n靠近你的每一步\n心跳都不受控制\n想要认识你却不知如何开口\n只能默默记住这感觉\n\n[Chorus]\n第一眼的心动 无法形容\n像是流星划过天空\n点燃了我内心的火焰\n只想和你一起 走过四季变换\n\n[Verse 2]\n回忆那天的每个画面\n你的声音仿佛就在耳边\n偶然的相识\n却让我念念不忘到永远`
 						}
-						
-						uni.showModal({
-							title: '生成失败',
-							content: errorMessage,
-							showCancel: false
-						});
-					}
-				} catch (error) {
-					console.error('AI歌词生成失败:', error);
+					];
 					
-					// 显示网络错误提示
-					uni.showModal({
-						title: '生成失败',
-						content: '网络连接异常，请检查网络后重试',
-						showCancel: false
-					});
-				} finally {
-					// 无论成功失败都要重置生成状态
+					// 更新状态
 					this.isGenerating = false;
-				}
+					this.isGenerated = true;
+					this.currentStep = 1; // 确保当前步骤为1
+				}, 3000);
 			},
 			// 选择版本
 			selectVersion(index) {
@@ -927,243 +549,35 @@
 	}
 }
 
-/* 模板选择区域样式 */
-.template-section {
-	margin-bottom: 40rpx;
-}
-
-/* 分类标签样式 */
-.category-tabs {
+/* 提示词模板卡片样式 */
+.template-cards {
 	display: flex;
-	flex-wrap: nowrap; /* 不换行 */
-	gap: 16rpx;
-	margin-bottom: 30rpx;
-	padding: 0 10rpx;
-	overflow-x: auto; /* 允许横向滚动 */
-	scrollbar-width: none; /* 隐藏滚动条 Firefox */
-	-ms-overflow-style: none; /* 隐藏滚动条 IE */
-}
-
-/* 隐藏webkit浏览器的滚动条 */
-.category-tabs::-webkit-scrollbar {
-	display: none;
-	width: 0;
-	height: 0;
-}
-
-.category-tab {
-	padding: 12rpx 24rpx;
-	background: rgba(255, 255, 255, 0.1);
-	border: 2rpx solid transparent;
-	border-radius: 25rpx;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	backdrop-filter: blur(10rpx);
-	flex-shrink: 0; /* 防止标签被压缩 */
-	white-space: nowrap; /* 文字不换行 */
-}
-
-.category-tab.active {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	border-color: rgba(255, 255, 255, 0.2);
-	transform: translateY(-2rpx);
-	box-shadow: 0 8rpx 20rpx rgba(102, 126, 234, 0.3);
-}
-
-.category-name {
-	font-size: 24rpx;
-	color: #FFFFFF;
-	font-weight: 500;
-}
-
-/* 模板网格样式 */
-.template-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(300rpx, 1fr));
+	overflow-y: auto;
 	gap: 20rpx;
-	padding: 0 10rpx;
 }
 
-.template-item {
-	background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-	border: 2rpx solid rgba(255, 255, 255, 0.1);
-	border-radius: 20rpx;
-	padding: 24rpx;
-	cursor: pointer;
-	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-	backdrop-filter: blur(20rpx);
-	position: relative;
-	overflow: hidden;
-}
-
-.template-item::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
-	opacity: 0;
-	transition: opacity 0.3s ease;
-	pointer-events: none;
-}
-
-.template-item:hover::before {
-	opacity: 1;
-}
-
-.template-item:hover {
-	transform: translateY(-8rpx);
-	border-color: rgba(102, 126, 234, 0.3);
-	box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.2);
-}
-
-.template-item.selected {
-	background: linear-gradient(145deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.1) 100%);
-	border-color: rgba(102, 126, 234, 0.5);
-	transform: translateY(-4rpx);
-	box-shadow: 0 12rpx 30rpx rgba(102, 126, 234, 0.4);
-}
-
-/* 模板头部 */
-.template-header {
+.template-card {
+	background-color: #1E1E1E;
+	border-radius: 16rpx;
+	padding: 20rpx;
+	border: 2rpx solid transparent;
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 16rpx;
-}
-
-.template-icon {
-	width: 60rpx;
-	height: 60rpx;
-	border-radius: 50%;
-	background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	backdrop-filter: blur(10rpx);
-}
-
-.icon-emoji {
-	font-size: 32rpx;
-	line-height: 1;
-}
-
-.template-category-badge {
-	padding: 6rpx 12rpx;
-	background: rgba(255, 255, 255, 0.2);
-	border-radius: 12rpx;
-	font-size: 20rpx;
-	color: #FFFFFF;
-	font-weight: 500;
-	backdrop-filter: blur(10rpx);
-}
-
-/* 模板内容 */
-.template-content {
-	font-size: 26rpx;
-	color: #FFFFFF;
-	line-height: 1.5;
-	margin-bottom: 16rpx;
-	opacity: 0.9;
-}
-
-/* 模板底部 */
-.template-footer {
-	display: flex;
-	justify-content: flex-end;
-	min-height: 30rpx;
-}
-
-.select-indicator {
-	width: 30rpx;
-	height: 30rpx;
-	border-radius: 50%;
-	background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	animation: bounceIn 0.5s ease;
-}
-
-.check-icon {
-	font-size: 18rpx;
-	color: #FFFFFF;
-	font-weight: bold;
-}
-
-/* 换一批按钮样式 */
-.change-batch-container {
-	display: flex;
-	justify-content: center;
-	margin-top: 30rpx;
-	padding: 0 10rpx;
-}
-
-.change-batch-btn {
-	display: flex;
-	align-items: center;
-	gap: 12rpx;
-	padding: 16rpx 32rpx;
-	background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
-	border: 2rpx solid rgba(255, 255, 255, 0.2);
-	border-radius: 30rpx;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	backdrop-filter: blur(15rpx);
-}
-
-.change-batch-btn:hover {
-	transform: translateY(-4rpx);
-	background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.15) 100%);
-	border-color: rgba(102, 126, 234, 0.4);
-	box-shadow: 0 8rpx 25rpx rgba(102, 126, 234, 0.3);
-}
-
-.change-batch-btn:active {
-	transform: translateY(-2rpx);
-}
-
-.batch-icon {
-	font-size: 28rpx;
-	line-height: 1;
-	animation: rotate360 2s linear infinite;
-}
-
-.batch-text {
-	font-size: 26rpx;
-	color: #FFFFFF;
-	font-weight: 500;
-}
-
-.batch-info {
-	font-size: 22rpx;
-	color: rgba(255, 255, 255, 0.7);
-	font-weight: 400;
-}
-
-/* 动画定义 */
-@keyframes bounceIn {
-	0% {
-		transform: scale(0);
-		opacity: 0;
+	flex-direction: column;
+	gap: 10rpx;
+	
+	&.active {
+		border-color: #0B67EC;
+		background-color: rgba(11, 103, 236, 0.1);
 	}
-	50% {
-		transform: scale(1.2);
+	
+	.template-content {
+		font-size: 28rpx;
+		color: #FFFFFF;
 	}
-	100% {
-		transform: scale(1);
-		opacity: 1;
-	}
-}
-
-@keyframes rotate360 {
-	from {
-		transform: rotate(0deg);
-	}
-	to {
-		transform: rotate(360deg);
+	
+	.template-category {
+		font-size: 22rpx;
+		color: #8E8E8E;
 	}
 }
 
@@ -1519,217 +933,4 @@
 		width: 60%;
 	}
 }
-/* AI灵感扩展按钮样式 */
-.ai-expand-btn {
-	position: absolute;
-	bottom: 30rpx;
-	right: 20rpx;
-	width: 200rpx;
-	height: 70rpx;
-	border-radius: 35rpx;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	box-shadow: 0 8rpx 25rpx rgba(102, 126, 234, 0.4);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-	z-index: 10;
-	overflow: hidden;
-	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.ai-expand-btn:hover {
-	transform: translateY(-4rpx);
-	box-shadow: 0 12rpx 35rpx rgba(102, 126, 234, 0.5);
-}
-
-.ai-expand-btn.generating {
-	background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
-	box-shadow: 0 8rpx 25rpx rgba(255, 154, 158, 0.4);
-}
-
-.ai-expand-btn.disabled {
-	pointer-events: none;
-}
-
-/* 按钮内容容器 */
-.ai-btn-content {
-	display: flex;
-	align-items: center;
-	gap: 12rpx;
-	z-index: 2;
-	position: relative;
-}
-
-/* AI图标样式 */
-.ai-icon {
-	font-size: 32rpx;
-	color: #FFFFFF;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: transform 0.3s ease;
-}
-
-.ai-icon.spinning {
-	animation: pulse 1.5s ease-in-out infinite;
-}
-
-/* 按钮文字 */
-.ai-text {
-	font-size: 24rpx;
-	color: #FFFFFF;
-	font-weight: 600;
-	white-space: nowrap;
-	letter-spacing: 0.5rpx;
-}
-
-/* 发光效果 */
-.ai-glow {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	border-radius: 35rpx;
-	background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%);
-	animation: shimmer 2s ease-in-out infinite;
-}
-
-/* 加载动画图标 */
-.loading-spinner {
-	width: 24rpx;
-	height: 24rpx;
-	border: 3rpx solid rgba(255, 255, 255, 0.3);
-	border-top: 3rpx solid #FFFFFF;
-	border-radius: 50%;
-	animation: rotate 1s linear infinite;
-}
-
-/* 加载动画样式 */
-.loading-dots {
-	display: flex;
-	gap: 4rpx;
-}
-
-.dot {
-	width: 4rpx;
-	height: 4rpx;
-	border-radius: 50%;
-	background-color: #FFFFFF;
-	animation: bounce 1.4s ease-in-out infinite both;
-}
-
-.dot1 {
-	animation-delay: -0.32s;
-}
-
-.dot2 {
-	animation-delay: -0.16s;
-}
-
-.dot3 {
-	animation-delay: 0s;
-}
-
-/* 免费次数提示样式 */
-.inspiration-tips {
-	position: absolute;
-	bottom: -40rpx;
-	left: 0;
-	right: 0;
-	text-align: center;
-}
-
-.tips-text {
-	font-size: 20rpx;
-	color: #8E8E8E;
-	background: rgba(0, 0, 0, 0.05);
-	padding: 8rpx 12rpx;
-	border-radius: 12rpx;
-	display: inline-block;
-}
-
-/* 动画定义 */
-@keyframes rotate {
-	from {
-		transform: rotate(0deg);
-	}
-	to {
-		transform: rotate(360deg);
-	}
-}
-
-@keyframes pulse {
-	0%, 100% {
-		transform: scale(1);
-	}
-	50% {
-		transform: scale(1.1);
-	}
-}
-
-@keyframes shimmer {
-	0% {
-		opacity: 0.6;
-		transform: translateX(-100%);
-	}
-	50% {
-		opacity: 1;
-	}
-	100% {
-		opacity: 0.6;
-		transform: translateX(100%);
-	}
-}
-
-@keyframes bounce {
-	0%, 80%, 100% {
-		transform: scale(0);
-	}
-	40% {
-		transform: scale(1);
-	}
-}
-
-/* 调整输入框容器样式，为AI按钮留出空间 */
-.input-container {
-	position: relative;
-	padding-bottom: 60rpx; /* 为提示文本留出空间，减少因为固定高度 */
-}
-
-/* 通用textarea样式（如果有其他textarea不使用专用类） */
-.input-container textarea:not(.inspiration-textarea) {
-	padding-right: 220rpx; /* 为AI按钮留出水平空间 */
-	padding-bottom: 30rpx; /* 为AI按钮留出垂直空间 */
-	min-height: 120rpx; /* 确保有足够高度 */
-}
-
-/* 创作灵感文本框样式 */
-.inspiration-textarea {
-	width: 100%;
-	height: 200rpx; /* 固定高度 */
-	box-sizing: border-box;
-	border: 2rpx solid #E8E8E8;
-	border-radius: 12rpx;
-	padding: 20rpx 220rpx 20rpx 20rpx; /* 右侧留出AI按钮空间 */
-	font-size: 28rpx;
-	line-height: 1.5;
-	color: #333333;
-	background-color: #FFFFFF;
-	resize: none; /* 禁止调整大小 */
-	overflow-y: auto; /* 允许垂直滚动 */
-	word-wrap: break-word; /* 自动换行 */
-	/* 隐藏滚动条但保持滚动功能 */
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* Internet Explorer 10+ */
-}
-
-/* 隐藏webkit浏览器的滚动条 */
-.inspiration-textarea::-webkit-scrollbar {
-	display: none;
-	width: 0;
-	height: 0;
-}
-
 </style> 

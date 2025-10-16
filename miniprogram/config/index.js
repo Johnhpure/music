@@ -1,18 +1,11 @@
 /**
- * AI音乐平台后端地址
+ * ip地址或域名
  */
-// 开发环境 - 本地局域网
-const devApiAddress = 'http://192.168.1.118:3000'
-// 备用地址
-const localhostApiAddress = 'http://localhost:8080'
-// 生产环境  
-const prodApiAddress = 'http://your-production-domain.com'
-
-// 当前使用的地址
-const ipAddress = devApiAddress
-
+const ipAddress = 'http://localhost:3000/api'
+// const ipAddress = 'http://8.141.1.164:8012/api'
 // 文件访问地址
-const fileAddr = `${ipAddress}/file/`
+const fileAddr = 'http://localhost:3000/fileUpload/'
+// const fileAddr = 'http://8.141.1.164:8012/fileUpload/'
 /**
  * api前缀
  */
@@ -25,7 +18,7 @@ const getBaseUrl = () => {
 	return apiPrefix
 	// #endif
 	// #ifndef H5
-	return ipAddress + apiPrefix
+	return ipAddress
 	// #endif
 }
 export default {
@@ -33,19 +26,5 @@ export default {
 	 * 针对不同平台的baseUrl
 	 */
 	baseUrl: getBaseUrl(),
-	
-	/**
-	 * 文件访问地址
-	 */
-	fileAddr: fileAddr,
-	
-	/**
-	 * 开发环境API地址
-	 */
-	devApiAddress: devApiAddress,
-	
-	/**
-	 * 生产环境API地址
-	 */
-	prodApiAddress: prodApiAddress
+	fileAddr
 }

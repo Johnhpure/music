@@ -507,9 +507,8 @@
         
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
-            // 设置当前时间
+            // 设置当前时间（移除 setInterval，只显示初始时间）
             updateCurrentTime();
-            setInterval(updateCurrentTime, 1000);
             
             // 加载仪表板数据
             loadDashboard();

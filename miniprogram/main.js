@@ -5,9 +5,6 @@ import i18n from './i18n'
 import _ from 'lodash'
 import MinRequest from './utils//MinRequest'
 import minApi from './api/api'
-// 将API注册到Vue原型上
-Vue.prototype.$minApi = minApi
-Vue.prototype.$api = minApi.apis
 import MinCache from './utils/MinCache'
 // import minRouter from './router/router.js'
 

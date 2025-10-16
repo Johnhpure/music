@@ -35,8 +35,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import * as echarts from 'echarts'
+import { shallowRef, computed, markRaw, onMounted, watch, nextTick, onUnmounted } from 'vue'
+// 按需导入 ECharts 模块（性能优化）
+import { init } from 'echarts/core'
+import { PieChart } from 'echarts/charts'
+import {
+  TooltipComponent,
+  LegendComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import { use } from 'echarts/core'
+import { useDebounceFn } from '@vueuse/core'
+
+// 注册必需的组件
+use([PieChart, TooltipComponent, LegendComponent, CanvasRenderer])
 
 interface ChartData {
   labels: string[]
@@ -56,41 +68,38 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false
 })
 
-const chartContainer = ref<HTMLDivElement>()
-let chartInstance: echarts.ECharts | null = null
+// 使用 shallowRef 避免深度响应式
+const chartContainer = shallowRef<HTMLDivElement>()
+let chartInstance: ReturnType<typeof init> | null = null
+let resizeHandler: (() => void) | null = null
 
+// 使用 shallowRef 存储图表数据
+const chartData = shallowRef(props.data)
+
+// 优化 computed，使用手动比较避免不必要更新
 const legendData = computed(() => {
-  if (!props.data.datasets[0]) return []
+  if (!chartData.value.datasets[0]) return []
   
-  const total = props.data.datasets[0].data.reduce((sum, value) => sum + value, 0)
+  const total = chartData.value.datasets[0].data.reduce((sum, value) => sum + value, 0)
   
-  return props.data.labels.map((label, index) => ({
+  return chartData.value.labels.map((label, index) => ({
     name: label,
-    value: Math.round((props.data.datasets[0].data[index] / total) * 100),
-    color: props.data.datasets[0].backgroundColor[index]
+    value: Math.round((chartData.value.datasets[0].data[index] / total) * 100),
+    color: chartData.value.datasets[0].backgroundColor[index]
   }))
 })
 
-const initChart = async () => {
-  if (!chartContainer.value || !props.data) return
+// 防抖更新图表
+const updateChart = useDebounceFn(() => {
+  if (!chartInstance || !chartData.value) return
 
-  await nextTick()
-
-  // Dispose existing chart
-  if (chartInstance) {
-    chartInstance.dispose()
-  }
-
-  // Create new chart instance
-  chartInstance = echarts.init(chartContainer.value, 'dark')
-
-  const seriesData = props.data.labels.map((label, index) => ({
-    value: props.data.datasets[0].data[index],
+  const seriesData = chartData.value.labels.map((label, index) => ({
+    value: chartData.value.datasets[0].data[index],
     name: label,
     itemStyle: {
-      color: props.data.datasets[0].backgroundColor[index],
+      color: chartData.value.datasets[0].backgroundColor[index],
       shadowBlur: 10,
-      shadowColor: props.data.datasets[0].backgroundColor[index]
+      shadowColor: chartData.value.datasets[0].backgroundColor[index]
     }
   }))
 
@@ -149,21 +158,19 @@ const initChart = async () => {
     ]
   }
 
-  chartInstance.setOption(option)
+  // 使用增量更新和延迟更新提升性能
+  chartInstance.setOption(option, {
+    notMerge: false,
+    lazyUpdate: true
+  })
 
-  // Handle resize
-  const handleResize = () => {
-    if (chartInstance) {
-      chartInstance.resize()
-    }
-  }
-
-  window.addEventListener('resize', handleResize)
-
-  // Add hover effects
+  // 添加鼠标交互事件（移除自动高亮 setInterval）
+  chartInstance.off('mouseover')
+  chartInstance.off('mouseout')
+  
   chartInstance.on('mouseover', (params) => {
-    if (params.dataIndex !== undefined) {
-      chartInstance?.dispatchAction({
+    if (params.dataIndex !== undefined && chartInstance && !chartInstance.isDisposed()) {
+      chartInstance.dispatchAction({
         type: 'highlight',
         seriesIndex: 0,
         dataIndex: params.dataIndex
@@ -172,41 +179,54 @@ const initChart = async () => {
   })
 
   chartInstance.on('mouseout', (params) => {
-    if (params.dataIndex !== undefined) {
-      chartInstance?.dispatchAction({
+    if (params.dataIndex !== undefined && chartInstance && !chartInstance.isDisposed()) {
+      chartInstance.dispatchAction({
         type: 'downplay',
         seriesIndex: 0,
         dataIndex: params.dataIndex
       })
     }
   })
+}, 100)
 
-  // Auto rotate highlight
-  let currentIndex = 0
-  const autoHighlight = () => {
-    chartInstance?.dispatchAction({
-      type: 'downplay',
-      seriesIndex: 0,
-      dataIndex: currentIndex
-    })
-    
-    currentIndex = (currentIndex + 1) % seriesData.length
-    
-    chartInstance?.dispatchAction({
-      type: 'highlight',
-      seriesIndex: 0,
-      dataIndex: currentIndex
-    })
+const initChart = async () => {
+  if (!chartContainer.value || !chartData.value) return
+
+  await nextTick()
+
+  // Dispose existing chart
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
   }
 
-  // Start auto highlight after initial animation
-  setTimeout(() => {
-    setInterval(autoHighlight, 3000)
-  }, 2000)
+  // 使用 markRaw 创建图表实例，避免响应式追踪
+  chartInstance = markRaw(init(chartContainer.value, 'dark', {
+    renderer: 'canvas',
+    useDirtyRect: true
+  }))
+
+  // 初始化图表
+  updateChart()
+
+  // 使用防抖处理 resize
+  resizeHandler = useDebounceFn(() => {
+    if (chartInstance && !chartInstance.isDisposed()) {
+      chartInstance.resize()
+    }
+  }, 200)
+
+  window.addEventListener('resize', resizeHandler)
 }
 
-// Watch for data changes
-watch(() => props.data, initChart, { deep: true })
+// Watch for data changes - 使用浅层监听
+watch(() => props.data, (newData) => {
+  chartData.value = newData
+  if (chartInstance) {
+    updateChart()
+  }
+}, { deep: false })
+
 watch(() => props.loading, (loading) => {
   if (!loading) {
     nextTick(initChart)
@@ -220,17 +240,19 @@ onMounted(() => {
   }
 })
 
-// Cleanup
-import { onUnmounted } from 'vue'
+// Cleanup（移除所有 setInterval 相关清理）
 onUnmounted(() => {
-  if (chartInstance) {
-    chartInstance.dispose()
+  // 移除事件监听器
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+    resizeHandler = null
   }
-  window.removeEventListener('resize', () => {
-    if (chartInstance) {
-      chartInstance.resize()
-    }
-  })
+
+  // 销毁图表实例
+  if (chartInstance && !chartInstance.isDisposed()) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
 })
 </script>
 

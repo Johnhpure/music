@@ -2,7 +2,7 @@
 -- 版本: 12
 -- 日期: 2024-10-15
 
-USE ai_music_platform;
+USE music_platform;
 
 -- 1. 创建管理员操作日志表
 CREATE TABLE IF NOT EXISTS `t_admin_logs` (
@@ -46,4 +46,4 @@ UPDATE `t_users` SET `role` = 'admin' WHERE `is_admin` = 1;
 -- 显示结果
 SELECT '迁移完成！' AS 'Status';
 SELECT COUNT(*) AS 'admin_logs表是否创建' FROM INFORMATION_SCHEMA.TABLES 
-WHERE TABLE_SCHEMA = 'ai_music_platform' AND TABLE_NAME = 't_admin_logs';
+WHERE TABLE_SCHEMA = 'music_platform' AND TABLE_NAME = 't_admin_logs';

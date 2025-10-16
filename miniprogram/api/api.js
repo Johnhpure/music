@@ -1,76 +1,37 @@
 import Vue from 'vue'
 import MinRequest from '@/utils/MinRequest'
 import globalConfig from '@/config'
-import requestQueue from '@/utils/requestQueue'
-import errorHandler from '@/utils/errorHandler'
-import tokenManager from '@/utils/tokenManager'
 
 const minRequest = new MinRequest()
 
-// Request interceptor with token management
+// 请求拦截器
 minRequest.interceptors.request((request) => {
-	const user = Vue.prototype.$store.getters.user
-	// Prioritize token, then ApiToken (compatibility)
-	const token = user?.token || user?.ApiToken || tokenManager.getToken();
-
-	console.log('📤 API Request Interceptor:');
-	console.log('  - URL:', request.url);
-	console.log('  - Token exists:', !!token);
-
+	// 优先从 localStorage 获取 token（微信登录）
+	const token = uni.getStorageSync('token')
 	if (token) {
 		request.header = {
 			...request.header,
 			'Authorization': `Bearer ${token}`
 		}
-		console.log('  - Authorization header added');
 	} else {
-		console.log('  - ⚠️ No token, skipping Authorization header');
+		// 兼容老系统的 WC-Token
+		const user = Vue.prototype.$store.getters.user
+		if (user && user.ApiToken) {
+			request.header = {
+				...request.header,
+				'WC-Token': user.ApiToken
+			}
+		}
 	}
 	return request
 })
 
-// Response interceptor with error handling and token refresh
-minRequest.interceptors.response(async (response) => {
-	console.log('📥 API Response Interceptor:');
-	console.log('  - Status Code:', response.statusCode);
-	console.log('  - Response Data:', response.data);
-
-	// 401 Unauthorized - Handle with automatic token refresh
-	if (response.statusCode === 401) {
-		console.log('🔐 Received 401 Unauthorized, attempting token refresh...');
-
-		try {
-			// Refresh token using TokenManager with proper API reference
-			const refreshTokenApi = async () => {
-				return await minRequest.post('/auth/refresh-token');
-			};
-			const newToken = await tokenManager.refreshToken({ refreshToken: refreshTokenApi });
-
-			// Update token in Vuex store
-			const user = Vue.prototype.$store.getters.user;
-			if (user) {
-				Vue.prototype.$store.commit('login', {
-					...user,
-					token: newToken,
-					ApiToken: newToken
-				});
-			}
-
-			console.log('✅ Token refreshed successfully, retry not implemented yet');
-			// Note: Actual request retry would require restructuring the interceptor
-			// For now, the token is refreshed but the original request fails
-			// The next request will use the new token
-		} catch (error) {
-			console.error('❌ Token refresh failed:', error);
-			// ErrorHandler will handle the redirect to login
-			errorHandler.handle(error, '401 Token Refresh');
-		}
-	}
-
+// 响应拦截器
+minRequest.interceptors.response((response) => {
 	return response.data
 })
 
-// Set default configuration
+// 设置默认配置
 minRequest.setConfig((config) => {
 	config.baseURL = globalConfig.baseUrl
 	return config
@@ -79,409 +40,64 @@ minRequest.setConfig((config) => {
 export default {
 	// 这里统一管理api请求
 	apis: {
-		// ============= 认证相关接口 =============
-		// 微信小程序登录 (旧版本，兼容保留)
-		wechatLogin(params) {
-			return minRequest.post('/auth/wechat-login', params)
+		login(params) {
+			return minRequest.post('/User/Login', params)
 		},
-		// 微信小程序授权登录 (新版本，支持手机号获取)
-		wechatAuth(params) {
-			return minRequest.post('/auth/wechat-auth', params)
-		},
-		// 检查登录状态
-		checkLoginState() {
-			return minRequest.get('/auth/check')
-		},
-		// Refresh token
-		refreshToken() {
-			return minRequest.post('/auth/refresh-token')
-		},
-		// 退出登录
 		logout() {
-			return minRequest.post('/auth/logout')
+			return minRequest.post('/User/LoginOff')
 		},
-
-		// ============= 用户相关接口 =============
-		// 获取用户信息
-		getUserProfile() {
-			return minRequest.get('/user/profile')
+		checkLoginState() {
+			return minRequest.post('/User/CheckLoginState')
 		},
-		// 更新用户信息
+		// 微信小程序登录
+		wechatLogin(params) {
+			return minRequest.post('/v1/auth/wechat/login', params)
+		},
+		// 获取用户手机号
+		getUserPhone(params) {
+			return minRequest.post('/v1/auth/wechat/phone', params)
+		},
+		// 更新用户资料
 		updateUserProfile(params) {
-			return minRequest.put('/user/profile', params)
+			return minRequest.post('/v1/user/profile', params)
 		},
-		// 每日签到
-		checkin() {
-			return minRequest.post('/user/checkin')
+		// 获取用户信息
+		getUserInfo() {
+			return minRequest.get('/v1/user/info')
 		},
-		// 获取用户统计
-		getUserStats() {
-			return minRequest.get('/user/stats')
+		// 获取用户点数
+		getUserPoints() {
+			return minRequest.get('/v1/user/points')
 		},
-		// 修改密码
-		changePassword(params) {
-			return minRequest.put('/user/password', params)
-		},
-
-		// ============= 音乐生成接口 =============
-		// 创建音乐生成任务
-		createMusicTask(params) {
-			return minRequest.post('/user/music/generate', params)
-		},
-		// 获取任务详情
-		getMusicTask(id) {
-			return minRequest.get(`/user/music/${id}`)
-		},
-		// 获取任务状态
-		getMusicTaskStatus(id) {
-			return minRequest.get(`/user/music/${id}/status`)
-		},
-		// 获取用户音乐任务列表
-		getMusicTasks(params) {
-			return minRequest.get('/user/music/list', params)
-		},
-		// 删除音乐任务
-		deleteMusicTask(id) {
-			return minRequest.delete(`/user/music/${id}`)
-		},
-
-		// ============= AI歌词生成接口 =============
-		// 生成AI歌词
-		generateLyrics(params) {
-			return minRequest.post('/user/ai/lyrics/generate', params)
-		},
-		// 获取歌词生成历史
-		getLyricsHistory(params) {
-			return minRequest.get('/user/ai/lyrics/history', params)
-		},
-		// 获取歌词详情
-		getLyricsDetail(requestId) {
-			return minRequest.get(`/user/ai/lyrics/${requestId}`)
-		},
-		// 评价歌词
-		rateLyrics(requestId, params) {
-			return minRequest.post(`/user/ai/lyrics/${requestId}/rate`, params)
-		},
-		// 收藏/取消收藏歌词
-		toggleLyricsFavorite(requestId) {
-			return minRequest.post(`/user/ai/lyrics/${requestId}/favorite`)
-		},
-		// 检查Gemini服务状态
-		checkGeminiStatus() {
-			return minRequest.get('/user/ai/gemini/status')
-		},
-
-		// ============= 作品管理接口 =============
-		// 获取用户作品列表
-		getUserWorks(params) {
-			return minRequest.get('/work/list', params)
-		},
-		// 获取公开作品列表
-		getPublicWorks(params) {
-			return minRequest.get('/work/public', params)
-		},
-		// 获取作品详情
-		getWorkDetail(id) {
-			return minRequest.get(`/work/${id}`)
-		},
-		// 更新作品信息
-		updateWork(id, params) {
-			return minRequest.put(`/work/${id}`, params)
-		},
-		// 删除作品
-		deleteWork(id) {
-			return minRequest.delete(`/work/${id}`)
-		},
-		// 分享作品
-		shareWork(id, params) {
-			return minRequest.post(`/work/${id}/share`, params)
-		},
-		// 点赞作品
-		likeWork(id) {
-			return minRequest.post(`/work/${id}/like`)
-		},
-
-		// ============= 点数系统接口 =============
-		// Get credit balance (with request deduplication)
-		getCreditBalance() {
-			const key = 'creditBalance';
-			return requestQueue.enqueue(key, () => minRequest.get('/user/credit/balance'));
-		},
-		// 获取点数记录
-		getCreditLogs(params) {
-			return minRequest.get('/user/credit/logs', params)
-		},
-		// 获取点数统计
-		getCreditStats() {
-			return minRequest.get('/user/credit/stats')
-		},
-		// 获取点数套餐
-		getCreditPackages() {
-			return minRequest.get('/user/credit/packages')
-		},
-		// 消费点数
-		consumeCredit(params) {
-			return minRequest.post('/user/credit/consume', params)
-		},
-		// 奖励点数
-		rewardCredit(params) {
-			return minRequest.post('/user/credit/reward', params)
-		},
-
-		// ============= 素材管理接口 =============
-		// 获取素材列表（歌词模板、灵感推荐等）
-		getMaterials(params) {
-			return minRequest.get('/material/list', params)
-		},
-		// 获取推荐素材
-		getRecommendedMaterials(params) {
-			return minRequest.get('/material/recommended', params)
-		},
-		// 获取素材详情
-		getMaterialDetail(id) {
-			return minRequest.get(`/material/${id}`)
-		},
-		// 收藏/取消收藏素材
-		toggleMaterialFavorite(id) {
-			return minRequest.post(`/material/${id}/favorite`)
-		},
-		// 使用素材
-		useMaterial(params) {
-			return minRequest.post('/material/use', params)
-		},
-		// 获取首页数据（提示词模板）
-		getHomePageData() {
-			return minRequest.get('/material/home-data')
-		},
-		// 获取热门推荐作品（旧接口，保留兼容）
-		getHotRecommendationsOld(params) {
-			return minRequest.get('/work/hot-recommendations', params)
-		},
-
-		// ============= Banner轮播图管理接口 =============
-		// Get banner list (with request deduplication)
+		// Banner相关接口
+		// 获取首页Banner列表
 		getBanners() {
-			const key = 'banners';
-			return requestQueue.enqueue(key, () => minRequest.get('/public/banner/list'));
+			return minRequest.get('/v1/banners')
 		},
-		// Get active banners (with request deduplication)
-		getActiveBanners() {
-			const key = 'activeBanners';
-			return requestQueue.enqueue(key, () => minRequest.get('/public/banner/list'));
-		},
-		// 创建轮播图
-		createBanner(params) {
-			return minRequest.post('/banner/create', params)
-		},
-		// 更新轮播图
-		updateBanner(id, params) {
-			return minRequest.put(`/banner/${id}`, params)
-		},
-		// 删除轮播图
-		deleteBanner(id) {
-			return minRequest.delete(`/banner/${id}`)
-		},
-		// 更新轮播图状态（启用/禁用）
-		toggleBannerStatus(id) {
-			return minRequest.post(`/banner/${id}/toggle`)
-		},
-		// 更新轮播图排序
-		updateBannerSort(sortData) {
-			return minRequest.post('/banner/sort', sortData)
-		},
-
-		// ============= 创作提示词管理接口 =============
-		// Get active prompt templates (with request deduplication)
-		getActivePromptTemplates(params) {
-			const key = requestQueue.generateKey('promptTemplates', params);
-			console.log('📋 Calling prompt template API:', '/public/prompt-template/list', params);
-			return requestQueue.enqueue(key, () => minRequest.get('/public/prompt-template/list', params || {}));
-		},
-		// 获取所有提示词列表（管理后台用）
-		getPromptTemplates(params) {
-			return minRequest.get('/', {}).then(response => {
-				if (response.code === 200 && response.data.promptTemplates) {
-					const templates = response.data.promptTemplates.templates;
-					if (params && params.category && params.category !== '全部') {
-						return {
-							...response,
-							data: templates.filter(t => t.category === params.category)
-						};
-					}
-					return { ...response, data: templates };
-				}
-				return response;
-			});
-		},
-		// 根据标签获取提示词
-		getPromptTemplatesByTag(tag) {
-			return minRequest.get(`/prompt-template/tag/${tag}`)
-		},
-		// 创建提示词
-		createPromptTemplate(params) {
-			return minRequest.post('/prompt-template/create', params)
-		},
-		// 更新提示词
-		updatePromptTemplate(id, params) {
-			return minRequest.put(`/prompt-template/${id}`, params)
-		},
-		// 删除提示词
-		deletePromptTemplate(id) {
-			return minRequest.delete(`/prompt-template/${id}`)
-		},
-		// 更新提示词状态（启用/禁用）
-		togglePromptTemplateStatus(id) {
-			return minRequest.post(`/prompt-template/${id}/toggle`)
-		},
-		// 更新提示词排序
-		updatePromptTemplateSort(sortData) {
-			return minRequest.post('/prompt-template/sort', sortData)
-		},
-		// 批量操作提示词
-		batchPromptTemplateOperation(params) {
-			return minRequest.post('/prompt-template/batch', params)
-		},
-		// 记录提示词使用统计
-		trackPromptTemplateUsage(params) {
-			console.log('📊 记录提示词使用统计:', params);
-			return minRequest.post('/public/prompt-template/usage', params);
-		},
-
-		// ============= AI灵感扩展接口 =============
-		// AI灵感扩展
-		expandInspiration(params) {
-			return minRequest.post('/user/ai/expand-inspiration', params)
-		},
-
-		// ============= 创作模板接口 =============
-		// 获取公开的模板列表
-		getPromptTemplates(category) {
-			console.log('📋 调用模板列表API:', '/public/prompt-template/list', { category });
-			const params = category ? { category } : {};
-			return minRequest.get('/public/prompt-template/list', params);
-		},
-		// 获取模板分类
-		getPromptCategories() {
-			console.log('📋 调用分类列表API:', '/public/prompt-template/categories');
-			return minRequest.get('/public/prompt-template/categories');
-		},
-		// 记录模板使用
-		recordTemplateUsage(templateId) {
-			return minRequest.post('/public/prompt-template/usage', { templateId })
-		},
-		// 管理后台：获取模板列表
-		getAdminPromptTemplates(params) {
-			return minRequest.get('/prompt-template/admin/list', params)
-		},
-		// 创建模板
-		createPromptTemplate(params) {
-			return minRequest.post('/prompt-template/create', params)
-		},
-		// 更新模板
-		updatePromptTemplate(id, params) {
-			return minRequest.patch(`/prompt-template/${id}`, params)
-		},
-		// 删除模板
-		deletePromptTemplate(id) {
-			return minRequest.delete(`/prompt-template/${id}`)
-		},
-		// 切换模板启用状态
-		togglePromptTemplate(id) {
-			return minRequest.post(`/prompt-template/${id}/toggle`)
-		},
-
-		// ============= 热门推荐管理接口 =============
-		// Get hot recommendations (with request deduplication)
-		getHotRecommendations(params) {
-			const key = requestQueue.generateKey('hotRecommendations', params);
-			return requestQueue.enqueue(key, () => minRequest.get('/public/hot-recommendation/list', params));
-		},
-		// 获取推荐分类标签
-		getRecommendationCategories() {
-			return minRequest.get('/public/hot-recommendation/categories')
-		},
-		// 根据分类获取推荐音乐
-		getRecommendationsByCategory(categoryId, params) {
-			return minRequest.get(`/public/hot-recommendation/category/${categoryId}`, params)
-		},
-		// 获取所有推荐音乐（管理后台用）
-		getAllRecommendations(params) {
-			return minRequest.get('/hot-recommendation/admin/list', params)
-		},
-		// 创建推荐音乐
-		createRecommendation(params) {
-			return minRequest.post('/hot-recommendation/create', params)
-		},
-		// 更新推荐音乐
-		updateRecommendation(id, params) {
-			return minRequest.put(`/hot-recommendation/${id}`, params)
-		},
-		// 删除推荐音乐
-		deleteRecommendation(id) {
-			return minRequest.delete(`/hot-recommendation/${id}`)
-		},
-		// 更新推荐音乐状态（启用/禁用）
-		toggleRecommendationStatus(id) {
-			return minRequest.post(`/hot-recommendation/${id}/toggle`)
-		},
-		// 更新推荐音乐排序
-		updateRecommendationSort(sortData) {
-			return minRequest.post('/hot-recommendation/sort', sortData)
-		},
-		// 批量操作推荐音乐
-		batchRecommendationOperation(params) {
-			return minRequest.post('/hot-recommendation/batch', params)
-		},
-		// 记录音乐播放统计
-		trackMusicPlay(params) {
-			return minRequest.post('/public/hot-recommendation/play', params)
-		},
-
-		// ============= 支付相关接口 =============
-		// 创建订单
-		createOrder(params) {
-			return minRequest.post('/user/payment/order', params)
-		},
-		// 创建微信支付
-		createWechatPayment(params) {
-			return minRequest.post('/user/payment/wechat-pay', params)
-		},
-		// 获取订单详情
-		getOrderDetail(id) {
-			return minRequest.get(`/user/payment/order/${id}`)
-		},
-		// 获取订单列表
-		getOrders(params) {
-			return minRequest.get('/user/payment/orders', params)
-		},
-		// 查询订单状态
-		queryOrderStatus(orderNo) {
-			return minRequest.get(`/user/payment/query/${orderNo}`)
-		},
-		// 取消订单
-		cancelOrder(orderNo) {
-			return minRequest.post(`/user/payment/cancel/${orderNo}`)
-		},
-
-		// ============= 文件管理接口 =============
-		// 文件上传
-		uploadFile(filePath, fileName, fileType, purpose) {
-			const user = Vue.prototype.$store.getters.user
+		// 上传头像
+		uploadAvatar(filePath) {
+			const token = uni.getStorageSync('token')
 			return new Promise((resolve, reject) => {
 				uni.uploadFile({
-					url: globalConfig.baseUrl + '/user/files/upload',
+					url: globalConfig.baseUrl + '/upload/avatar',
 					filePath: filePath,
 					name: 'file',
 					header: {
-						'Authorization': `Bearer ${user.ApiToken}`
-					},
-					formData: {
-						type: fileType || 'audio',
-						purpose: purpose || 'music_upload'
+						'Authorization': `Bearer ${token}`
 					},
 					success: (res) => {
+						console.log('上传头像响应:', res)
 						if(typeof res.data === 'string') {
-							res.data = JSON.parse(res.data)
+							try {
+								res.data = JSON.parse(res.data)
+							} catch (e) {
+								console.error('解析响应失败:', e)
+								reject({
+									code: 500,
+									msg: '响应格式错误'
+								})
+								return
+							}
 						}
 						if(res.data.code === 200) {
 							resolve(res.data)
@@ -490,27 +106,15 @@ export default {
 						}
 					},
 					fail: (err) => {
+						console.error('上传头像失败:', err)
 						reject({
 							code: 500,
-							message: err.errMsg || '上传失败'
+							msg: err.errMsg || '上传失败'
 						})
 					}
 				})
 			})
 		},
-		// 获取文件信息
-		getFileInfo(id) {
-			return minRequest.get(`/user/files/${id}`)
-		},
-		// 文件下载
-		downloadFile(id) {
-			return minRequest.get(`/user/files/${id}/download`)
-		},
-		// 文件预览
-		previewFile(id) {
-			return minRequest.get(`/user/files/${id}/preview`)
-		},
-
 		listUser(params) {
 			return minRequest.get('/User/GetUserList',params)
 		},

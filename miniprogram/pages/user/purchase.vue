@@ -118,8 +118,6 @@
 </template>
 
 <script>
-import WeChatAuth from '@/utils/wechatAuth'
-
 export default {
 	data() {
 		return {
@@ -133,15 +131,8 @@ export default {
 				bonus: 30,
 				tag: '首充特惠'
 			},
-			newBalance: 0,
-			isCheckingLogin: false // 是否正在检查登录状态
+			newBalance: 0
 		}
-	},
-	async onLoad() {
-		console.log('购买点数页面加载');
-		
-		// 检查登录状态
-		await this.checkLoginStatus();
 	},
 	created() {
 		// 计算支付后的新余额
@@ -163,139 +154,27 @@ export default {
 		navigateBack() {
 			uni.navigateBack();
 		},
-		
-		// 检查登录状态
-		async checkLoginStatus() {
-			if (this.isCheckingLogin) return;
-			
-			this.isCheckingLogin = true;
-			
-			try {
-				// 检查是否已登录
-				const isLoggedIn = await WeChatAuth.checkPurchaseLogin();
-				
-				if (!isLoggedIn) {
-					// 用户取消登录，返回上一页
-					uni.navigateBack();
-					return;
-				}
-				
-				console.log('✅ 用户已登录，可以购买点数');
-				
-			} catch (error) {
-				console.error('登录检查失败:', error);
-				uni.showToast({
-					title: '登录验证失败',
-					icon: 'none'
-				});
-				
-				// 延迟后返回上一页
-				setTimeout(() => {
-					uni.navigateBack();
-				}, 1500);
-				
-			} finally {
-				this.isCheckingLogin = false;
-			}
-		},
-		
-		// 微信支付 - 使用真实API
-		async simulatePayment() {
-			// 再次检查登录状态
-			if (!WeChatAuth.isLoggedIn()) {
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none'
-				});
-				this.checkLoginStatus();
-				return;
-			}
-			
+		simulatePayment() {
+			// 显示支付中提示
 			uni.showLoading({
 				title: '正在调起支付...'
 			});
 			
-			try {
-				// TODO: 1. 创建订单
-				const orderResponse = await this.$minApi.apis.createOrder({
-					packageId: this.selectedPackage.id || 1,
-					amount: this.selectedPackage.price,
-					points: this.selectedPackage.points,
-					bonus: this.selectedPackage.bonus
-				});
-				
-				if (!orderResponse || orderResponse.code !== 200) {
-					throw new Error(orderResponse?.message || '创建订单失败');
-				}
-				
-				const orderId = orderResponse.data.orderId;
-				
-				// TODO: 2. 调起微信支付参数
-				const paymentResponse = await this.$minApi.apis.createWechatPayment({
-					orderId: orderId
-				});
-				
-				if (!paymentResponse || paymentResponse.code !== 200) {
-					throw new Error(paymentResponse?.message || '调起支付失败');
-				}
-				
-				// 3. 使用微信小程序官方 wx.requestPayment API
-				await new Promise((resolve, reject) => {
-					wx.requestPayment({
-						timeStamp: paymentResponse.data.timeStamp,
-						nonceStr: paymentResponse.data.nonceStr,
-						package: paymentResponse.data.package,
-						signType: paymentResponse.data.signType,
-						paySign: paymentResponse.data.paySign,
-						success: (res) => {
-							console.log('✅ 微信支付成功:', res);
-							resolve(res);
-						},
-						fail: (err) => {
-							console.error('❌ 微信支付失败:', err);
-							reject(err);
-						}
-					});
-				});
-				
+			// 模拟微信支付过程
+			setTimeout(() => {
 				uni.hideLoading();
 				
-				// 支付成功
+				// 显示支付成功提示
 				uni.showToast({
 					title: '支付成功',
 					icon: 'success'
 				});
 				
-				// 刷新用户点数
-				if (this.$store && this.$store.dispatch) {
-					await this.$store.dispatch('getCreditBalance');
-					// 更新新余额显示
-					this.newBalance = this.$store.getters.userCreditBalance;
-				}
-				
 				// 延迟后切换到支付成功步骤
 				setTimeout(() => {
 					this.currentStep = 2;
 				}, 1000);
-				
-			} catch (error) {
-				uni.hideLoading();
-				
-				// 判断是否为用户取消
-				if (error.errMsg && (error.errMsg.includes('cancel') || error.errMsg.includes('用户取消'))) {
-					uni.showToast({
-						title: '支付已取消',
-						icon: 'none'
-					});
-				} else {
-					uni.showToast({
-						title: error.message || '支付失败',
-						icon: 'none'
-					});
-				}
-				
-				console.error('❌ 支付流程失败:', error);
-			}
+			}, 1500);
 		},
 		viewDetails() {
 			// 跳转到点数明细页面，并设置激活的标签页

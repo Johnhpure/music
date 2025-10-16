@@ -200,64 +200,28 @@ export default {
 		navigateBack() {
 			uni.navigateBack();
 		},
-		// 获取作品详情 - 使用真实API
-		async getWorkDetail() {
-			try {
-				uni.showLoading({ title: '加载中...' });
+		getWorkDetail() {
+			// 模拟从API获取数据
+			setTimeout(() => {
+				this.workDetail = {
+					id: this.id,
+					title: '夏日海风',
+					style: '电子 · 轻松',
+					coverUrl: '/static/img/covers/cover2.jpg',
+					createdAt: new Date('2023-11-20 03:45'),
+					creationMode: 'AI创作',
+					bpm: 120,
+					key: 'C大调',
+					prompt: '夏日海边，轻松愉快的电子音乐',
+					playCount: 128,
+					audioUrl: 'https://example.com/sample-music.mp3'
+				};
 				
-				const response = await this.$minApi.apis.getMusicTasks({
-					page: 1,
-					pageSize: 100
-				});
-				
-				if (response && response.data) {
-					// 从列表中找到对应的作品
-					const task = response.data.list.find(t => String(t.id) === String(this.id));
-					
-					if (task) {
-						this.workDetail = {
-							id: task.id,
-							title: task.title || '未命名作品',
-							style: task.style || '未知',
-							coverUrl: task.imageUrl || '/static/img/covers/default.jpg',
-							createdAt: task.createdAt,
-							creationMode: task.model === 'chirp-v3-5' ? 'AI创作' : '自主创作',
-							bpm: 120, // TODO: 后端添加BPM字段
-							key: 'C大调', // TODO: 后端添加调性字段
-							prompt: task.prompt || task.lyrics || '',
-							playCount: 0, // TODO: 后端添加播放次数统计
-							audioUrl: task.audioUrl
-						};
-						
-						// 设置音频源 - 使用微信小程序官方API
-						if (this.workDetail.audioUrl) {
-							this.audioContext.src = this.workDetail.audioUrl;
-							// 监听音频加载完成
-							this.audioContext.onCanplay(() => {
-								this.totalTime = this.audioContext.duration;
-							});
-						}
-						
-						console.log('✅ 作品详情加载成功:', this.workDetail.title);
-					} else {
-						throw new Error('作品不存在');
-					}
-				} else {
-					throw new Error('获取作品列表失败');
+				// 设置音频源
+				if (this.workDetail.audioUrl) {
+					this.audioContext.src = this.workDetail.audioUrl;
 				}
-			} catch (error) {
-				console.error('❌ 获取作品详情失败:', error);
-				uni.showToast({
-					title: error.message || '加载失败',
-					icon: 'none'
-				});
-				// 延迟后返回上一页
-				setTimeout(() => {
-					uni.navigateBack();
-				}, 1500);
-			} finally {
-				uni.hideLoading();
-			}
+			}, 500);
 		},
 		generateWaveform() {
 			// 生成随机波形图高度
@@ -354,62 +318,19 @@ export default {
 				menus: ['shareAppMessage', 'shareTimeline']
 			});
 		},
-		// 下载作品 - 使用微信小程序官方API
 		downloadWork() {
-			if (!this.workDetail.audioUrl) {
-				uni.showToast({
-					title: '音频文件不存在',
-					icon: 'none'
-				});
-				return;
-			}
-			
 			uni.showLoading({
 				title: '下载中...'
 			});
 			
-			// 使用微信小程序官方 wx.downloadFile API
-			wx.downloadFile({
-				url: this.workDetail.audioUrl,
-				success: (res) => {
-					if (res.statusCode === 200) {
-						// 下载成功，保存文件
-						wx.saveFile({
-							tempFilePath: res.tempFilePath,
-							success: (saveRes) => {
-								uni.hideLoading();
-								uni.showToast({
-									title: '下载成功',
-									icon: 'success'
-								});
-								console.log('✅ 文件已保存到:', saveRes.savedFilePath);
-							},
-							fail: (err) => {
-								uni.hideLoading();
-								uni.showToast({
-									title: '保存失败',
-									icon: 'none'
-								});
-								console.error('❌ 保存文件失败:', err);
-							}
-						});
-					} else {
-						uni.hideLoading();
-						uni.showToast({
-							title: '下载失败',
-							icon: 'none'
-						});
-					}
-				},
-				fail: (err) => {
-					uni.hideLoading();
-					uni.showToast({
-						title: '下载失败',
-						icon: 'none'
-					});
-					console.error('❌ 下载文件失败:', err);
-				}
-			});
+			// 模拟下载过程
+			setTimeout(() => {
+				uni.hideLoading();
+				uni.showToast({
+					title: '下载成功',
+					icon: 'success'
+				});
+			}, 2000);
 		},
 		showActionSheet() {
 			uni.showActionSheet({

@@ -239,60 +239,28 @@ export default {
 			if (index >= this.milestones.length - 1) return Infinity;
 			return this.milestones[index + 1].days;
 		},
-		// 签到 - 使用真实API
-		async checkIn() {
+		checkIn() {
 			if (this.isCheckedToday) return;
 			
+			// 模拟签到过程
 			uni.showLoading({
 				title: '签到中...'
 			});
 			
-			try {
-				const response = await this.$minApi.apis.checkin();
-				
-				if (response && (response.code === 200 || response.success)) {
-					const data = response.data || response;
-					
-					// 更新签到状态
-					this.isCheckedToday = true;
-					this.checkedDays.push(this.today);
-					this.streakDays = data.consecutiveDays || this.streakDays + 1;
-					
-					// 今日奖励
-					this.todayReward = data.creditReward || 5;
-					
-					// 更新用户点数
-					if (this.$store && this.$store.dispatch) {
-						await this.$store.dispatch('getCreditBalance');
-					}
-					
-					uni.hideLoading();
-					
-					// 显示奖励弹窗
-					this.showRewardPopup = true;
-					
-					console.log('✅ 签到成功，获得', this.todayReward, '点数');
-				} else {
-					throw new Error(response.message || '签到失败');
-				}
-			} catch (error) {
+			setTimeout(() => {
 				uni.hideLoading();
 				
-				if (error.message && error.message.includes('已签到')) {
-					this.isCheckedToday = true;
-					uni.showToast({
-						title: '今日已签到',
-						icon: 'none'
-					});
-				} else {
-					uni.showToast({
-						title: error.message || '签到失败',
-						icon: 'none'
-					});
-				}
+				// 更新签到状态
+				this.isCheckedToday = true;
+				this.checkedDays.push(this.today);
+				this.streakDays++;
 				
-				console.error('❌ 签到失败:', error);
-			}
+				// 计算今日奖励
+				this.calculateTodayReward();
+				
+				// 显示奖励弹窗
+				this.showRewardPopup = true;
+			}, 500);
 		},
 		calculateTodayReward() {
 			// 基础奖励

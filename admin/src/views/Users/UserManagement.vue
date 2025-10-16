@@ -234,7 +234,8 @@
       <!-- Table -->
       <div v-if="!loading && paginatedUsers.length > 0" class="overflow-x-auto">
         <table class="w-full">
-          <thead>
+          <!-- v-once 优化静态表头 -->
+          <thead v-once>
             <tr class="border-b border-gray-700/30">
               <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">
                 <input
@@ -253,20 +254,22 @@
               <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">操作</th>
             </tr>
           </thead>
-          <tbody>
-            <TransitionGroup
-              enter-active-class="transition-all duration-300"
-              leave-active-class="transition-all duration-300"
-              enter-from-class="opacity-0 translate-y-4"
-              leave-to-class="opacity-0 -translate-y-4"
-              move-class="transition-transform duration-300"
-              tag="tbody"
-            >
+          <!-- 移除 tbody 外层，直接使用 tbody 作为 TransitionGroup -->
+          <TransitionGroup
+            enter-active-class="transition-all duration-300"
+            leave-active-class="transition-all duration-300"
+            enter-from-class="opacity-0 translate-y-4"
+            leave-to-class="opacity-0 -translate-y-4"
+            move-class="transition-transform duration-300"
+            tag="tbody"
+          >
+              <!-- 使用 v-memo 优化行渲染，只在关键数据变化时更新 -->
               <tr
                 v-for="(user, index) in paginatedUsers"
                 :key="user.id"
+                v-memo="[user.id, user.status, user.totalCredits, user.userType, selectedItems.includes(user.id)]"
                 class="border-b border-gray-700/20 hover:bg-glass-white/5 transition-all duration-200"
-                :style="{ animationDelay: `${700 + index * 50}ms` }"
+                :style="{ animationDelay: `${Math.min(700 + index * 50, 1500)}ms` }"
               >
                 <td class="py-4 px-4">
                   <input
@@ -517,7 +520,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { shallowRef, computed, onMounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import CyberCard from '@/components/UI/CyberCard.vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
@@ -527,18 +530,19 @@ import ConfirmModal from '@/components/UI/ConfirmModal.vue'
 import type { User } from '@/types'
 
 // State
-const loading = ref(false)
-const showCreateModal = ref(false)
-const showDetailModal = ref(false)
-const showDeleteModal = ref(false)
+const loading = shallowRef(false)
+const showCreateModal = shallowRef(false)
+const showDetailModal = shallowRef(false)
+const showDeleteModal = shallowRef(false)
 
-const users = ref<User[]>([])
-const deletingUser = ref<User | null>(null)
-const selectedItems = ref<string[]>([])
+// 使用 shallowRef 优化大数组，避免深度响应式
+const users = shallowRef<User[]>([])
+const deletingUser = shallowRef<User | null>(null)
+const selectedItems = shallowRef<string[]>([])
 const selectAll = ref(false)
 
 // Filters and pagination
-const filters = ref({
+const filters = shallowRef({
   search: '',
   status: '',
   userType: '',
@@ -547,15 +551,15 @@ const filters = ref({
   sortOrder: 'desc'
 })
 
-const pagination = ref({
+const pagination = shallowRef({
   current: 1,
   pageSize: 20,
   total: 0,
   totalPages: 0
 })
 
-// Stats
-const stats = ref({
+// Stats - 使用 shallowRef
+const stats = shallowRef({
   total: 1234,
   active: 856,
   newUsers: '43',
@@ -696,8 +700,8 @@ const loadUsers = async () => {
   try {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    // Generate mock users
-    users.value = Array.from({ length: 150 }, (_, i) => ({
+    // Generate mock users - 使用 shallowRef，需要整体替换
+    const newUsers = Array.from({ length: 150 }, (_, i) => ({
       id: `user_${i + 1}`,
       username: `用户${String(i + 1).padStart(3, '0')}`,
       email: Math.random() > 0.3 ? `user${i + 1}@example.com` : undefined,
@@ -711,6 +715,9 @@ const loadUsers = async () => {
       updatedAt: new Date().toISOString(),
       lastLoginAt: Math.random() > 0.2 ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() : undefined
     }))
+    
+    // shallowRef 需要整体替换数组
+    users.value = newUsers
     
     updatePagination()
   } catch (error) {
@@ -787,9 +794,12 @@ const handleToggleStatus = async (user: User) => {
   try {
     await new Promise(resolve => setTimeout(resolve, 500))
     
+    // shallowRef 需要创建新数组来触发更新
     const index = users.value.findIndex(u => u.id === user.id)
     if (index > -1) {
-      users.value[index].status = user.status === 'banned' ? 'active' : 'banned'
+      const newUsers = [...users.value]
+      newUsers[index] = { ...newUsers[index], status: user.status === 'banned' ? 'active' : 'banned' }
+      users.value = newUsers
     }
   } catch (error) {
     console.error('Failed to toggle user status:', error)
@@ -807,10 +817,8 @@ const confirmDelete = async () => {
   try {
     await new Promise(resolve => setTimeout(resolve, 500))
     
-    const index = users.value.findIndex(u => u.id === deletingUser.value!.id)
-    if (index > -1) {
-      users.value.splice(index, 1)
-    }
+    // shallowRef 需要创建新数组
+    users.value = users.value.filter(u => u.id !== deletingUser.value!.id)
     
     showDeleteModal.value = false
     deletingUser.value = null
@@ -830,12 +838,10 @@ const batchBanUsers = async () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      selectedItems.value.forEach(id => {
-        const index = users.value.findIndex(u => u.id === id)
-        if (index > -1) {
-          users.value[index].status = 'banned'
-        }
-      })
+      // shallowRef 需要创建新数组
+      users.value = users.value.map(u => 
+        selectedItems.value.includes(u.id) ? { ...u, status: 'banned' as const } : u
+      )
       
       selectedItems.value = []
       selectAll.value = false
@@ -849,12 +855,10 @@ const batchActivateUsers = async () => {
   try {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    selectedItems.value.forEach(id => {
-      const index = users.value.findIndex(u => u.id === id)
-      if (index > -1) {
-        users.value[index].status = 'active'
-      }
-    })
+    // shallowRef 需要创建新数组
+    users.value = users.value.map(u => 
+      selectedItems.value.includes(u.id) ? { ...u, status: 'active' as const } : u
+    )
     
     selectedItems.value = []
     selectAll.value = false

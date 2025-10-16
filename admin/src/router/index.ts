@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
-// Layout
+// Layout - 同步加载主布局
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+
+// 直接使用动态导入，Vue Router会自动处理异步组件
 
 const routes: RouteRecordRaw[] = [
   {

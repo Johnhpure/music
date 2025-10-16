@@ -179,76 +179,78 @@ export default {
 		navigateBack() {
 			uni.navigateBack();
 		},
-		// 获取作品列表 - 使用真实API
-		async getWorksList() {
-			try {
-				uni.showLoading({ title: '加载中...' });
-				
-				const response = await this.$minApi.apis.getMusicTasks({
-					page: 1,
-					pageSize: 50
-				});
-				
-				if (response && response.data) {
-					// 转换API数据为页面数据格式
-					this.works = response.data.list.map(task => ({
-						id: String(task.id),
-						title: task.title || '未命名作品',
-						coverUrl: task.imageUrl || '/static/img/covers/default.jpg',
-						createTime: this.formatDate(task.createdAt),
-						duration: this.formatDuration(task.duration),
-						isDownloaded: false, // TODO: 需要后端提供下载状态
-						daysLeft: this.calculateDaysLeft(task.createdAt),
-						isPlaying: false,
-						selected: false,
-						showActions: false,
-						offsetX: 0,
-						genre: task.style || '未知',
-						audioUrl: task.audioUrl,
-						status: task.status
-					}));
-					
-					console.log('✅ 作品列表加载成功:', this.works.length + '首');
-				} else {
-					console.warn('⚠️ API返回数据格式异常');
-					this.works = [];
+		getWorksList() {
+			// 模拟数据，实际应从API获取
+			this.works = [
+				{
+					id: '1',
+					title: '夏日晚风',
+					coverUrl: '/static/img/covers/cover1.jpg',
+					createTime: '2023-06-15',
+					duration: '03:25',
+					isDownloaded: true,
+					isPlaying: false,
+					selected: false,
+					showActions: false,
+					offsetX: 0,
+					genre: '流行'
+				},
+				{
+					id: '2',
+					title: '城市霓虹',
+					coverUrl: '/static/img/covers/cover2.jpg',
+					createTime: '2023-06-10',
+					duration: '02:47',
+					isDownloaded: false,
+					daysLeft: 15,
+					isPlaying: false,
+					selected: false,
+					showActions: false,
+					offsetX: 0,
+					genre: '电子'
+				},
+				{
+					id: '3',
+					title: '雨后彩虹',
+					coverUrl: '/static/img/covers/cover3.jpg',
+					createTime: '2023-06-05',
+					duration: '03:10',
+					isDownloaded: true,
+					isPlaying: false,
+					selected: false,
+					showActions: false,
+					offsetX: 0,
+					genre: '民谣'
+				},
+				{
+					id: '4',
+					title: '电子梦境',
+					coverUrl: '/static/img/covers/cover4.jpg',
+					createTime: '2023-05-28',
+					duration: '04:05',
+					isDownloaded: false,
+					daysLeft: 2,
+					isPlaying: false,
+					selected: false,
+					showActions: false,
+					offsetX: 0,
+					genre: '电子'
+				},
+				{
+					id: '5',
+					title: '星空漫步',
+					coverUrl: '/static/img/covers/cover5.jpg',
+					createTime: '2023-05-20',
+					duration: '03:55',
+					isDownloaded: false,
+					daysLeft: 8,
+					isPlaying: false,
+					selected: false,
+					showActions: false,
+					offsetX: 0,
+					genre: '轻音乐'
 				}
-			} catch (error) {
-				console.error('❌ 获取作品列表失败:', error);
-				uni.showToast({
-					title: '加载失败',
-					icon: 'none'
-				});
-				// 失败时保持空数组，不使用模拟数据
-				this.works = [];
-			} finally {
-				uni.hideLoading();
-			}
-		},
-		// 格式化日期
-		formatDate(dateString) {
-			if (!dateString) return '';
-			const date = new Date(dateString);
-			const year = date.getFullYear();
-			const month = String(date.getMonth() + 1).padStart(2, '0');
-			const day = String(date.getDate()).padStart(2, '0');
-			return `${year}-${month}-${day}`;
-		},
-		// 格式化时长
-		formatDuration(seconds) {
-			if (!seconds) return '00:00';
-			const min = Math.floor(seconds / 60);
-			const sec = Math.floor(seconds % 60);
-			return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-		},
-		// 计算剩余天数
-		calculateDaysLeft(createdAt) {
-			if (!createdAt) return 0;
-			const created = new Date(createdAt);
-			const now = new Date();
-			const diffTime = 90 * 24 * 60 * 60 * 1000 - (now - created); // 90天有效期
-			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-			return diffDays > 0 ? diffDays : 0;
+			];
 		},
 		checkExpiringWorks() {
 			// 过滤出即将过期的作品（剩余天数小于7天且未下载的）

@@ -22,18 +22,22 @@ export default {
 	},
 	onLoad() {
 		setTimeout(() => {
-			this.$minApi.checkLoginState().then(res=>{
-				if(res.state == 'success'){
-					uni.reLaunch({
-						url: '/pages/home/index'
-					});
-				} else{
-					uni.reLaunch({
-						url: '/pages/login/login'
-					});
-				}
-			})
-		}, 1000); // 2秒后跳转
+			// 检查本地是否有登录信息
+			const token = uni.getStorageSync('token');
+			const userInfo = uni.getStorageSync('userInfo');
+			
+			if (token && userInfo) {
+				// 已登录，跳转到首页
+				uni.reLaunch({
+					url: '/pages/index/index'
+				});
+			} else {
+				// 未登录，跳转到登录页
+				uni.reLaunch({
+					url: '/pages/login/login'
+				});
+			}
+		}, 1000); // 1秒后跳转
 	},
 	onReady() {
 		this.setNavBarColor()

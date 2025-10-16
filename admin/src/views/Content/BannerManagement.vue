@@ -387,11 +387,13 @@ const loadBanners = async () => {
     console.log('📋 Banner列表响应:', response)
     
     if (response.code === 200 && response.data) {
-      banners.value = response.data.data || []
+      banners.value = response.data.items || []
       pagination.value.total = response.data.total || 0
       pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.pageSize)
       
       // 更新统计数据
+      stats.value.total = response.data.total || 0
+      stats.value.active = banners.value.filter(b => b.isActive).length
       await loadStats()
     } else {
       console.error('获取Banner列表失败:', response.message)
@@ -503,6 +505,7 @@ const handleSubmit = async (bannerData: Partial<Banner>) => {
   modalLoading.value = true
   try {
     let response
+    const isUpdating = !!editingBanner.value  // 保存编辑状态
     
     if (editingBanner.value) {
       // 更新现有Banner
@@ -524,7 +527,7 @@ const handleSubmit = async (bannerData: Partial<Banner>) => {
       // 显示成功通知
       if ((window as any).$notify) {
         (window as any).$notify.success(
-          editingBanner.value ? 'Banner更新成功' : 'Banner创建成功'
+          isUpdating ? 'Banner更新成功' : 'Banner创建成功'
         )
       }
       

@@ -24,13 +24,42 @@ export class AuthService {
   ) {}
 
   async validateUser(username: string, password: string): Promise<User | null> {
-    // Password authentication is not supported in current database schema
-    // Only WeChat login is supported
-    this.logger.warn(
-      'Password authentication attempted but not supported',
-      'AuthService',
+    // 支持用户名或邮箱登录
+    const user = await this.userService.findByUsernameOrEmail(username);
+
+    if (!user) {
+      this.logger.warn(
+        `登录失败：用户不存在 - ${username}`,
+        'AuthService',
+      );
+      return null;
+    }
+
+    // 检查是否有密码
+    if (!user.password) {
+      this.logger.warn(
+        `登录失败：用户未设置密码 - ${username}`,
+        'AuthService',
+      );
+      return null;
+    }
+
+    // 验证密码
+    const isPasswordValid = await this.userService.validatePassword(
+      password,
+      user.password,
     );
-    return null;
+
+    if (!isPasswordValid) {
+      this.logger.warn(
+        `登录失败：密码错误 - ${username}`,
+        'AuthService',
+      );
+      return null;
+    }
+
+    this.logger.log(`用户验证成功: ${user.id} (${username})`, 'AuthService');
+    return user;
   }
 
   async login(user: User) {
@@ -131,6 +160,16 @@ export class AuthService {
         role: user.role,
         credit: user.credit,
       },
+    };
+  }
+
+  async logout(userId: number) {
+    this.logger.log(`用户退出登录: ${userId}`, 'AuthService');
+
+    // 对于JWT，我们在前端删除token
+    // 如果将来需要实现token黑名单，可以在这里添加逻辑
+    return {
+      message: '退出登录成功',
     };
   }
 }

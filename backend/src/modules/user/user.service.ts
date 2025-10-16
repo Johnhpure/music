@@ -82,10 +82,37 @@ export class UserService {
     });
   }
 
-  // Email authentication is not supported in current database schema
-  // async findByEmail(email: string): Promise<User | null> {
-  //   return null;
-  // }
+  async findByUsername(username: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { username },
+      select: ['id', 'username', 'email', 'password', 'nickname', 'avatar', 'credit', 'is_admin', 'is_banned', 'openid'],
+    });
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { email },
+      select: ['id', 'username', 'email', 'password', 'nickname', 'avatar', 'credit', 'is_admin', 'is_banned', 'openid'],
+    });
+  }
+
+  async findByUsernameOrEmail(identifier: string): Promise<User | null> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.username = :identifier OR user.email = :identifier', { identifier })
+      .addSelect('user.password')
+      .getOne();
+    return user;
+  }
+
+  async hashPassword(password: string): Promise<string> {
+    const saltRounds = 10;
+    return bcrypt.hash(password, saltRounds);
+  }
+
+  async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+    return bcrypt.compare(plainPassword, hashedPassword);
+  }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
@@ -102,11 +129,6 @@ export class UserService {
     await this.userRepository.remove(user);
     this.logger.log(`用户删除成功: ${id}`, 'UserService');
   }
-
-  // Password authentication is not supported in current database schema
-  // async validatePassword(user: User, password: string): Promise<boolean> {
-  //   return false;
-  // }
 
   async updateCredit(userId: number, amount: number): Promise<User> {
     const user = await this.findOne(userId);

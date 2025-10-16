@@ -33,4 +33,9 @@ export class AuthController {
   async refreshToken(@Request() req) {
     return this.authService.refreshToken(req.user.id);
   }
+
+  @Post('logout')
+  async logout(@Request() req) {
+    return this.authService.logout(req.user.id);
+  }
 }

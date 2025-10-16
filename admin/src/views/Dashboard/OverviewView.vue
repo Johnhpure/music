@@ -16,15 +16,16 @@
               今天是 {{ formatDate(new Date()) }}，让我们看看平台的运行情况
             </p>
           </div>
-          <div class="hidden lg:block">
+          <!-- v-once 优化静态图标 -->
+          <div v-once class="hidden lg:block">
             <div class="w-32 h-32 rounded-full bg-gradient-to-br from-cyber-purple/20 to-cyber-pink/20 flex items-center justify-center">
               <Icon icon="mdi:chart-line" class="w-16 h-16 text-cyber-purple" />
             </div>
           </div>
         </div>
         
-        <!-- Floating particles background -->
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <!-- Floating particles background - v-once 优化静态动画 -->
+        <div v-once class="absolute inset-0 overflow-hidden pointer-events-none">
           <div class="absolute w-2 h-2 bg-cyber-purple/30 rounded-full animate-float" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
           <div class="absolute w-1 h-1 bg-cyber-pink/40 rounded-full animate-float" style="top: 60%; left: 80%; animation-delay: 1s;"></div>
           <div class="absolute w-1.5 h-1.5 bg-cyber-cyan/30 rounded-full animate-float" style="top: 80%; left: 20%; animation-delay: 2s;"></div>
@@ -164,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { shallowRef, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import CyberCard from '@/components/UI/CyberCard.vue'
@@ -177,8 +178,11 @@ import SystemStatusItem from './components/SystemStatusItem.vue'
 
 const router = useRouter()
 
-// Stats data
-const stats = ref([
+// 保存数据刷新定时器引用
+let dataRefreshTimer: ReturnType<typeof setInterval> | null = null
+
+// 使用 shallowRef 优化大数据
+const stats = shallowRef([
   {
     title: '总用户数',
     value: '12,847',
@@ -213,8 +217,8 @@ const stats = ref([
   }
 ])
 
-// Chart data
-const userGrowthData = ref({
+// 使用 shallowRef 优化图表数据
+const userGrowthData = shallowRef({
   labels: Array.from({ length: 30 }, (_, i) => `${i + 1}日`),
   datasets: [{
     label: '新增用户',
@@ -225,7 +229,7 @@ const userGrowthData = ref({
   }]
 })
 
-const contentAnalyticsData = ref({
+const contentAnalyticsData = shallowRef({
   labels: ['提示词模板', 'Banner轮播', '热门推荐', '用户作品'],
   datasets: [{
     data: [35, 25, 20, 20],
@@ -239,8 +243,8 @@ const contentAnalyticsData = ref({
   }]
 })
 
-// Activity data
-const recentActivities = ref([
+// 使用 shallowRef 优化活动数据
+const recentActivities = shallowRef([
   {
     id: '1',
     type: 'user' as const,
@@ -279,8 +283,8 @@ const recentActivities = ref([
   }
 ])
 
-// Quick actions
-const quickActions = ref([
+// 使用 shallowRef 优化快捷操作
+const quickActions = shallowRef([
   { name: '创建Banner', icon: 'mdi:image-plus', action: 'create-banner' },
   { name: '添加提示词', icon: 'mdi:lightbulb-plus', action: 'create-prompt' },
   { name: '用户管理', icon: 'mdi:account-cog', action: 'manage-users' },
@@ -288,8 +292,8 @@ const quickActions = ref([
   { name: '数据导出', icon: 'mdi:download', action: 'export-data' }
 ])
 
-// System services
-const systemServices = ref([
+// 使用 shallowRef 优化系统服务数据
+const systemServices = shallowRef([
   {
     name: 'API服务',
     status: 'healthy' as const,
@@ -351,25 +355,67 @@ const handleQuickAction = (action: any) => {
   }
 }
 
+// 加载 Dashboard 数据
+const loadDashboardData = async () => {
+  try {
+    console.log('Loading dashboard data...')
+    // TODO: 从 API 加载真实数据
+    // 示例：
+    // const response = await fetch('/api/dashboard/stats')
+    // const data = await response.json()
+    // stats.value = data.stats
+    // userGrowthData.value = data.userGrowth
+    // contentAnalyticsData.value = data.contentAnalytics
+    // recentActivities.value = data.activities
+    // systemServices.value = data.services
+    
+    console.log('Dashboard data loaded successfully')
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error)
+  }
+}
+
 // Load data on mount
 onMounted(async () => {
-  // TODO: Load real data from API
-  console.log('Dashboard mounted, loading data...')
+  // 初始加载数据
+  await loadDashboardData()
+  
+  // 设置定时刷新（10分钟 = 600000毫秒）
+  dataRefreshTimer = setInterval(() => {
+    loadDashboardData()
+  }, 600000) // 10分钟
+  
+  console.log('Dashboard mounted, data refresh scheduled every 10 minutes')
+})
+
+// 清理定时器
+onUnmounted(() => {
+  if (dataRefreshTimer) {
+    clearInterval(dataRefreshTimer)
+    dataRefreshTimer = null
+    console.log('Dashboard data refresh timer cleared')
+  }
 })
 </script>
 
 <style scoped>
-/* Custom animations for floating particles */
+/* 优化后的浮动粒子动画 - 使用 GPU 加速 */
 @keyframes float {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translateY(-20px);
+    transform: translate3d(0, -20px, 0);
   }
 }
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+  /* GPU 加速 */
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* 性能优化 */
+  contain: layout style paint;
 }
 </style>

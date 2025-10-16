@@ -258,7 +258,7 @@
 						}, 500);
 					}
 					this.generatingProgress = Math.floor(progress);
-				}, 800);
+				}, 1000); // 优化: 从800ms改为1000ms，降低刷新频率
 			},
 			// 初始化音频
 			initAudio() {
@@ -314,7 +314,7 @@
 				this.stopProgressTimer();
 				this.progressTimer = setInterval(() => {
 					this.currentTime = this.audioContext.currentTime || 0;
-				}, 250);
+				}, 500); // 优化: 从250ms改为500ms，降低刷新频率，减少性能消耗
 			},
 			// 停止进度定时器
 			stopProgressTimer() {

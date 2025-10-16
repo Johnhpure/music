@@ -224,7 +224,12 @@ const statusBadgeClass = computed(() => {
     : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
 })
 
-const formatNumber = (num: number) => {
+const formatNumber = (num: number | undefined | null) => {
+  // 处理undefined、null或0的情况
+  if (num == null || num === 0) {
+    return '0'
+  }
+  
   if (num >= 1000000) {
     return `${(num / 1000000).toFixed(1)}M`
   } else if (num >= 1000) {

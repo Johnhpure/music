@@ -4,8 +4,8 @@
 		<!-- 点数余额显示 -->
 		<view class="points-balance">
 			<text class="balance-label">当前点数余额</text>
-			<text class="balance-value">{{userCreditBalance}}</text>
-			<text class="balance-update-time">{{lastUpdateTime}}</text>
+			<text class="balance-value">{{userPoints}}</text>
+			<text class="balance-update-time">上次更新：{{lastUpdateTime}}</text>
 		</view>
 		
 		<!-- 标签页导航 -->
@@ -232,9 +232,8 @@
 export default {
 	data() {
 		return {
-			userCreditBalance: 0,
-			lastUpdateTime: '',
-			loadingBalance: false,
+			userPoints: 320,
+			lastUpdateTime: '今天 10:30',
 			activeTab: 'free',
 			selectedPackage: 0,
 			adWatchRemaining: 3,
@@ -313,7 +312,7 @@ export default {
 			return grouped;
 		}
 	},
-	async onLoad(options) {
+	onLoad(options) {
 		// 处理URL参数，切换到指定标签页
 		if (options && options.activeTab) {
 			// 确保activeTab值是有效的
@@ -322,166 +321,10 @@ export default {
 			}
 		}
 		
-		// 初始化时从store中获取点数
-		this.userCreditBalance = this.$store.getters.userCreditBalance || 0;
-		
-		// 加载真实的用户点数和数据
-		await this.loadUserData();
-		
-		// 生成模拟数据（后续会替换为真实API）
+		// 生成模拟数据
 		this.generateMockRecords();
 	},
-	
-	async onShow() {
-		// 页面显示时刷新数据
-		this.userCreditBalance = this.$store.getters.userCreditBalance || this.userCreditBalance;
-		await this.loadUserData();
-	},
 	methods: {
-		// 加载用户数据
-		async loadUserData() {
-			if (!this.$store.getters.isLoggedIn) {
-				this.userCreditBalance = 0;
-				this.lastUpdateTime = '';
-				return;
-			}
-			
-			if (this.loadingBalance) return;
-			this.loadingBalance = true;
-			
-			try {
-				// 获取用户点数余额
-				const balance = await this.$store.dispatch('getCreditBalance');
-				this.userCreditBalance = balance;
-				
-				// 更新最后更新时间
-				const now = new Date();
-				const hours = now.getHours().toString().padStart(2, '0');
-				const minutes = now.getMinutes().toString().padStart(2, '0');
-				const isToday = now.toDateString() === new Date().toDateString();
-				this.lastUpdateTime = isToday ? `今天 ${hours}:${minutes}` : this.formatDateTime(now);
-				
-				console.log('✅ 点数中心页面数据更新成功:', this.userCreditBalance);
-				
-				// 同时加载点数记录
-				await this.loadPointsHistory();
-				
-			} catch (error) {
-				console.error('❌ 获取用户数据失败:', error);
-				// 网络错误时显示当前store中的数据
-				this.userCreditBalance = this.$store.getters.userCreditBalance || 0;
-				this.lastUpdateTime = '数据获取失败';
-			} finally {
-				this.loadingBalance = false;
-			}
-		},
-		
-		// 加载点数记录
-		async loadPointsHistory() {
-			try {
-				const response = await this.$minApi.getCreditLogs({
-					page: 1,
-					pageSize: 10
-				});
-				
-				if (response.code === 200) {
-					// 转换API数据为页面数据格式
-					this.pointRecords = response.data.items.map(item => ({
-						title: this.getRecordTitle(item.type, item.reason),
-						subtitle: item.relatedId ? this.getRecordSubtitle(item) : null,
-						time: this.formatDateTime(new Date(item.createdAt)),
-						points: Math.abs(item.amount),
-						type: item.amount > 0 ? 'add' : 'minus'
-					}));
-					
-					// 计算汇总数据
-					this.calculateSummary();
-				}
-			} catch (error) {
-				console.error('❌ 获取点数记录失败:', error);
-				// 失败时保持使用模拟数据
-			}
-		},
-		
-		// 获取记录标题
-		getRecordTitle(type, reason) {
-			const titleMap = {
-				'consume': '消费点数',
-				'reward': '获得奖励', 
-				'purchase': '购买点数',
-				'refund': '退款返还'
-			};
-			
-			// 根据具体原因细化标题
-			if (reason.includes('签到')) return '每日签到';
-			if (reason.includes('生成')) return '创作歌曲';
-			if (reason.includes('下载')) return '下载歌曲';
-			if (reason.includes('广告')) return '观看广告';
-			if (reason.includes('分享')) return '转发作品';
-			if (reason.includes('邀请')) return '邀请好友';
-			
-			return titleMap[type] || reason;
-		},
-		
-		// 获取记录副标题
-		getRecordSubtitle(item) {
-			// 根据关联类型和ID生成副标题
-			if (item.relatedType === 'music_task') {
-				return `作品ID: ${item.relatedId}`;
-			}
-			return null;
-		},
-		
-		// 计算汇总数据
-		calculateSummary() {
-			const added = this.pointRecords
-				.filter(record => record.type === 'add')
-				.reduce((sum, record) => sum + record.points, 0);
-				
-			const used = this.pointRecords
-				.filter(record => record.type === 'minus')
-				.reduce((sum, record) => sum + record.points, 0);
-				
-			this.summary = {
-				added,
-				used,
-				net: added - used
-			};
-		},
-		
-		// 格式化日期时间 (使用iOS兼容格式)
-		formatDateTime(date) {
-			const year = date.getFullYear();
-			const month = String(date.getMonth() + 1).padStart(2, '0');
-			const day = String(date.getDate()).padStart(2, '0');
-			const hours = date.getHours().toString().padStart(2, '0');
-			const minutes = date.getMinutes().toString().padStart(2, '0');
-
-			// 判断是否为今天
-			const today = new Date();
-			if (year === today.getFullYear() &&
-				month === String(today.getMonth() + 1).padStart(2, '0') &&
-				day === String(today.getDate()).padStart(2, '0')) {
-				return `今天 ${hours}:${minutes}`;
-			}
-
-			return `${year}/${month}/${day} ${hours}:${minutes}`; // 使用斜杠分隔符，兼容iOS
-		},
-		// 解析日期字符串 (iOS兼容)
-		parseDate(dateStr) {
-			// 如果已经是Date对象，直接返回
-			if (dateStr instanceof Date) {
-				return dateStr;
-			}
-
-			// 将 YYYY-MM-DD HH:mm:ss 格式转换为 YYYY/MM/DD HH:mm:ss (iOS兼容)
-			if (typeof dateStr === 'string') {
-				dateStr = dateStr.replace(/-/g, '/');
-			}
-
-			return new Date(dateStr);
-		},
-
 		navigateBack() {
 			uni.navigateBack();
 		},
@@ -497,7 +340,7 @@ export default {
 				icon: 'none'
 			});
 		},
-		async watchAd() {
+		watchAd() {
 			if (this.adWatchRemaining <= 0) {
 				uni.showToast({
 					title: '今日观看次数已用完',
@@ -510,111 +353,30 @@ export default {
 				title: '广告加载中...'
 			});
 			
-			// 模拟广告播放
-			setTimeout(async () => {
-				try {
-					// 这里后续可以集成真实的广告奖励API
-					// const response = await this.$minApi.rewardCredit({
-					//     type: 'ad_watch'
-					// });
-					
-					// 模拟奖励
-					const adReward = 10;
-					this.userCreditBalance += adReward;
-					this.adWatchRemaining -= 1;
-					
-					// 更新Vuex状态
-					this.$store.commit('updateCreditBalance', this.userCreditBalance);
-					
-					// 更新最后更新时间
-					const now = new Date();
-					const hours = now.getHours().toString().padStart(2, '0');
-					const minutes = now.getMinutes().toString().padStart(2, '0');
-					this.lastUpdateTime = `今天 ${hours}:${minutes}`;
-					
-					uni.hideLoading();
-					uni.showToast({
-						title: `获得${adReward}点数`,
-						icon: 'success'
-					});
-					
-					// 刷新点数记录
-					await this.loadPointsHistory();
-					
-				} catch (error) {
-					uni.hideLoading();
-					uni.showToast({
-						title: '广告奖励发放失败',
-						icon: 'none'
-					});
-				}
-			}, 2000);
-		},
-		async checkIn() {
-			if (!this.$store.getters.isLoggedIn) {
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none'
-				});
-				return;
-			}
-			
-			try {
-				uni.showLoading({
-					title: '签到中...'
-				});
-				
-				// 调用签到API
-				const response = await this.$minApi.checkin();
-				
-				if (response.code === 200) {
-					// 签到成功
-					const data = response.data;
-					
-					// 更新点数显示
-					this.userCreditBalance = data.totalCredit;
-					
-					// 更新Vuex状态
-					this.$store.commit('updateCreditBalance', data.totalCredit);
-					
-					// 更新签到状态
-					this.checkedInToday = true;
-					
-					// 更新时间
-					const now = new Date();
-					const hours = now.getHours().toString().padStart(2, '0');
-					const minutes = now.getMinutes().toString().padStart(2, '0');
-					this.lastUpdateTime = `今天 ${hours}:${minutes}`;
-					
-					uni.hideLoading();
-					uni.showToast({
-						title: `签到成功！获得${data.creditReward}点`,
-						icon: 'success'
-					});
-					
-					// 刷新点数记录
-					await this.loadPointsHistory();
-					
-				} else {
-					throw new Error(response.message || '签到失败');
-				}
-				
-			} catch (error) {
+			setTimeout(() => {
 				uni.hideLoading();
 				
-				if (error.message && error.message.includes('已签到')) {
-					this.checkedInToday = true;
-					uni.showToast({
-						title: '今日已签到',
-						icon: 'none'
-					});
-				} else {
-					uni.showToast({
-						title: error.message || '签到失败',
-						icon: 'none'
-					});
-				}
-			}
+				// 增加点数
+				this.userPoints += 10;
+				this.adWatchRemaining -= 1;
+				
+				// 更新最后更新时间
+				const now = new Date();
+				const hours = now.getHours().toString().padStart(2, '0');
+				const minutes = now.getMinutes().toString().padStart(2, '0');
+				this.lastUpdateTime = `今天 ${hours}:${minutes}`;
+				
+				uni.showToast({
+					title: '获得10点数',
+					icon: 'success'
+				});
+			}, 2000);
+		},
+		checkIn() {
+			// 跳转到签到页面
+			uni.navigateTo({
+				url: '/pages/user/checkin'
+			});
 		},
 		inviteFriend() {
 			uni.showToast({
@@ -654,7 +416,7 @@ export default {
 					type: 'add'
 				}
 			];
-
+			
 			// 昨天的记录
 			const yesterday = new Date(today);
 			yesterday.setDate(yesterday.getDate() - 1);
@@ -679,9 +441,9 @@ export default {
 					type: 'add'
 				}
 			);
-
-			// 更早的记录 - 使用iOS兼容的日期格式
-			const earlierDate = new Date('2023/06/15'); // 使用斜杠分隔符
+			
+			// 更早的记录
+			const earlierDate = new Date('2023-06-15');
 			this.pointRecords.push(
 				{
 					title: '下载歌曲',
@@ -700,12 +462,12 @@ export default {
 			);
 		},
 		
-		// 格式化日期 (使用iOS兼容格式)
+		// 格式化日期
 		formatDate(date) {
 			const year = date.getFullYear();
 			const month = String(date.getMonth() + 1).padStart(2, '0');
 			const day = String(date.getDate()).padStart(2, '0');
-			return `${year}/${month}/${day}`; // 使用斜杠分隔符，兼容iOS
+			return `${year}-${month}-${day}`;
 		},
 		
 		// 格式化日期标签
@@ -735,60 +497,45 @@ export default {
 		},
 		
 		// 加载更多记录
-		async loadMoreRecords() {
+		loadMoreRecords() {
 			if (!this.hasMoreRecords) return;
 			
 			uni.showLoading({
 				title: '加载中...'
 			});
 			
-			try {
-				// 计算下一页
-				const currentPage = Math.floor(this.pointRecords.length / 10) + 1;
-				const nextPage = currentPage + 1;
+			// 模拟加载更多数据
+			setTimeout(() => {
+				uni.hideLoading();
 				
-				const response = await this.$minApi.getCreditLogs({
-					page: nextPage,
-					pageSize: 10
-				});
+				// 添加更多模拟数据
+				const olderDate = new Date('2023-06-10');
+				this.pointRecords.push(
+					{
+						title: '转发作品',
+						time: `${this.formatDate(olderDate)} 16:45`,
+						points: 5,
+						type: 'add'
+					},
+					{
+						title: '邀请好友',
+						subtitle: '用户：音乐爱好者',
+						time: `${this.formatDate(olderDate)} 14:30`,
+						points: 20,
+						type: 'add'
+					}
+				);
 				
-				if (response.code === 200 && response.data.items.length > 0) {
-					// 添加新记录
-					const newRecords = response.data.items.map(item => ({
-						title: this.getRecordTitle(item.type, item.reason),
-						subtitle: item.relatedId ? this.getRecordSubtitle(item) : null,
-						time: this.formatDateTime(new Date(item.createdAt)),
-						points: Math.abs(item.amount),
-						type: item.amount > 0 ? 'add' : 'minus'
-					}));
-					
-					this.pointRecords.push(...newRecords);
-					
-					// 检查是否还有更多数据
-					this.hasMoreRecords = response.data.items.length === 10;
-					
-					uni.showToast({
-						title: '加载成功',
-						icon: 'success'
-					});
-				} else {
-					// 没有更多数据
+				// 如果已加载足够多的记录，禁用加载更多
+				if (this.pointRecords.length > 10) {
 					this.hasMoreRecords = false;
-					uni.showToast({
-						title: '没有更多记录',
-						icon: 'none'
-					});
 				}
 				
-			} catch (error) {
-				console.error('加载更多记录失败:', error);
 				uni.showToast({
-					title: '加载失败',
-					icon: 'none'
+					title: '加载成功',
+					icon: 'success'
 				});
-			} finally {
-				uni.hideLoading();
-			}
+			}, 1000);
 		}
 	}
 }

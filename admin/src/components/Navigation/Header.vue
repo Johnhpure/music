@@ -159,7 +159,7 @@
       <!-- User Menu -->
       <div class="relative">
         <button
-          @click="showUserMenu = !showUserMenu"
+          @click="() => { console.log('👤 用户菜单按钮被点击，showUserMenu:', !showUserMenu); showUserMenu = !showUserMenu }"
           class="flex items-center space-x-2 p-2 rounded-lg hover:bg-glass-white/10 transition-colors"
         >
           <div class="w-8 h-8 rounded-full bg-gradient-to-br from-cyber-green to-green-400 flex items-center justify-center">
@@ -177,30 +177,25 @@
         </button>
         
         <!-- User Dropdown -->
-        <Transition
-          enter-active-class="transition-all duration-200"
-          leave-active-class="transition-all duration-200"
-          enter-from-class="opacity-0 scale-95 translate-y-2"
-          leave-to-class="opacity-0 scale-95 translate-y-2"
+        <!-- Debug: Simplified without Transition -->
+        <div
+          v-if="showUserMenu"
+          class="absolute top-full right-0 mt-2 w-48 bg-cyber-darker border-2 border-red-500 rounded-lg shadow-cyber-lg z-[9999]"
+          style="background-color: #1a1a2e !important;"
         >
-          <div
-            v-if="showUserMenu"
-            v-click-outside="() => showUserMenu = false"
-            class="absolute top-full right-0 mt-2 w-48 bg-cyber-darker/90 backdrop-blur-xl border border-gray-700/30 rounded-lg shadow-cyber-lg z-50"
-          >
-            <div class="p-2 space-y-1">
-              <button
-                v-for="item in userMenuItems"
-                :key="item.name"
-                @click="handleUserMenuClick(item)"
-                class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left hover:bg-glass-white/10 transition-colors"
-              >
-                <Icon :icon="item.icon" class="w-4 h-4 text-gray-400" />
-                <span class="text-sm text-white">{{ item.name }}</span>
-              </button>
-            </div>
+          <div class="p-2 space-y-1">
+            <div class="text-white p-2">调试：菜单应该显示在这里</div>
+            <button
+              v-for="item in userMenuItems"
+              :key="item.name"
+              @click="handleUserMenuClick(item)"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left hover:bg-glass-white/10 transition-colors"
+            >
+              <Icon :icon="item.icon" class="w-4 h-4 text-gray-400" />
+              <span class="text-sm text-white">{{ item.name }}</span>
+            </button>
           </div>
-        </Transition>
+        </div>
       </div>
     </div>
   </header>
@@ -210,6 +205,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { useAuthStore } from '@/stores/auth'
 
 // Props
 interface Props {
@@ -226,11 +222,17 @@ const emit = defineEmits<{
 
 // Composables
 const router = useRouter()
+const authStore = useAuthStore()
 
 // State
 const searchQuery = ref('')
 const showNotifications = ref(false)
 const showUserMenu = ref(false)
+
+// Debug: Watch showUserMenu changes
+watch(showUserMenu, (newVal) => {
+  console.log('🔍 showUserMenu 状态变化:', newVal)
+})
 const notifications = ref([
   {
     id: 1,
@@ -290,6 +292,9 @@ const userMenuItems = [
   { name: '退出登录', icon: 'mdi:logout', action: 'logout' }
 ]
 
+// Debug: Log userMenuItems
+console.log('🔍 Header组件加载，用户菜单项:', userMenuItems)
+
 // Methods
 const handleSearch = () => {
   if (searchResults.value.length > 0) {
@@ -347,9 +352,9 @@ const handleNotificationClick = (notification: any) => {
   // Handle notification navigation if needed
 }
 
-const handleUserMenuClick = (item: any) => {
+const handleUserMenuClick = async (item: any) => {
   showUserMenu.value = false
-  
+
   switch (item.action) {
     case 'profile':
       // Handle profile navigation
@@ -361,8 +366,14 @@ const handleUserMenuClick = (item: any) => {
       // Open help documentation
       break
     case 'logout':
-      // Handle logout
-      console.log('Logout clicked')
+      try {
+        console.log('🚪 正在退出登录...')
+        await authStore.logout()
+        console.log('✅ 退出成功，跳转到登录页')
+        router.push('/auth/login')
+      } catch (error) {
+        console.error('❌ 退出登录失败:', error)
+      }
       break
   }
 }

@@ -14,13 +14,12 @@
           class="relative overflow-hidden rounded-lg backdrop-blur-xl border shadow-cyber-lg"
           :class="getNotificationClass(notification.type)"
         >
-          <!-- Progress Bar -->
+          <!-- Progress Bar with CSS Animation -->
           <div
             v-if="notification.duration && notification.duration > 0"
-            class="absolute top-0 left-0 h-1 bg-current transition-all ease-linear"
+            class="absolute top-0 left-0 h-1 bg-current notification-progress"
             :style="{ 
-              width: `${notification.progress}%`,
-              transitionDuration: `${notification.duration}ms`
+              animationDuration: `${notification.duration}ms`
             }"
           ></div>
           
@@ -93,7 +92,6 @@ interface Notification {
   message: string
   duration?: number
   action?: NotificationAction
-  progress?: number
 }
 
 const notifications = ref<Notification[]>([])
@@ -135,29 +133,16 @@ const addNotification = (notification: Omit<Notification, 'id'>) => {
   const newNotification: Notification = {
     ...notification,
     id,
-    duration,
-    progress: 100
+    duration
   }
   
   notifications.value.push(newNotification)
   
+  // 使用 setTimeout 替代 setInterval，只在结束时移除
   if (duration > 0) {
-    // Start progress countdown
-    const startTime = Date.now()
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime
-      const progress = Math.max(0, 100 - (elapsed / duration) * 100)
-      
-      const notif = notifications.value.find(n => n.id === id)
-      if (notif) {
-        notif.progress = progress
-      }
-      
-      if (progress <= 0) {
-        clearInterval(interval)
-        removeNotification(id)
-      }
-    }, 16) // ~60fps
+    setTimeout(() => {
+      removeNotification(id)
+    }, duration)
   }
 }
 
@@ -198,6 +183,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  notifications.value = []
   // @ts-ignore
   delete window.$notify
 })
@@ -208,5 +194,17 @@ provide('notify', notificationMethods)
 </script>
 
 <style scoped>
-/* Custom styles for progress animation */
+/* 使用 CSS 动画替代 setInterval */
+@keyframes progressCountdown {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.notification-progress {
+  animation: progressCountdown linear forwards;
+}
 </style>

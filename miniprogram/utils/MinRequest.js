@@ -78,80 +78,28 @@ class MinRequest {
 		options.url = url
 		options.data = data
 		options.method = 'GET'
-		return this.request(options)
-			.then(checkLogin)
-			.then(checkResult)
-			.catch(err => {
-				console.error('GET请求失败:', url, err);
-				// 网络错误时返回标准错误格式
-				return {
-					code: 500,
-					msg: '网络连接失败',
-					data: null,
-					isOk: false,
-					ok: () => false
-				};
-			})
+		return this.request(options).then(checkLogin).then(checkResult)
 	}
 
 	post(url, data, options = {}) {
 		options.url = url
 		options.data = data
 		options.method = 'POST'
-		return this.request(options)
-			.then(checkLogin)
-			.then(checkResult)
-			.catch(err => {
-				console.error('POST请求失败:', url, err);
-				// 网络错误时返回标准错误格式
-				return {
-					code: 500,
-					msg: '网络连接失败',
-					data: null,
-					isOk: false,
-					ok: () => false
-				};
-			})
+		return this.request(options).then(checkLogin).then(checkResult)
+	}
+	
+	put(url, data, options = {}) {
+		options.url = url
+		options.data = data
+		options.method = 'PUT'
+		return this.request(options).then(checkLogin).then(checkResult)
 	}
 	
 	delete(url, data, options = {}) {
 		options.url = url
 		options.data = data
 		options.method = 'DELETE'
-		return this.request(options)
-			.then(checkLogin)
-			.then(checkResult)
-			.catch(err => {
-				console.error('DELETE请求失败:', url, err);
-				// 网络错误时返回标准错误格式
-				return {
-					code: 500,
-					msg: '网络连接失败',
-					data: null,
-					isOk: false,
-					ok: () => false
-				};
-			})
-	}
-
-	put(url, data, options = {}) {
-		options.url = url
-		options.data = data
-		options.method = 'PUT'
-		return this.request(options)
-			.then(checkLogin)
-			.then(checkResult)
-			.catch(err => {
-				console.error('PUT请求失败:', url, err);
-				// 网络错误时返回标准错误格式
-				return {
-					code: 500,
-					msg: '网络连接失败',
-					data: null,
-					isOk: false,
-					ok: () => false
-				};
-			})
+		return this.request(options).then(checkLogin).then(checkResult)
 	}
 }
 

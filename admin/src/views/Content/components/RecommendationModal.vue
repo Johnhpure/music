@@ -80,19 +80,19 @@
                     <!-- Genre -->
                     <div>
                       <label class="block text-sm font-medium text-gray-300 mb-2">
-                        音乐风格 <span class="text-red-400">*</span>
+                        分类 <span class="text-red-400">*</span>
                       </label>
                       <select 
-                        v-model="form.genre"
+                        v-model="form.category"
                         class="cyber-input w-full"
                         required
                       >
-                        <option value="">请选择风格</option>
-                        <option v-for="genre in genres" :key="genre" :value="genre">
-                          {{ genre }}
+                        <option value="">请选择分类</option>
+                        <option v-for="category in categories" :key="category" :value="category">
+                          {{ category }}
                         </option>
                       </select>
-                      <p v-if="errors.genre" class="text-red-400 text-xs mt-1">{{ errors.genre }}</p>
+                      <p v-if="errors.category" class="text-red-400 text-xs mt-1">{{ errors.category }}</p>
                     </div>
                     
                     <!-- Duration -->
@@ -126,43 +126,15 @@
                       left-icon="mdi:file-music"
                     />
                     
-                    <!-- Tags -->
+                    <!-- Description -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-300 mb-2">标签</label>
-                      <div class="flex flex-wrap gap-2 mb-3">
-                        <span
-                          v-for="(tag, index) in form.tags"
-                          :key="index"
-                          class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-500/20 text-red-400 border border-red-500/30"
-                        >
-                          {{ tag }}
-                          <button
-                            type="button"
-                            @click="removeTag(index)"
-                            class="ml-2 hover:text-red-300 transition-colors"
-                          >
-                            <Icon icon="mdi:close" class="w-3 h-3" />
-                          </button>
-                        </span>
-                      </div>
-                      
-                      <div class="flex items-center space-x-2">
-                        <CyberInput
-                          v-model="newTag"
-                          placeholder="输入标签按回车添加"
-                          @keyup.enter="addTag"
-                          class="flex-1"
-                        />
-                        <CyberButton
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          @click="addTag"
-                          :disabled="!newTag.trim()"
-                        >
-                          添加
-                        </CyberButton>
-                      </div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">描述</label>
+                      <textarea
+                        v-model="form.description"
+                        class="cyber-input w-full"
+                        rows="3"
+                        placeholder="输入推荐描述..."
+                      ></textarea>
                     </div>
                   </form>
                 </div>
@@ -202,7 +174,7 @@
                             {{ form.artist || '艺术家' }}
                           </p>
                           <div class="flex items-center space-x-3 text-xs text-gray-500 mt-1">
-                            <span>{{ form.genre || '未分类' }}</span>
+                            <span>{{ form.category || '未分类' }}</span>
                             <span>{{ form.duration || '0:00' }}</span>
                           </div>
                         </div>
@@ -212,41 +184,12 @@
                         </button>
                       </div>
                       
-                      <!-- Tags -->
-                      <div v-if="form.tags.length > 0" class="flex flex-wrap gap-1">
-                        <span
-                          v-for="tag in form.tags"
-                          :key="tag"
-                          class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-gray-700/50 text-gray-300"
-                        >
-                          {{ tag }}
-                        </span>
-                      </div>
+
                     </div>
                   </div>
                   
                   <!-- Settings -->
                   <div class="space-y-4">
-                    <!-- Hot Status -->
-                    <div class="flex items-center justify-between p-4 bg-glass-white/5 rounded-lg border border-gray-700/30">
-                      <div class="flex items-center space-x-3">
-                        <Icon icon="mdi:fire" class="w-5 h-5 text-red-400" />
-                        <div>
-                          <h6 class="text-white font-medium">热门推荐</h6>
-                          <p class="text-xs text-gray-400">标记为热门推荐会在小程序中突出显示</p>
-                        </div>
-                      </div>
-                      
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input
-                          v-model="form.isHot"
-                          type="checkbox"
-                          class="sr-only peer"
-                        />
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-                      </label>
-                    </div>
-                    
                     <!-- Active Status -->
                     <div class="flex items-center justify-between p-4 bg-glass-white/5 rounded-lg border border-gray-700/30">
                       <div class="flex items-center space-x-3">
@@ -319,7 +262,7 @@ import type { HotRecommendation } from '@/types'
 interface Props {
   visible: boolean
   recommendation?: HotRecommendation | null
-  genres: string[]
+  categories: string[]
   loading?: boolean
 }
 
@@ -333,16 +276,14 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const newTag = ref('')
 const form = ref({
   title: '',
   artist: '',
-  genre: '',
+  category: '',
   duration: '',
   coverUrl: '',
   audioUrl: '',
-  tags: [] as string[],
-  isHot: false,
+  description: '',
   isActive: true,
   sortOrder: 1
 })
@@ -351,17 +292,7 @@ const errors = ref<Record<string, string>>({})
 
 const isEditing = computed(() => !!props.recommendation?.id)
 
-const addTag = () => {
-  const tag = newTag.value.trim()
-  if (tag && !form.value.tags.includes(tag)) {
-    form.value.tags.push(tag)
-    newTag.value = ''
-  }
-}
 
-const removeTag = (index: number) => {
-  form.value.tags.splice(index, 1)
-}
 
 const validateForm = (): boolean => {
   errors.value = {}
@@ -374,8 +305,8 @@ const validateForm = (): boolean => {
     errors.value.artist = '请输入艺术家'
   }
   
-  if (!form.value.genre) {
-    errors.value.genre = '请选择音乐风格'
+  if (!form.value.category) {
+    errors.value.category = '请选择分类'
   }
   
   if (!form.value.duration.trim()) {
@@ -427,12 +358,11 @@ watch(() => props.recommendation, () => {
         form.value = {
           title: props.recommendation.title,
           artist: props.recommendation.artist,
-          genre: props.recommendation.genre,
+          category: props.recommendation.category,
           duration: props.recommendation.duration,
           coverUrl: props.recommendation.coverUrl,
           audioUrl: props.recommendation.audioUrl,
-          tags: [...(props.recommendation.tags || [])],
-          isHot: props.recommendation.isHot,
+          description: props.recommendation.description || '',
           isActive: props.recommendation.isActive,
           sortOrder: props.recommendation.sortOrder
         }
@@ -440,12 +370,11 @@ watch(() => props.recommendation, () => {
         form.value = {
           title: '',
           artist: '',
-          genre: '',
+          category: '',
           duration: '',
           coverUrl: '',
           audioUrl: '',
-          tags: [],
-          isHot: false,
+          description: '',
           isActive: true,
           sortOrder: 1
         }

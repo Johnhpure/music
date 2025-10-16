@@ -39,11 +39,11 @@
       />
       
       <StatsCard
-        title="热门推荐"
-        :value="stats.hot"
-        change="+1"
-        trend="up"
-        icon="mdi:fire"
+        title="启用中"
+        :value="stats.active"
+        change="-"
+        trend="neutral"
+        icon="mdi:check-circle"
         color="success"
         :delay="100"
       />
@@ -59,11 +59,11 @@
       />
       
       <StatsCard
-        title="平均时长"
-        :value="stats.averageDuration"
-        change="3:24"
+        title="总点赞数"
+        :value="stats.totalLikes.toLocaleString()"
+        change="-"
         trend="neutral"
-        icon="mdi:timer"
+        icon="mdi:heart"
         color="warning"
         :delay="300"
       />
@@ -72,7 +72,7 @@
     <!-- Filters -->
     <CyberCard title="筛选条件" :delay="400">
       <div class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <CyberInput
             v-model="filters.search"
             placeholder="搜索标题或艺术家..."
@@ -81,13 +81,13 @@
           />
           
           <select 
-            v-model="filters.genre"
+            v-model="filters.category"
             class="cyber-input"
             @change="handleFilter"
           >
-            <option value="">全部风格</option>
-            <option v-for="genre in genres" :key="genre" :value="genre">
-              {{ genre }}
+            <option value="">全部分类</option>
+            <option v-for="category in categories" :key="category" :value="category">
+              {{ category }}
             </option>
           </select>
           
@@ -100,27 +100,6 @@
             <option value="active">启用</option>
             <option value="inactive">禁用</option>
           </select>
-          
-          <select 
-            v-model="filters.isHot"
-            class="cyber-input"
-            @change="handleFilter"
-          >
-            <option value="">全部类型</option>
-            <option value="true">热门推荐</option>
-            <option value="false">普通推荐</option>
-          </select>
-          
-          <select 
-            v-model="filters.sortBy"
-            class="cyber-input"
-            @change="handleFilter"
-          >
-            <option value="sortOrder">按排序权重</option>
-            <option value="playCount">按播放量</option>
-            <option value="createdAt">按创建时间</option>
-            <option value="title">按标题</option>
-          </select>
         </div>
         
         <!-- Batch Actions -->
@@ -128,22 +107,6 @@
           <div class="flex items-center space-x-4">
             <span class="text-sm text-white">已选择 {{ selectedItems.length }} 项</span>
             <div class="flex items-center space-x-2">
-              <CyberButton
-                size="sm"
-                variant="outline"
-                left-icon="mdi:fire"
-                @click="batchSetHot(true)"
-              >
-                设为热门
-              </CyberButton>
-              <CyberButton
-                size="sm"
-                variant="outline"
-                left-icon="mdi:fire-off"
-                @click="batchSetHot(false)"
-              >
-                取消热门
-              </CyberButton>
               <CyberButton
                 size="sm"
                 variant="danger"
@@ -307,7 +270,7 @@
     <RecommendationModal
       v-model:visible="showCreateModal"
       :recommendation="editingRecommendation"
-      :genres="genres"
+      :categories="categories"
       :loading="modalLoading"
       @submit="handleSubmit"
       @cancel="handleModalCancel"
@@ -343,7 +306,12 @@ import RecommendationItem from './components/RecommendationItem.vue'
 import RecommendationModal from './components/RecommendationModal.vue'
 import RecommendationPreviewModal from './components/RecommendationPreviewModal.vue'
 import ConfirmModal from '@/components/UI/ConfirmModal.vue'
+import { adminContentAPI } from '@/api'
+import { useNotification } from '@/composables/useNotification'
 import type { HotRecommendation } from '@/types'
+
+// Notification
+const { showSuccess, showError } = useNotification()
 
 // State
 const loading = ref(false)
@@ -356,10 +324,10 @@ const recommendations = ref<HotRecommendation[]>([])
 const editingRecommendation = ref<HotRecommendation | null>(null)
 const previewRecommendation = ref<HotRecommendation | null>(null)
 const deletingRecommendation = ref<HotRecommendation | null>(null)
-const selectedItems = ref<string[]>([])
+const selectedItems = ref<number[]>([])
 const selectAll = ref(false)
 
-const genres = ref([
+const categories = ref([
   '流行', 'R&B', '电子', '摇滚', '民谣', 
   '古典', '爵士', '嘻哈', '乡村', '蓝调', '其他'
 ])
@@ -367,10 +335,8 @@ const genres = ref([
 // Filters and pagination
 const filters = ref({
   search: '',
-  genre: '',
-  status: '',
-  isHot: '',
-  sortBy: 'sortOrder'
+  category: '',
+  status: ''
 })
 
 const pagination = ref({
@@ -381,66 +347,18 @@ const pagination = ref({
 })
 
 // Stats
-const stats = ref({
-  total: 16,
-  hot: 8,
-  totalPlays: 25600,
-  averageDuration: '3:24'
-})
+const stats = computed(() => ({
+  total: pagination.value.total,
+  active: recommendations.value.filter(r => r.isActive).length,
+  totalPlays: recommendations.value.reduce((sum, r) => sum + r.playCount, 0),
+  totalLikes: recommendations.value.reduce((sum, r) => sum + r.likeCount, 0)
+}))
 
-// Computed
-const filteredRecommendations = computed(() => {
-  let result = recommendations.value
-  
-  if (filters.value.search) {
-    const search = filters.value.search.toLowerCase()
-    result = result.filter(rec => 
-      rec.title.toLowerCase().includes(search) ||
-      rec.artist.toLowerCase().includes(search)
-    )
-  }
-  
-  if (filters.value.genre) {
-    result = result.filter(rec => rec.genre === filters.value.genre)
-  }
-  
-  if (filters.value.status) {
-    const isActive = filters.value.status === 'active'
-    result = result.filter(rec => rec.isActive === isActive)
-  }
-  
-  if (filters.value.isHot) {
-    const isHot = filters.value.isHot === 'true'
-    result = result.filter(rec => rec.isHot === isHot)
-  }
-  
-  // Sort
-  result.sort((a, b) => {
-    const field = filters.value.sortBy
-    switch (field) {
-      case 'playCount':
-        return b.playCount - a.playCount
-      case 'sortOrder':
-        return a.sortOrder - b.sortOrder
-      case 'title':
-        return a.title.localeCompare(b.title)
-      case 'createdAt':
-      default:
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    }
-  })
-  
-  return result
-})
-
-const paginatedRecommendations = computed(() => {
-  const start = (pagination.value.current - 1) * pagination.value.pageSize
-  const end = start + pagination.value.pageSize
-  return filteredRecommendations.value.slice(start, end)
-})
+// Computed - 直接使用API返回的数据
+const paginatedRecommendations = computed(() => recommendations.value)
 
 const hasFilters = computed(() => {
-  return filters.value.search || filters.value.genre || filters.value.status || filters.value.isHot
+  return filters.value.search || filters.value.category || filters.value.status
 })
 
 const visiblePages = computed(() => {
@@ -476,42 +394,30 @@ const visiblePages = computed(() => {
 const loadRecommendations = async () => {
   loading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const params = {
+      page: pagination.value.current,
+      pageSize: pagination.value.pageSize,
+      keyword: filters.value.search || undefined,
+      category: filters.value.category || undefined,
+      status: filters.value.status || undefined
+    }
     
-    // Generate mock recommendations
-    recommendations.value = Array.from({ length: 16 }, (_, i) => ({
-      id: `rec_${i + 1}`,
-      title: `推荐音乐 ${i + 1}`,
-      artist: `艺术家 ${Math.floor(i / 2) + 1}`,
-      genre: genres.value[i % genres.value.length],
-      duration: `${Math.floor(Math.random() * 3) + 2}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
-      coverUrl: `/static/img/music/cover${(i % 5) + 1}.jpg`,
-      audioUrl: `/static/audio/music${(i % 3) + 1}.mp3`,
-      isHot: Math.random() > 0.5,
-      tags: ['推荐', '热门', genres.value[i % genres.value.length]],
-      playCount: Math.floor(Math.random() * 5000) + 100,
-      sortOrder: i + 1,
-      isActive: Math.random() > 0.2,
-      createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date().toISOString()
-    }))
+    const response = await adminContentAPI.getRecommendations(params)
     
-    updatePagination()
-  } catch (error) {
+    if (response.code === 200 && response.data) {
+      recommendations.value = response.data.items || []
+      pagination.value.total = response.data.total || 0
+      pagination.value.totalPages = response.data.totalPages || 0
+    }
+  } catch (error: any) {
     console.error('Failed to load recommendations:', error)
+    showError(error.response?.data?.message || '加载推荐列表失败')
   } finally {
     loading.value = false
   }
 }
 
-const updatePagination = () => {
-  pagination.value.total = filteredRecommendations.value.length
-  pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.pageSize)
-  
-  if (pagination.value.current > pagination.value.totalPages) {
-    pagination.value.current = Math.max(1, pagination.value.totalPages)
-  }
-}
+
 
 const refreshData = () => {
   loadRecommendations()
@@ -519,33 +425,32 @@ const refreshData = () => {
 
 const handleSearch = () => {
   pagination.value.current = 1
-  updatePagination()
+  loadRecommendations()
 }
 
 const handleFilter = () => {
   pagination.value.current = 1
-  updatePagination()
+  loadRecommendations()
 }
 
 const clearFilters = () => {
   filters.value = {
     search: '',
-    genre: '',
-    status: '',
-    isHot: '',
-    sortBy: 'sortOrder'
+    category: '',
+    status: ''
   }
   pagination.value.current = 1
-  updatePagination()
+  loadRecommendations()
 }
 
 const handlePageChange = (page: number) => {
   pagination.value.current = page
+  loadRecommendations()
 }
 
 const handlePageSizeChange = () => {
   pagination.value.current = 1
-  updatePagination()
+  loadRecommendations()
 }
 
 const handleSelectAll = () => {
@@ -556,7 +461,7 @@ const handleSelectAll = () => {
   }
 }
 
-const handleSelect = (recId: string, selected: boolean) => {
+const handleSelect = (recId: number, selected: boolean) => {
   if (selected) {
     if (!selectedItems.value.includes(recId)) {
       selectedItems.value.push(recId)
@@ -583,29 +488,18 @@ const handleDelete = (recommendation: HotRecommendation) => {
 
 const handleToggleStatus = async (recommendation: HotRecommendation) => {
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const index = recommendations.value.findIndex(r => r.id === recommendation.id)
-    if (index > -1) {
-      recommendations.value[index].isActive = !recommendations.value[index].isActive
+    const response = await adminContentAPI.toggleRecommendationStatus(recommendation.id.toString())
+    if (response.code === 200) {
+      showSuccess('切换状态成功')
+      await loadRecommendations()
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to toggle recommendation status:', error)
+    showError(error.response?.data?.message || '切换状态失败')
   }
 }
 
-const handleToggleHot = async (recommendation: HotRecommendation) => {
-  try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const index = recommendations.value.findIndex(r => r.id === recommendation.id)
-    if (index > -1) {
-      recommendations.value[index].isHot = !recommendations.value[index].isHot
-    }
-  } catch (error) {
-    console.error('Failed to toggle hot status:', error)
-  }
-}
+
 
 const handlePreview = (recommendation: HotRecommendation) => {
   previewRecommendation.value = recommendation
@@ -620,32 +514,27 @@ const handlePlay = (recommendation: HotRecommendation) => {
 const handleSubmit = async (recommendationData: Partial<HotRecommendation>) => {
   modalLoading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
     if (editingRecommendation.value) {
-      const index = recommendations.value.findIndex(r => r.id === editingRecommendation.value!.id)
-      if (index > -1) {
-        recommendations.value[index] = { ...recommendations.value[index], ...recommendationData }
+      const response = await adminContentAPI.updateRecommendation(
+        editingRecommendation.value.id.toString(),
+        recommendationData
+      )
+      if (response.code === 200) {
+        showSuccess('更新推荐成功')
       }
     } else {
-      const newRecommendation: HotRecommendation = {
-        id: `rec_${Date.now()}`,
-        ...recommendationData,
-        isActive: true,
-        playCount: 0,
-        sortOrder: recommendations.value.length + 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      } as HotRecommendation
-      
-      recommendations.value.unshift(newRecommendation)
+      const response = await adminContentAPI.createRecommendation(recommendationData)
+      if (response.code === 201 || response.code === 200) {
+        showSuccess('创建推荐成功')
+      }
     }
     
     showCreateModal.value = false
     editingRecommendation.value = null
-    updatePagination()
-  } catch (error) {
+    await loadRecommendations()
+  } catch (error: any) {
     console.error('Failed to save recommendation:', error)
+    showError(error.response?.data?.message || '保存推荐失败')
   } finally {
     modalLoading.value = false
   }
@@ -660,57 +549,48 @@ const confirmDelete = async () => {
   if (!deletingRecommendation.value) return
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const index = recommendations.value.findIndex(r => r.id === deletingRecommendation.value!.id)
-    if (index > -1) {
-      recommendations.value.splice(index, 1)
+    const response = await adminContentAPI.deleteRecommendation(
+      deletingRecommendation.value.id.toString()
+    )
+    if (response.code === 204 || response.code === 200) {
+      showSuccess('删除推荐成功')
+      showDeleteModal.value = false
+      deletingRecommendation.value = null
+      await loadRecommendations()
     }
-    
-    showDeleteModal.value = false
-    deletingRecommendation.value = null
-    updatePagination()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to delete recommendation:', error)
+    showError(error.response?.data?.message || '删除推荐失败')
   }
 }
 
-const batchSetHot = async (isHot: boolean) => {
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    selectedItems.value.forEach(id => {
-      const index = recommendations.value.findIndex(r => r.id === id)
-      if (index > -1) {
-        recommendations.value[index].isHot = isHot
-      }
-    })
-    
-    selectedItems.value = []
-    selectAll.value = false
-  } catch (error) {
-    console.error('Failed to batch set hot:', error)
-  }
-}
+
 
 const batchDelete = async () => {
-  if (confirm(`确定要删除选中的 ${selectedItems.value.length} 个推荐吗？`)) {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      recommendations.value = recommendations.value.filter(r => !selectedItems.value.includes(r.id))
-      selectedItems.value = []
-      selectAll.value = false
-      updatePagination()
-    } catch (error) {
-      console.error('Failed to batch delete:', error)
-    }
+  if (!confirm(`确定要删除选中的 ${selectedItems.value.length} 个推荐吗？`)) {
+    return
+  }
+  
+  try {
+    const deletePromises = selectedItems.value.map(id =>
+      adminContentAPI.deleteRecommendation(id.toString())
+    )
+    
+    await Promise.all(deletePromises)
+    showSuccess(`成功删除 ${selectedItems.value.length} 个推荐`)
+    selectedItems.value = []
+    selectAll.value = false
+    await loadRecommendations()
+  } catch (error: any) {
+    console.error('Failed to batch delete:', error)
+    showError(error.response?.data?.message || '批量删除失败')
   }
 }
 
 // Watch filters for auto-update
 watch(() => filters.value, () => {
-  updatePagination()
+  pagination.value.current = 1
+  loadRecommendations()
 }, { deep: true })
 
 // Lifecycle

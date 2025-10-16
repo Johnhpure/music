@@ -280,6 +280,23 @@ const errors = ref<Record<string, string>>({})
 // Computed
 const isEditing = computed(() => !!props.banner?.id)
 
+// 获取API基础URL，与api/index.ts中的逻辑保持一致
+const getApiBaseUrl = (): string => {
+  // 优先使用环境变量
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL.replace('/api', '')
+  }
+  
+  // 根据当前域名自动判断
+  const hostname = window.location.hostname
+  if (hostname === 'admin.jianzhile.vip') {
+    return 'https://adminapi.jianzhile.vip'
+  }
+  
+  // 本地开发环境
+  return 'http://localhost:3000'
+}
+
 // Methods
 const resetForm = () => {
   form.value = {
@@ -303,8 +320,9 @@ const loadBannerData = () => {
       description: props.banner.description || '',
       imageUrl: props.banner.imageUrl || '',
       linkUrl: props.banner.linkUrl || '',
-      startDate: props.banner.startDate ? props.banner.startDate.split('T')[0] : '',
-      endDate: props.banner.endDate ? props.banner.endDate.split('T')[0] : '',
+      // 后端使用startTime/endTime，需要正确读取
+      startDate: (props.banner as any).startTime ? new Date((props.banner as any).startTime).toISOString().split('T')[0] : '',
+      endDate: (props.banner as any).endTime ? new Date((props.banner as any).endTime).toISOString().split('T')[0] : '',
       sortOrder: props.banner.sortOrder || 1,
       isActive: props.banner.isActive ?? true
     }
@@ -383,14 +401,38 @@ const uploadFile = async (file: File) => {
       uploadProgress.value = progress
     })
     
-    console.log('📁 上传结果:', result)
+    console.log('📁 完整上传响应:', result)
+    console.log('📁 响应data字段:', result.data)
     
-    if (result.code === 200 && result.data?.fileUrl) {
-      // 上传成功 - 后端返回 fileUrl 字段
-      // 如果返回的是相对路径，添加基础URL
-      form.value.imageUrl = result.data.fileUrl.startsWith('http') 
-        ? result.data.fileUrl 
-        : `http://192.168.1.118:3000${result.data.fileUrl}`
+    // 处理不同的响应结构
+    let fileUrl = ''
+    if (result.code === 200 || result.code === 201) {
+      // 尝试多种可能的响应结构
+      if (result.data?.data?.fileUrl) {
+        fileUrl = result.data.data.fileUrl
+      } else if (result.data?.fileUrl) {
+        fileUrl = result.data.fileUrl
+      } else if (result.data) {
+        // 如果data直接是fileUrl字符串
+        if (typeof result.data === 'string') {
+          fileUrl = result.data
+        } else {
+          console.error('❌ 未找到fileUrl字段，响应结构:', result)
+        }
+      }
+    }
+    
+    if (fileUrl) {
+      // 上传成功 - 处理相对路径和绝对路径
+      if (!fileUrl.startsWith('http')) {
+        // 相对路径，添加基础URL（使用动态获取的API地址）
+        const apiBaseUrl = getApiBaseUrl()
+        form.value.imageUrl = `${apiBaseUrl}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`
+      } else {
+        // 绝对路径
+        form.value.imageUrl = fileUrl
+      }
+      
       uploadProgress.value = 100
       
       // 短暂显示完成状态后清除进度条
@@ -398,7 +440,7 @@ const uploadFile = async (file: File) => {
         uploadProgress.value = 0
       }, 1000)
       
-      console.log('✅ 图片上传成功:', form.value.imageUrl)
+      console.log('✅ 图片上传成功，最终URL:', form.value.imageUrl)
     } else {
       throw new Error(result.message || '上传失败')
     }
@@ -417,13 +459,13 @@ const handleReUpload = () => {
 const handleSubmit = () => {
   if (!validateForm()) return
   
-  const submitData: Partial<Banner> = {
+  const submitData: any = {
     title: form.value.title.trim(),
-    description: form.value.description.trim(),
     imageUrl: form.value.imageUrl,
     linkUrl: form.value.linkUrl.trim() || undefined,
-    startDate: form.value.startDate || undefined,
-    endDate: form.value.endDate || undefined,
+    // 后端使用startTime/endTime字段名
+    startTime: form.value.startDate || undefined,
+    endTime: form.value.endDate || undefined,
     sortOrder: form.value.sortOrder,
     isActive: form.value.isActive
   }

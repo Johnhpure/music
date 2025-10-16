@@ -1,0 +1,143 @@
+/* Chrome 性能优化样式 - 针对Chrome浏览器的特殊优化 */
+
+/* 检测Chrome浏览器 */
+@supports (-webkit-appearance: none) and (not (-moz-appearance: none)) {
+  /* Chrome特定优化 */
+  
+  /* 1. 简化backdrop-filter效果 */
+  .glass-card,
+  .cyber-card-container,
+  .bg-glass-white\/10 {
+    /* 降低blur强度，减少GPU负担 */
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    
+    /* 使用will-change提示浏览器优化 */
+    will-change: transform;
+    
+    /* 强制GPU加速 */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    
+    /* 限制重绘范围 */
+    contain: layout style paint;
+  }
+  
+  /* 2. 优化动画性能 */
+  .animate-pulse {
+    /* 使用transform代替opacity动画 */
+    animation: chrome-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+  }
+  
+  @keyframes chrome-pulse {
+    0%, 100% {
+      transform: scale(1) translateZ(0);
+    }
+    50% {
+      transform: scale(1.05) translateZ(0);
+    }
+  }
+  
+  /* 3. 简化阴影效果 */
+  .shadow-cyber-lg {
+    /* 使用单层阴影代替多层 */
+    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2) !important;
+  }
+  
+  .hover\:shadow-cyber-lg:hover {
+    box-shadow: 0 15px 40px rgba(139, 92, 246, 0.3) !important;
+  }
+  
+  /* 4. 优化过渡效果 */
+  .transition-all {
+    /* 只过渡必要的属性 */
+    transition: transform 0.3s ease, opacity 0.3s ease !important;
+  }
+  
+  /* 5. 优化悬停效果 */
+  .hover\:bg-glass-white\/20:hover {
+    /* 使用opacity代替background-color变化 */
+    background-color: transparent !important;
+    position: relative;
+  }
+  
+  .hover\:bg-glass-white\/20:hover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .hover\:bg-glass-white\/20:hover::before {
+    opacity: 1;
+  }
+  
+  /* 6. 禁用不必要的动画 */
+  .animate-float {
+    animation: none !important;
+    opacity: 0.3;
+  }
+  
+  /* 7. 优化滚动性能 */
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    /* 使用硬件加速滚动 */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto; /* 避免smooth滚动的性能开销 */
+  }
+  
+  /* 8. 优化输入框 */
+  input, textarea, select {
+    /* 禁用自动完成的动画 */
+    transition: border-color 0.15s ease !important;
+  }
+  
+  /* 9. 优化ECharts容器 */
+  [class*="echarts"] {
+    /* 限制重绘 */
+    contain: strict;
+    will-change: auto;
+  }
+  
+  /* 10. 减少动画的视觉复杂度 */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Chrome特定的性能类 */
+.chrome-optimized {
+  /* 启用硬件加速 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* 禁用Chrome中性能开销大的效果 */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  /* Chrome, Safari, Edge */
+  .disable-in-chrome {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(17, 24, 39, 0.95) !important;
+  }
+}
+
+/* 优化大列表渲染 */
+.virtual-list-container {
+  contain: strict;
+  will-change: scroll-position;
+}
+
+.virtual-list-item {
+  contain: layout style paint;
+}

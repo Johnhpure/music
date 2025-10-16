@@ -19,8 +19,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue'
-import * as echarts from 'echarts'
+import { shallowRef, markRaw, onMounted, watch, nextTick, onUnmounted } from 'vue'
+// 按需导入 ECharts 模块（性能优化）
+import { init } from 'echarts/core'
+import { LineChart } from 'echarts/charts'
+import {
+  GridComponent,
+  TooltipComponent,
+  DatasetComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import type {
+  LineSeriesOption,
+  GridComponentOption,
+  TooltipComponentOption
+} from 'echarts'
+import { use } from 'echarts/core'
+import { useDebounceFn } from '@vueuse/core'
+
+// 注册必需的组件
+use([LineChart, GridComponent, TooltipComponent, DatasetComponent, CanvasRenderer])
 
 interface ChartData {
   labels: string[]
@@ -42,21 +60,19 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false
 })
 
-const chartContainer = ref<HTMLDivElement>()
-let chartInstance: echarts.ECharts | null = null
+// 使用 shallowRef 避免深度响应式追踪容器元素
+const chartContainer = shallowRef<HTMLDivElement>()
+// 使用 markRaw 标记的图表实例，避免响应式追踪
+let chartInstance: ReturnType<typeof init> | null = null
+let highlightTimer: number | null = null
+let resizeHandler: (() => void) | null = null
 
-const initChart = async () => {
-  if (!chartContainer.value || !props.data) return
+// 使用 shallowRef 存储图表数据，避免深度响应式
+const chartData = shallowRef(props.data)
 
-  await nextTick()
-
-  // Dispose existing chart
-  if (chartInstance) {
-    chartInstance.dispose()
-  }
-
-  // Create new chart instance
-  chartInstance = echarts.init(chartContainer.value, 'dark')
+// 防抖更新图表，避免频繁重绘
+const updateChart = useDebounceFn(() => {
+  if (!chartInstance || !chartData.value) return
 
   const option = {
     backgroundColor: 'transparent',
@@ -84,7 +100,7 @@ const initChart = async () => {
     },
     xAxis: {
       type: 'category',
-      data: props.data.labels,
+      data: chartData.value.labels,
       axisLine: {
         lineStyle: {
           color: 'rgba(156, 163, 175, 0.3)'
@@ -117,7 +133,7 @@ const initChart = async () => {
         }
       }
     },
-    series: props.data.datasets.map(dataset => ({
+    series: chartData.value.datasets.map(dataset => ({
       name: dataset.label,
       type: 'line',
       data: dataset.data,
@@ -165,31 +181,71 @@ const initChart = async () => {
     }))
   }
 
-  chartInstance.setOption(option)
+  // 使用 notMerge: false 和 lazyUpdate: true 提升性能
+  chartInstance.setOption(option, {
+    notMerge: false,  // 增量更新
+    lazyUpdate: true  // 延迟更新
+  })
 
-  // Handle resize
-  const handleResize = () => {
-    if (chartInstance) {
-      chartInstance.resize()
-    }
+  // 延迟高亮动画
+  if (highlightTimer) {
+    clearTimeout(highlightTimer)
   }
-
-  window.addEventListener('resize', handleResize)
-
-  // Animate on load
-  setTimeout(() => {
-    if (chartInstance) {
+  highlightTimer = window.setTimeout(() => {
+    if (chartInstance && !chartInstance.isDisposed() && chartData.value.datasets[0]) {
       chartInstance.dispatchAction({
         type: 'highlight',
         seriesIndex: 0,
-        dataIndex: props.data.datasets[0].data.length - 1
+        dataIndex: chartData.value.datasets[0].data.length - 1
       })
     }
   }, 1000)
+}, 100)
+
+const initChart = async () => {
+  if (!chartContainer.value || !chartData.value) return
+
+  await nextTick()
+
+  // 清理旧的定时器
+  if (highlightTimer) {
+    clearTimeout(highlightTimer)
+    highlightTimer = null
+  }
+
+  // Dispose existing chart
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
+
+  // 使用 markRaw 创建图表实例，避免响应式追踪
+  chartInstance = markRaw(init(chartContainer.value, 'dark', {
+    renderer: 'canvas',  // 使用 Canvas 渲染器（性能更好）
+    useDirtyRect: true   // 启用脏矩形优化
+  }))
+
+  // 初始化图表配置
+  updateChart()
+
+  // 使用防抖处理 resize 事件
+  resizeHandler = useDebounceFn(() => {
+    if (chartInstance && !chartInstance.isDisposed()) {
+      chartInstance.resize()
+    }
+  }, 200)
+
+  window.addEventListener('resize', resizeHandler)
 }
 
-// Watch for data changes
-watch(() => props.data, initChart, { deep: true })
+// Watch for data changes - 使用浅层监听
+watch(() => props.data, (newData) => {
+  chartData.value = newData
+  if (chartInstance) {
+    updateChart()
+  }
+}, { deep: false })
+
 watch(() => props.loading, (loading) => {
   if (!loading) {
     nextTick(initChart)
@@ -204,16 +260,24 @@ onMounted(() => {
 })
 
 // Cleanup
-import { onUnmounted } from 'vue'
 onUnmounted(() => {
-  if (chartInstance) {
-    chartInstance.dispose()
+  // 清理定时器
+  if (highlightTimer) {
+    clearTimeout(highlightTimer)
+    highlightTimer = null
   }
-  window.removeEventListener('resize', () => {
-    if (chartInstance) {
-      chartInstance.resize()
-    }
-  })
+
+  // 移除事件监听器
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+    resizeHandler = null
+  }
+
+  // 销毁图表实例
+  if (chartInstance && !chartInstance.isDisposed()) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
 })
 </script>
 

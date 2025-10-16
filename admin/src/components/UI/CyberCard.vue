@@ -202,6 +202,17 @@ const handleClick = (event: MouseEvent) => {
 <style scoped>
 .cyber-card-container {
   position: relative;
+  /* GPU 加速优化 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: auto;
+  /* 渲染隔离优化 */
+  contain: layout style paint;
+}
+
+/* 悬停时启用 will-change */
+.cyber-card-container:hover {
+  will-change: transform, opacity;
 }
 
 .cyber-card-header {
@@ -216,17 +227,20 @@ const handleClick = (event: MouseEvent) => {
   @apply pt-4 mt-4 border-t border-gray-700/30;
 }
 
-/* Custom glow animation */
+/* 优化后的发光动画 - 使用 GPU 加速 */
 @keyframes pulse-glow {
   0%, 100% {
     box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    transform: translateZ(0) scale(1);
   }
   50% {
     box-shadow: 0 0 40px rgba(99, 102, 241, 0.8);
+    transform: translateZ(0) scale(1.001);
   }
 }
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+  will-change: transform, box-shadow;
 }
 </style>

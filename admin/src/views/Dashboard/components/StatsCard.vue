@@ -34,7 +34,7 @@
     <!-- Value -->
     <div class="mt-4">
       <h3 class="text-3xl font-bold text-white mb-1 group-hover:text-gradient transition-all duration-300">
-        {{ animatedValue }}
+        {{ value }}
       </h3>
       <p class="text-gray-400 text-sm">{{ title }}</p>
     </div>
@@ -49,7 +49,7 @@
         <div 
           class="h-full transition-all duration-1000 ease-out rounded-full"
           :class="progressBarClass"
-          :style="{ width: `${animatedProgress}%` }"
+          :style="{ width: `${progress}%` }"
         ></div>
       </div>
     </div>
@@ -90,8 +90,6 @@ const emit = defineEmits<{
 }>()
 
 const sparklineCanvas = ref<HTMLCanvasElement>()
-const animatedValue = ref('0')
-const animatedProgress = ref(0)
 
 // Computed properties
 const iconBgClass = computed(() => {
@@ -138,71 +136,7 @@ const progressBarClass = computed(() => {
   return colorClasses[props.color]
 })
 
-// Animation functions
-const animateValue = () => {
-  const numericValue = typeof props.value === 'string' 
-    ? parseFloat(props.value.replace(/[^0-9.-]/g, ''))
-    : props.value
-
-  if (isNaN(numericValue)) {
-    animatedValue.value = props.value.toString()
-    return
-  }
-
-  const duration = 1500
-  const steps = 60
-  const stepValue = numericValue / steps
-  let currentValue = 0
-  let step = 0
-
-  const timer = setInterval(() => {
-    currentValue += stepValue
-    step++
-
-    if (step >= steps) {
-      currentValue = numericValue
-      clearInterval(timer)
-    }
-
-    // Format the value maintaining original format
-    if (typeof props.value === 'string') {
-      const originalStr = props.value.toString()
-      if (originalStr.includes('¥')) {
-        animatedValue.value = `¥${Math.floor(currentValue).toLocaleString()}`
-      } else if (originalStr.includes('%')) {
-        animatedValue.value = `${currentValue.toFixed(1)}%`
-      } else if (originalStr.includes(',')) {
-        animatedValue.value = Math.floor(currentValue).toLocaleString()
-      } else {
-        animatedValue.value = Math.floor(currentValue).toString()
-      }
-    } else {
-      animatedValue.value = Math.floor(currentValue).toString()
-    }
-  }, duration / steps)
-}
-
-const animateProgress = () => {
-  if (props.progress === undefined) return
-
-  const duration = 1200
-  const steps = 60
-  const stepValue = props.progress / steps
-  let currentProgress = 0
-  let step = 0
-
-  const timer = setInterval(() => {
-    currentProgress += stepValue
-    step++
-
-    if (step >= steps) {
-      currentProgress = props.progress!
-      clearInterval(timer)
-    }
-
-    animatedProgress.value = currentProgress
-  }, duration / steps)
-}
+// 移除所有 setInterval 动画，直接显示数值
 
 const drawSparkline = () => {
   if (!sparklineCanvas.value || !props.sparklineData) return
@@ -272,15 +206,9 @@ const drawSparkline = () => {
 
 // Lifecycle
 onMounted(() => {
-  setTimeout(() => {
-    animateValue()
-    animateProgress()
-    drawSparkline()
-  }, props.delay)
+  drawSparkline()
 })
 
-watch(() => props.value, animateValue)
-watch(() => props.progress, animateProgress)
 watch(() => props.sparklineData, drawSparkline)
 </script>
 

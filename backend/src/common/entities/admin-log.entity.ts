@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { User } from '../../modules/user/entities/user.entity';
 
-@Entity('admin_logs')
+@Entity('t_admin_logs')
 export class AdminLog {
   @PrimaryGeneratedColumn()
   id: number;

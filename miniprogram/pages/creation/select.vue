@@ -70,43 +70,17 @@ export default {
 		},
 		
 		// 处理自主创作点击
-		async handleManualCreation() {
+		handleManualCreation() {
 			console.log('点击了自主创作按钮');
-			
-			// 检查登录状态
-			const isLoggedIn = await this.checkLoginForCreation('manual');
-			if (!isLoggedIn) {
-				return; // 用户取消登录，停止流程
-			}
-			
-			// 登录成功，继续创作流程
-			this.showCopyrightModal('manual');
+			// 直接跳转测试
+			this.navigateToCreation('manual');
+			// this.showCopyrightModal('manual');
 		},
 		
 		// 处理AI辅助创作点击
-		async handleAICreation() {
+		handleAICreation() {
 			console.log('点击了AI辅助创作按钮');
-			
-			// 检查登录状态
-			const isLoggedIn = await this.checkLoginForCreation('ai');
-			if (!isLoggedIn) {
-				return; // 用户取消登录，停止流程
-			}
-			
-			// 登录成功，继续创作流程
 			this.showCopyrightModal('ai');
-		},
-		
-		// 创作功能登录检查
-		async checkLoginForCreation(creationType) {
-			try {
-				const WeChatAuth = require('@/utils/wechatAuth').default;
-				const isLoggedIn = await WeChatAuth.checkCreationLogin(creationType);
-				return isLoggedIn;
-			} catch (error) {
-				console.error('登录检查失败:', error);
-				return false;
-			}
 		},
 		
 		// 显示版权弹窗

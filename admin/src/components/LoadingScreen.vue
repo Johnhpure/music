@@ -113,12 +113,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 
-const progress = ref(0)
-const currentFeatureIndex = ref(-1)
-const loadingText = ref('正在初始化...')
+const progress = ref(100) // 直接显示完成状态
+const currentFeatureIndex = ref(4) // 显示所有功能已加载
+const loadingText = ref('加载完成!')
 
 const features = [
   '加载系统配置',
@@ -136,28 +136,7 @@ const loadingTexts = [
   '即将完成...'
 ]
 
-onMounted(() => {
-  // Simulate loading progress
-  const interval = setInterval(() => {
-    if (progress.value < 100) {
-      const increment = Math.random() * 15 + 5
-      progress.value = Math.min(100, progress.value + increment)
-      
-      // Update current feature
-      const featureIndex = Math.floor((progress.value / 100) * features.length)
-      currentFeatureIndex.value = featureIndex
-      
-      // Update loading text
-      const textIndex = Math.floor((progress.value / 100) * loadingTexts.length)
-      if (textIndex < loadingTexts.length) {
-        loadingText.value = loadingTexts[textIndex]
-      }
-    } else {
-      clearInterval(interval)
-      loadingText.value = '加载完成!'
-    }
-  }, 200)
-})
+// 移除所有 setInterval 动画，使用纯 CSS 动画
 </script>
 
 <style scoped>

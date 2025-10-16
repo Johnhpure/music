@@ -36,8 +36,8 @@
 			// 排除启动页
 			if (currentPage !== 'pages/start/index') {
 				// this.setTabBarText();
-				// 检查登录状态
-				this.checkLoginStatus();
+				// 检查登录状态（暂时注释，等待实现微信登录）
+				// this.checkLoginStatus();
 				// 处理推送消息
 				this.handlePush();
 			}
@@ -132,19 +132,10 @@
 			 */
 			initSystem() {
 				const self = this
-				// 使用新的API替代过时的getSystemInfo
-				Promise.all([
-					uni.getDeviceInfo(),
-					uni.getWindowInfo(),
-					uni.getAppBaseInfo()
-				]).then(([deviceInfo, windowInfo, appInfo]) => {
-					const e = {
-						...deviceInfo,
-						...windowInfo, 
-						...appInfo
-					}
-					// app整包更新检测
-					self.appUpgrade(e.platform)
+				uni.getSystemInfo({
+					success: function(e) {
+						// app整包更新检测
+						self.appUpgrade(e.platform)
 
 						// #ifndef MP
 						Vue.prototype.StatusBar = e.statusBarHeight;
@@ -166,48 +157,31 @@
 						Vue.prototype.StatusBar = e.statusBarHeight;
 						Vue.prototype.CustomBar = e.statusBarHeight + e.titleBarHeight;
 						// #endif
-					}).catch(err => {
-						console.warn('获取系统信息失败:', err)
-						// 降级处理，使用旧API
-						uni.getSystemInfo({
-							success: function(e) {
-								self.appUpgrade(e.platform)
-								Vue.prototype.StatusBar = e.statusBarHeight;
-								// #ifdef MP-WEIXIN
-								let custom = wx.getMenuButtonBoundingClientRect();
-								Vue.prototype.Custom = custom;
-								Vue.prototype.CustomBar = custom.bottom + custom.top - e.statusBarHeight;
-								// #endif
-							}
-						})
-					})
+					}
+				})
 			},
 			/**
 			 * 检查登录状态
 			 */
 			async checkLoginStatus() {
 				try {
-					// 暂时注释掉API检查，避免干扰微信登录
-					console.log('⏩ 跳过传统登录状态检查，使用微信登录');
-					return;
-					
-					// const res = await this.$minApi.checkLoginState();
-					// if (res.state === 'error') {
-					// 	// 登录状态失效，清除登录信息并跳转到登录页
-					// 	uni.removeStorageSync('token');
-					// 	uni.removeStorageSync('userInfo');
-					// 	uni.redirectTo({
-					// 		url: '/pages/login/index'
-					// 	});
-					// }
+					const res = await this.$minApi.checkLoginState();
+					if (res.state === 'error') {
+						// 登录状态失效，清除登录信息并跳转到登录页
+						uni.removeStorageSync('token');
+						uni.removeStorageSync('userInfo');
+						uni.redirectTo({
+							url: '/pages/login/index'
+						});
+					}
 				} catch (e) {
 					console.error('检查登录状态失败', e);
-					// 暂时不清除微信登录信息
-					// uni.removeStorageSync('token');
-					// uni.removeStorageSync('userInfo');
-					// uni.redirectTo({
-					// 	url: '/pages/login/index'
-					// });
+					// 发生错误时也清除登录信息并跳转到登录页
+					uni.removeStorageSync('token');
+					uni.removeStorageSync('userInfo');
+					uni.redirectTo({
+						url: '/pages/login/index'
+					});
 				}
 			}
 		}
