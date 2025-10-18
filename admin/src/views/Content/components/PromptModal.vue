@@ -163,6 +163,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import CyberInput from '@/components/UI/CyberInput.vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
+import { getCategoryIcon } from '@/utils/music-category-icons'
 import type { PromptTemplate } from '@/types'
 
 interface Props {
@@ -251,6 +252,15 @@ watch(() => props.prompt, () => {
     })
   }
 }, { immediate: true })
+
+// 监听分类变化，自动设置对应的icon
+watch(() => form.value.category, (newCategory) => {
+  if (newCategory && !isEditing.value) {
+    // 只在新建模式下自动设置icon
+    // 编辑模式下保留用户原有的icon选择
+    form.value.icon = getCategoryIcon(newCategory)
+  }
+})
 </script>
 
 <style scoped>

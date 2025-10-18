@@ -342,6 +342,7 @@ import PromptPreviewModal from './components/PromptPreviewModal.vue'
 import ConfirmModal from '@/components/UI/ConfirmModal.vue'
 import { adminContentAPI } from '@/api'
 import type { PromptTemplate } from '@/types'
+import { getCategoryIcon, getCategoryIconConfig } from '@/utils/music-category-icons'
 
 // State
 const loading = ref(false)
@@ -357,10 +358,20 @@ const deletingPrompt = ref<PromptTemplate | null>(null)
 const selectedItems = ref<string[]>([])
 const selectAll = ref(false)
 
-const categories = ref([
-  '流行音乐', 'R&B', '电子音乐', '摇滚', '民谣', 
-  '古典', '爵士', '嘻哈', '乡村', '蓝调'
-])
+// 从实际数据中提取分类，并合并预定义分类
+const categories = computed(() => {
+  // 预定义的音乐分类（作为默认选项）
+  const predefined = [
+    '流行音乐', 'R&B', '电子音乐', '摇滚', '民谣', 
+    '古典', '爵士', '嘻哈', '乡村', '蓝调'
+  ]
+  
+  // 从实际数据中提取分类
+  const fromData = [...new Set(prompts.value.map(p => p.category).filter(Boolean))]
+  
+  // 合并并去重
+  return [...new Set([...predefined, ...fromData])]
+})
 
 // Filters and pagination
 const filters = ref({
@@ -378,12 +389,27 @@ const pagination = ref({
   totalPages: 0
 })
 
-// Stats
-const stats = ref({
-  total: 25,
-  active: 22,
-  totalUsage: 1580,
-  topCategory: '流行音乐'
+// Stats - 从实际数据计算
+const stats = computed(() => {
+  const total = prompts.value.length
+  const active = prompts.value.filter(p => p.isActive).length
+  const totalUsage = prompts.value.reduce((sum, p) => sum + (p.usageCount || 0), 0)
+  
+  // 计算最热门分类
+  const categoryCount = {}
+  prompts.value.forEach(p => {
+    categoryCount[p.category] = (categoryCount[p.category] || 0) + 1
+  })
+  const topCategory = Object.keys(categoryCount).length > 0
+    ? Object.entries(categoryCount).sort((a, b) => b[1] - a[1])[0][0]
+    : '-'
+  
+  return {
+    total,
+    active,
+    totalUsage,
+    topCategory
+  }
 })
 
 // Computed
@@ -497,7 +523,7 @@ const loadPrompts = async () => {
           content: item.content,
           category: item.category,
           tags: typeof item.tags === 'string' ? item.tags.split(',') : (item.tags || []),
-          icon: item.icon || '🎵',
+          icon: item.icon || getCategoryIcon(item.category),
           iconBg: getIconBg(item.category),
           isActive: item.isActive,
           usageCount: item.usageCount || 0,
@@ -518,7 +544,7 @@ const loadPrompts = async () => {
           content: item.content,
           category: item.category,
           tags: typeof item.tags === 'string' ? item.tags.split(',') : (item.tags || []),
-          icon: item.icon || '🎵',
+          icon: item.icon || getCategoryIcon(item.category),
           iconBg: getIconBg(item.category),
           isActive: item.isActive,
           usageCount: item.usageCount || 0,
@@ -544,19 +570,9 @@ const loadPrompts = async () => {
   }
 }
 
-// 根据分类获取图标背景样式
+// 根据分类获取图标和背景样式
 const getIconBg = (category) => {
-  const categoryColors = {
-    '流行': 'bg-gradient-to-br from-purple-500 to-purple-600',
-    '电子': 'bg-gradient-to-br from-blue-500 to-blue-600',
-    '摇滚': 'bg-gradient-to-br from-red-500 to-red-600',
-    '民谣': 'bg-gradient-to-br from-green-500 to-green-600',
-    '古典': 'bg-gradient-to-br from-yellow-500 to-yellow-600',
-    '爵士': 'bg-gradient-to-br from-indigo-500 to-indigo-600',
-    '说唱': 'bg-gradient-to-br from-pink-500 to-pink-600',
-    '其他': 'bg-gradient-to-br from-cyan-500 to-cyan-600'
-  }
-  return categoryColors[category] || 'bg-gradient-to-br from-gray-500 to-gray-600'
+  return getCategoryIconConfig(category).bgClass
 }
 
 const updatePagination = () => {
@@ -749,33 +765,95 @@ const confirmDelete = async () => {
 
 const batchToggleStatus = async (active: boolean) => {
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log('🔄 开始批量切换状态:', selectedItems.value, '目标状态:', active)
     
-    selectedItems.value.forEach(id => {
-      const index = prompts.value.findIndex(p => p.id === id)
-      if (index > -1) {
-        prompts.value[index].isActive = active
+    // 调用后端API逐个更新状态
+    const updatePromises = selectedItems.value.map(id => 
+      adminContentAPI.updatePrompt(id, { isActive: active })
+    )
+    
+    const results = await Promise.allSettled(updatePromises)
+    
+    // 统计成功和失败的数量
+    let successCount = 0
+    let failCount = 0
+    
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value.code === 200) {
+        successCount++
+        // 更新本地数据中成功的项
+        const id = selectedItems.value[index]
+        const idx = prompts.value.findIndex(p => p.id === id)
+        if (idx > -1) {
+          prompts.value[idx].isActive = active
+        }
+      } else {
+        failCount++
+        console.error('状态切换失败:', selectedItems.value[index], result)
       }
     })
     
+    console.log(`✅ 批量状态切换完成: 成功${successCount}条, 失败${failCount}条`)
+    
+    // 清空选中项
     selectedItems.value = []
     selectAll.value = false
+    
+    // 提示用户
+    if (failCount > 0) {
+      alert(`状态切换完成：成功${successCount}条，失败${failCount}条`)
+    }
   } catch (error) {
-    console.error('Failed to batch toggle status:', error)
+    console.error('❌ 批量状态切换失败:', error)
+    alert('批量状态切换失败，请稍后重试')
   }
 }
 
 const batchDelete = async () => {
   if (confirm(`确定要删除选中的 ${selectedItems.value.length} 个提示词吗？`)) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log('🔄 开始批量删除提示词:', selectedItems.value)
       
-      prompts.value = prompts.value.filter(p => !selectedItems.value.includes(p.id))
+      // 调用后端API逐个删除
+      const deletePromises = selectedItems.value.map(id => 
+        adminContentAPI.deletePrompt(id)
+      )
+      
+      const results = await Promise.allSettled(deletePromises)
+      
+      // 统计成功和失败的数量
+      let successCount = 0
+      let failCount = 0
+      
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.code === 200) {
+          successCount++
+          // 从本地数组中删除成功的项
+          const id = selectedItems.value[index]
+          const idx = prompts.value.findIndex(p => p.id === id)
+          if (idx > -1) {
+            prompts.value.splice(idx, 1)
+          }
+        } else {
+          failCount++
+          console.error('删除失败:', selectedItems.value[index], result)
+        }
+      })
+      
+      console.log(`✅ 批量删除完成: 成功${successCount}条, 失败${failCount}条`)
+      
+      // 清空选中项
       selectedItems.value = []
       selectAll.value = false
       updatePagination()
+      
+      // 提示用户
+      if (failCount > 0) {
+        alert(`删除完成：成功${successCount}条，失败${failCount}条`)
+      }
     } catch (error) {
-      console.error('Failed to batch delete:', error)
+      console.error('❌ 批量删除失败:', error)
+      alert('批量删除失败，请稍后重试')
     }
   }
 }

@@ -74,6 +74,42 @@ export default {
 		getBanners() {
 			return minRequest.get('/public/banner/list')
 		},
+		
+		// 提示词相关接口
+		// 获取提示词模板列表（公开接口）
+		getPromptTemplates(params) {
+			return minRequest.get('/public/prompt-template/list', params)
+		},
+		// 获取提示词分类
+		getPromptCategories() {
+			return minRequest.get('/public/prompt-template/categories')
+		},
+		// 记录提示词使用
+		recordPromptUsage(params) {
+			return minRequest.post('/public/prompt-template/usage', params)
+		},
+		
+		// 热门推荐相关接口
+		// 获取热门推荐列表（公开接口）
+		getHotRecommendations(params) {
+			return minRequest.get('/public/hot-recommendation/list', params)
+		},
+		// 获取推荐分类
+		getRecommendationCategories() {
+			return minRequest.get('/public/hot-recommendation/categories')
+		},
+		// 按分类获取推荐
+		getRecommendationsByCategory(categoryId, params) {
+			return minRequest.get(`/public/hot-recommendation/category/${categoryId}`, params)
+		},
+		// 记录播放
+		trackMusicPlay(params) {
+			return minRequest.post('/public/hot-recommendation/play', params)
+		},
+		// 切换点赞
+		toggleRecommendationLike(id) {
+			return minRequest.post(`/public/hot-recommendation/${id}/toggle-like`)
+		},
 		// 上传头像
 		uploadAvatar(filePath) {
 			const token = uni.getStorageSync('token')

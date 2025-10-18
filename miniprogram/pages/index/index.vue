@@ -42,7 +42,7 @@
 				<text class="section-title">新手指引</text>
 			</view>
 			<view class="guide-cards">
-				<view class="guide-card" @click="goToTutorial('self')">
+				<view class="guide-card breathe-effect-blue" @click="goToTutorial('self')">
 					<view class="guide-icon bg-theme-blue">
 						<!-- <text class="iconfont icon-edit"></text> -->
 						<image src="/static/img/icon/pen.svg" class="guide-icon-image"></image>
@@ -50,7 +50,7 @@
 					<text class="guide-title">自主创作教程</text>
 					<text class="guide-desc">学习如何自己创作歌曲</text>
 				</view>
-				<view class="guide-card" @click="goToTutorial('ai')">
+				<view class="guide-card breathe-effect-purple" @click="goToTutorial('ai')">
 					<view class="guide-icon bg-theme-purple">
 						<!-- <text class="iconfont icon-ai"></text> -->
 						 <image src="/static/img/icon/ai.svg" class="guide-icon-image"></image>
@@ -203,53 +203,7 @@
 					}
 				],
 				// 热门推荐列表
-				hotRecommendations: [
-					{
-						id: "1",
-						title: "夏日海滩",
-						genre: "电子",
-						duration: "3:45",
-						coverUrl: "/static/img/covers/cover1.jpg",
-						playCount: "2.5k",
-						tags: ["夏日", "欢快"]
-					},
-					{
-						id: "2",
-						title: "电子节拍",
-						genre: "电子",
-						duration: "4:12",
-						coverUrl: "/static/img/covers/cover2.jpg",
-						playCount: "1.8k",
-						tags: ["电子", "节奏"]
-					},
-					{
-						id: "3",
-						title: "城市夜景",
-						genre: "流行",
-						duration: "3:28",
-						coverUrl: "/static/img/covers/cover3.jpg",
-						playCount: "1.6k",
-						tags: ["都市", "流行"]
-					},
-					{
-						id: "4",
-						title: "秋日回忆",
-						genre: "民谣",
-						duration: "3:55",
-						coverUrl: "/static/img/covers/cover4.jpg",
-						playCount: "1.5k",
-						tags: ["温暖", "民谣"]
-					},
-					{
-						id: "5",
-						title: "山间小路",
-						genre: "轻音乐",
-						duration: "4:30",
-						coverUrl: "/static/img/covers/cover5.jpg",
-						playCount: "1.3k",
-						tags: ["轻音乐", "舒缓"]
-					}
-				],
+				hotRecommendations: [],
 				// 创作教程
 				tutorials: [
 					{
@@ -289,6 +243,8 @@
 		mounted() {
 			this.checkLoginAndLoadPoints();
 			this.loadBanners();
+			this.loadPromptTemplates();
+			this.loadHotRecommendations();
 		},
 		methods: {
 			/**
@@ -317,6 +273,44 @@
 			handleAuthSuccess() {
 				// 授权成功后刷新点数
 				this.checkLoginAndLoadPoints();
+			},
+			/**
+			 * 加载提示词模板列表
+			 */
+			async loadPromptTemplates() {
+				try {
+					const res = await this.$minApi.getPromptTemplates();
+					if (res.code === 200 && res.data && res.data.length > 0) {
+						// 映射API数据到页面数据格式
+						this.promptTemplates = res.data.map((item) => {
+							// 根据分类设置图标背景色
+							const categoryColorMap = {
+								'流行': 'bg-theme-purple',
+								'电子': 'bg-theme-blue',
+								'摇滚': 'bg-danger',
+								'民谣': 'bg-success',
+								'古典': 'bg-warning',
+								'爵士': 'bg-link',
+								'嘻哈': 'bg-info',
+								'乡村': 'bg-olive',
+								'蓝调': 'bg-purple'
+							};
+							
+							return {
+								id: item.id,
+								title: item.title,
+								content: item.content,
+								icon: item.icon || '🎵',
+								iconBg: categoryColorMap[item.category] || 'bg-theme-blue',
+								tags: Array.isArray(item.tagsArray) ? item.tagsArray : (item.tags || '').split(',').filter(t => t)
+							};
+						});
+						console.log('提示词加载成功，共', this.promptTemplates.length, '条');
+					}
+				} catch (err) {
+					console.error('获取提示词列表失败:', err);
+					// 失败时保留默认的mock数据
+				}
 			},
 			/**
 			 * 加载Banner列表
@@ -353,6 +347,33 @@
 							imageUrl: "/static/img/banner/banner3.jpg"
 						}
 					];
+				}
+			},
+			/**
+			 * 加载热门推荐列表
+			 */
+			async loadHotRecommendations() {
+				try {
+					const res = await this.$minApi.getHotRecommendations({
+						pageSize: 10,
+						page: 1
+					});
+					if (res.code === 200 && res.data) {
+						this.hotRecommendations = (res.data.items || res.data).map(item => ({
+							id: item.id,
+							title: item.title,
+							genre: item.category,
+							duration: item.duration,
+							coverUrl: item.coverUrl,
+							audioUrl: item.audioUrl,
+							artist: item.artist,
+							playCount: item.playCount,
+							tags: []
+						}));
+						console.log('热门推荐加载成功，共', this.hotRecommendations.length, '条');
+					}
+				} catch (err) {
+					console.error('获取热门推荐列表失败:', err);
 				}
 			},
 			/**
@@ -579,12 +600,15 @@
 }
 
 .prompt-card {
-	display: inline-block;
+	display: inline-flex;
+	flex-direction: column;
 	width: 470rpx;
+	height: 180rpx;
 	background-color: #1E1E1E;
 	border-radius: 20rpx;
 	padding: 20rpx;
 	margin-right: 16rpx;
+	vertical-align: top;
 }
 
 .prompt-head {
@@ -624,6 +648,8 @@
 .prompt-tags {
 	display: flex;
 	flex-wrap: wrap;
+	max-height: 60rpx;
+	overflow: hidden;
 }
 
 .tag {
@@ -656,6 +682,47 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	position: relative;
+	border: 2rpx solid transparent;
+	transition: transform 0.3s ease;
+}
+
+/* 蓝色卡片呼吸效果 */
+.breathe-effect-blue {
+	border-color: rgba(11, 103, 236, 0.3);
+	box-shadow: 0 0 12rpx 2rpx rgba(11, 103, 236, 0.3);
+	animation: breathe-blue 3s ease-in-out infinite alternate;
+}
+
+/* 紫色卡片呼吸效果 */
+.breathe-effect-purple {
+	border-color: rgba(115, 66, 204, 0.3);
+	box-shadow: 0 0 12rpx 2rpx rgba(115, 66, 204, 0.3);
+	animation: breathe-purple 3s ease-in-out infinite alternate;
+}
+
+/* 蓝色呼吸动画 */
+@keyframes breathe-blue {
+	0% {
+		box-shadow: 0 0 12rpx 2rpx rgba(11, 103, 236, 0.3);
+		border-color: rgba(11, 103, 236, 0.3);
+	}
+	100% {
+		box-shadow: 0 0 24rpx 4rpx rgba(11, 103, 236, 0.6);
+		border-color: rgba(11, 103, 236, 0.6);
+	}
+}
+
+/* 紫色呼吸动画 */
+@keyframes breathe-purple {
+	0% {
+		box-shadow: 0 0 12rpx 2rpx rgba(115, 66, 204, 0.3);
+		border-color: rgba(115, 66, 204, 0.3);
+	}
+	100% {
+		box-shadow: 0 0 24rpx 4rpx rgba(115, 66, 204, 0.6);
+		border-color: rgba(115, 66, 204, 0.6);
+	}
 }
 
 .guide-icon {

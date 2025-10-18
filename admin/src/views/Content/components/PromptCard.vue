@@ -6,7 +6,7 @@
     :enter="{ opacity: 1, scale: 1, y: 0, transition: { duration: 300, delay: delay } }"
   >
     <!-- Selection Checkbox -->
-    <div class="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+    <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
       <label class="flex items-center cursor-pointer">
         <input
           :checked="selected"
@@ -44,7 +44,7 @@
       <!-- Action Menu -->
       <div class="relative">
         <button
-          @click="showActions = !showActions"
+          @click.stop="showActions = !showActions"
           class="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-700/30 transition-all duration-200"
         >
           <Icon icon="mdi:dots-vertical" class="w-4 h-4 text-gray-400" />
@@ -64,7 +64,7 @@
           >
             <div class="p-2 space-y-1">
               <button
-                @click="handlePreview"
+                @click.stop="handlePreview"
                 class="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-glass-white/10 rounded-lg transition-colors"
               >
                 <Icon icon="mdi:eye" class="w-4 h-4" />
@@ -72,7 +72,7 @@
               </button>
               
               <button
-                @click="handleEdit"
+                @click.stop="handleEdit"
                 class="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-glass-white/10 rounded-lg transition-colors"
               >
                 <Icon icon="mdi:pencil" class="w-4 h-4" />
@@ -80,7 +80,7 @@
               </button>
               
               <button
-                @click="handleToggleStatus"
+                @click.stop="handleToggleStatus"
                 class="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-glass-white/10 rounded-lg transition-colors"
               >
                 <Icon :icon="prompt.isActive ? 'mdi:eye-off' : 'mdi:eye'" class="w-4 h-4" />
@@ -90,7 +90,7 @@
               <div class="border-t border-gray-700/30 my-1"></div>
               
               <button
-                @click="handleDelete"
+                @click.stop="handleDelete"
                 class="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
               >
                 <Icon icon="mdi:delete" class="w-4 h-4" />
@@ -149,9 +149,9 @@
       </div>
       
       <!-- Quick Actions -->
-      <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div class="flex items-center space-x-1 opacity-50 group-hover:opacity-100 transition-opacity duration-200">
         <button
-          @click="handleToggleStatus"
+          @click.stop="handleToggleStatus"
           class="p-1.5 rounded-lg transition-all duration-200"
           :class="[
             prompt.isActive 
@@ -167,7 +167,7 @@
         </button>
         
         <button
-          @click="handleEdit"
+          @click.stop="handleEdit"
           class="p-1.5 rounded-lg text-blue-400 hover:bg-blue-500/20 transition-all duration-200"
           title="编辑"
         >
@@ -175,7 +175,7 @@
         </button>
         
         <button
-          @click="handleDelete"
+          @click.stop="handleDelete"
           class="p-1.5 rounded-lg text-red-400 hover:bg-red-500/20 transition-all duration-200"
           title="删除"
         >

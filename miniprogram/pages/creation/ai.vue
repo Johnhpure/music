@@ -70,16 +70,19 @@
 					<view class="section-title">选择创作模版</view>
 					<scroll-view class="scroll-view-x" scroll-x enable-flex>
 						<view class="template-cards">
-							<view 
-								class="template-card" 
-								v-for="(template, index) in filteredTemplates" 
-								:key="index"
-								@click="selectTemplate(template)"
-								:class="{'active': selectedTemplate === template}"
-							>
-								<view class="template-content">{{template.content}}</view>
-								<view class="template-category">#{{template.category}}</view>
+						<view 
+							class="template-card" 
+							v-for="(template, index) in filteredTemplates" 
+							:key="index"
+							@click="selectTemplate(template)"
+							:class="{'active': selectedTemplate === template}"
+						>
+							<view class="template-header">
+								<view class="template-icon">{{template.icon}}</view>
+								<view class="template-category-tag">#{{template.category}}</view>
 							</view>
+							<view class="template-content">{{template.content}}</view>
+						</view>
 						</view>
 					</scroll-view>
 					</view>
@@ -263,12 +266,35 @@
 			}
 		},
 		onLoad(options) {
+			// 加载提示词模板
+			this.loadPromptTemplates();
 			// 如果有主题ID参数，自动设置提示词
 			if(options.themeId && options.themeName) {
 				this.setThemePrompt(options.themeId, options.themeName);
 			}
 		},
 		methods: {
+			// 加载提示词模板列表
+			async loadPromptTemplates() {
+				try {
+					const res = await this.$minApi.getPromptTemplates();
+					if (res.code === 200 && res.data && res.data.length > 0) {
+						// 映射API数据到页面数据格式
+						this.promptTemplates = res.data.map((item) => {
+							return {
+								id: item.id,
+								category: item.category,
+								content: item.title + '：' + item.content,
+								icon: item.icon || '🎵'  // 添加icon字段
+							};
+						});
+						console.log('AI创作页：提示词加载成功，共', this.promptTemplates.length, '条');
+					}
+				} catch (err) {
+					console.error('获取提示词列表失败:', err);
+					// 失败时保留默认的mock数据
+				}
+			},
 			// 返回上一页
 			goBack() {
 				uni.navigateBack();
@@ -564,20 +590,49 @@
 	display: flex;
 	flex-direction: column;
 	gap: 10rpx;
+	min-width: 280rpx;
 	
 	&.active {
 		border-color: #0B67EC;
 		background-color: rgba(11, 103, 236, 0.1);
 	}
 	
-	.template-content {
-		font-size: 28rpx;
-		color: #FFFFFF;
+	.template-header {
+		display: flex;
+		align-items: center;
+		gap: 12rpx;
+		margin-bottom: 8rpx;
 	}
 	
-	.template-category {
+	.template-icon {
+		width: 56rpx;
+		height: 56rpx;
+		border-radius: 12rpx;
+		background: linear-gradient(135deg, #0B67EC 0%, #7342CC 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 32rpx;
+		flex-shrink: 0;
+	}
+	
+	.template-category-tag {
 		font-size: 22rpx;
-		color: #8E8E8E;
+		color: #ACACAC;
+		background-color: rgba(255, 255, 255, 0.05);
+		padding: 4rpx 12rpx;
+		border-radius: 8rpx;
+	}
+	
+	.template-content {
+		font-size: 26rpx;
+		color: #FFFFFF;
+		line-height: 1.5;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 }
 
