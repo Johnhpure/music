@@ -88,6 +88,31 @@
     @apply transition-all duration-300;
   }
   
+  /* Select dropdown options styling */
+  .cyber-input option,
+  select.cyber-input option,
+  select option {
+    @apply bg-cyber-dark text-white;
+    background-color: #0B1426 !important;
+    color: #ffffff !important;
+  }
+  
+  /* Select hover state for options */
+  .cyber-input option:hover,
+  select.cyber-input option:hover,
+  select option:hover {
+    @apply bg-cyber-purple text-white;
+    background-color: #6366F1 !important;
+  }
+  
+  /* Select checked/selected state */
+  .cyber-input option:checked,
+  select.cyber-input option:checked,
+  select option:checked {
+    @apply bg-cyber-purple/70 text-white;
+    background-color: rgba(99, 102, 241, 0.7) !important;
+  }
+  
   /* Cyber Card */
   .cyber-card {
     @apply glass-card p-6 hover:bg-glass-white/20 transition-all duration-300;
