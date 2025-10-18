@@ -717,16 +717,6 @@ const handleMaskClick = () => {
   }
 }
 
-const handleImageError = (event: Event) => {
-  const img = event.target as HTMLImageElement
-  // 防止无限重试，只设置一次fallback
-  if (!img.dataset.fallback) {
-    img.dataset.fallback = 'true'
-    // 使用base64编码的音乐placeholder SVG
-    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjMzc0MTUxIiByeD0iOCIvPgo8Y2lyY2xlIGN4PSI0MCIgY3k9IjQwIiByPSIxNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNkI3Mjg0IiBzdHJva2Utd2lkdGg9IjIiLz4KPHA+4paqPC9wPgo8Y2lyY2xlIGN4PSI0MCIgY3k9IjQwIiByPSI0IiBmaWxsPSIjNkI3Mjg0Ii8+Cjwvc3ZnPgo='
-  }
-}
-
 watch(() => props.recommendation, () => {
   if (props.visible) {
     nextTick(() => {
