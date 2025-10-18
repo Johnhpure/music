@@ -19,10 +19,19 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authAPI.login(credentials)
       
+      console.log('🔍 登录API响应:', response)
+      console.log('🔍 response.data:', response.data)
+      console.log('🔍 access_token:', response.data?.access_token)
+      console.log('🔍 token字段:', response.data?.token)
+      
       if (response.code === 200 && response.data) {
-        token.value = response.data.access_token
-        user.value = response.data.user
-        setToken(response.data.access_token)
+        // 兼容token和access_token两种字段
+        const accessToken = response.data.token || response.data.access_token
+        console.log('🔑 实际使用的token:', accessToken)
+        
+        token.value = accessToken
+        user.value = response.data.user || response.data.userInfo
+        setToken(accessToken)
         
         console.log('✅ 登录成功:', user.value)
         return true
