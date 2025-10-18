@@ -434,6 +434,9 @@ export const adminContentAPI = {
   getRecommendation: (id: string): Promise<ApiResponse<any>> =>
     apiRequest.get(`/admin/hot-recommendation/${id}`),
     
+  getRecommendationCategories: (): Promise<ApiResponse<any>> =>
+    apiRequest.get('/public/hot-recommendation/categories'),
+    
   createRecommendation: (data: any): Promise<ApiResponse<any>> =>
     apiRequest.post('/admin/hot-recommendation', data),
     

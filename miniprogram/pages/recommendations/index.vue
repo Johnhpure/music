@@ -110,15 +110,7 @@ export default {
 	data() {
 		return {
 			currentCategory: 'all',
-			categories: [
-				{ id: 'all', name: '全部' },
-				{ id: 'pop', name: '流行' },
-				{ id: 'electronic', name: '电子' },
-				{ id: 'rock', name: '摇滚' },
-				{ id: 'folk', name: '民谣' },
-				{ id: 'hiphop', name: '嘻哈' },
-				{ id: 'classical', name: '古典' }
-			],
+			categories: [],
 			weeklyHot: [],
 			featured: [],
 			newArtists: [],
@@ -126,9 +118,29 @@ export default {
 		}
 	},
 	onLoad() {
+		this.loadCategories()
 		this.loadRecommendations()
 	},
 	methods: {
+		async loadCategories() {
+			try {
+				const res = await this.$minApi.getRecommendationCategories()
+				if (res.code === 200 && res.data) {
+					// 将API返回的分类数据映射为页面需要的格式
+					this.categories = res.data.map(item => ({
+						id: item.code,
+						name: item.name
+					}))
+					console.log('分类加载成功，共', this.categories.length, '个')
+				}
+			} catch (error) {
+				console.error('加载分类失败:', error)
+				// 失败时使用默认分类
+				this.categories = [
+					{ id: 'all', name: '全部' }
+				]
+			}
+		},
 		async loadRecommendations() {
 			if (this.loading) return
 			

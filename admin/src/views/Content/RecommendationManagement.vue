@@ -327,10 +327,7 @@ const deletingRecommendation = ref<HotRecommendation | null>(null)
 const selectedItems = ref<number[]>([])
 const selectAll = ref(false)
 
-const categories = ref([
-  '流行', 'R&B', '电子', '摇滚', '民谣', 
-  '古典', '爵士', '嘻哈', '乡村', '蓝调', '其他'
-])
+const categories = ref<string[]>([])
 
 // Filters and pagination
 const filters = ref({
@@ -391,6 +388,23 @@ const visiblePages = computed(() => {
 })
 
 // Methods
+const loadCategories = async () => {
+  try {
+    const response = await adminContentAPI.getRecommendationCategories()
+    if (response.code === 200 && response.data) {
+      // 将API返回的分类数据映射为名称数组（用于下拉框显示）
+      categories.value = response.data
+        .filter((cat: any) => cat.code !== 'all') // 过滤掉"全部"分类
+        .map((cat: any) => cat.name)
+      console.log('分类加载成功，共', categories.value.length, '个')
+    }
+  } catch (error: any) {
+    console.error('Failed to load categories:', error)
+    // 失败时使用默认分类
+    categories.value = ['流行', '电子', '摇滚', '民谣', '嘻哈', '古典']
+  }
+}
+
 const loadRecommendations = async () => {
   loading.value = true
   try {
@@ -595,6 +609,7 @@ watch(() => filters.value, () => {
 
 // Lifecycle
 onMounted(() => {
+  loadCategories()
   loadRecommendations()
 })
 </script>
