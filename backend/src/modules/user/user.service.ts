@@ -222,4 +222,241 @@ export class UserService {
       consecutiveDays: checkedDays.length, // TODO: 实际计算连续签到天数
     };
   }
+
+  // ==================== 管理员专用方法 ====================
+
+  // 高级筛选查询用户列表
+  async findAllWithFilters(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: 'active' | 'inactive' | 'banned' | 'pending';
+    userType?: 'free' | 'vip' | 'admin';
+    registrationSource?: 'wechat' | 'web' | 'mobile' | 'unknown';
+    sortBy?: string;
+    sortOrder?: 'ASC' | 'DESC';
+  }): Promise<{ data: User[]; total: number; page: number; limit: number }> {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      userType,
+      registrationSource,
+      sortBy = 'created_at',
+      sortOrder = 'DESC',
+    } = params;
+
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+
+    // 搜索条件：用户名、邮箱、手机号
+    if (search) {
+      queryBuilder.andWhere(
+        '(user.username LIKE :search OR user.email LIKE :search OR user.phone LIKE :search OR user.nickname LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // 用户类型筛选
+    if (userType) {
+      queryBuilder.andWhere('user.user_type = :userType', { userType });
+    }
+
+    // 注册来源筛选
+    if (registrationSource) {
+      queryBuilder.andWhere('user.registration_source = :registrationSource', {
+        registrationSource,
+      });
+    }
+
+    // 状态筛选
+    if (status) {
+      if (status === 'banned') {
+        queryBuilder.andWhere('user.is_banned = :is_banned', { is_banned: true });
+      } else if (status === 'pending') {
+        queryBuilder.andWhere('user.last_login_at IS NULL');
+      } else if (status === 'inactive') {
+        queryBuilder.andWhere('user.last_login_at IS NOT NULL');
+        queryBuilder.andWhere('user.last_login_at < :thirtyDaysAgo', {
+          thirtyDaysAgo: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        });
+        queryBuilder.andWhere('user.is_banned = :is_banned', { is_banned: false });
+      } else if (status === 'active') {
+        queryBuilder.andWhere('user.last_login_at IS NOT NULL');
+        queryBuilder.andWhere('user.last_login_at >= :thirtyDaysAgo', {
+          thirtyDaysAgo: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        });
+        queryBuilder.andWhere('user.is_banned = :is_banned', { is_banned: false });
+      }
+    }
+
+    // 排序
+    const allowedSortFields = ['created_at', 'last_login_at', 'credit_balance', 'username'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
+    queryBuilder.orderBy(`user.${sortField}`, sortOrder);
+
+    // 分页
+    const total = await queryBuilder.getCount();
+    const data = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    this.logger.log(
+      `管理员查询用户列表: page=${page}, limit=${limit}, total=${total}, filters=${JSON.stringify(params)}`,
+      'UserService',
+    );
+
+    return { data, total, page, limit };
+  }
+
+  // 切换用户封禁状态
+  async toggleBan(userId: number): Promise<User> {
+    const user = await this.findOne(userId);
+    user.is_banned = !user.is_banned;
+    const updatedUser = await this.userRepository.save(user);
+
+    this.logger.log(
+      `用户封禁状态切换: userId=${userId}, is_banned=${updatedUser.is_banned}`,
+      'UserService',
+    );
+
+    return updatedUser;
+  }
+
+  // 批量封禁用户
+  async batchBan(userIds: number[]): Promise<{ success: number; failed: number }> {
+    let success = 0;
+    let failed = 0;
+
+    for (const userId of userIds) {
+      try {
+        const user = await this.findOne(userId);
+        if (!user.is_banned) {
+          user.is_banned = true;
+          await this.userRepository.save(user);
+          success++;
+        }
+      } catch (error) {
+        this.logger.error(`批量封禁失败: userId=${userId}, error=${error.message}`, 'UserService');
+        failed++;
+      }
+    }
+
+    this.logger.log(`批量封禁完成: success=${success}, failed=${failed}`, 'UserService');
+    return { success, failed };
+  }
+
+  // 批量激活用户
+  async batchActivate(userIds: number[]): Promise<{ success: number; failed: number }> {
+    let success = 0;
+    let failed = 0;
+
+    for (const userId of userIds) {
+      try {
+        const user = await this.findOne(userId);
+        if (user.is_banned) {
+          user.is_banned = false;
+          await this.userRepository.save(user);
+          success++;
+        }
+      } catch (error) {
+        this.logger.error(`批量激活失败: userId=${userId}, error=${error.message}`, 'UserService');
+        failed++;
+      }
+    }
+
+    this.logger.log(`批量激活完成: success=${success}, failed=${failed}`, 'UserService');
+    return { success, failed };
+  }
+
+  // 批量删除用户
+  async batchDelete(userIds: number[]): Promise<{ success: number; failed: number }> {
+    let success = 0;
+    let failed = 0;
+
+    for (const userId of userIds) {
+      try {
+        await this.remove(userId);
+        success++;
+      } catch (error) {
+        this.logger.error(`批量删除失败: userId=${userId}, error=${error.message}`, 'UserService');
+        failed++;
+      }
+    }
+
+    this.logger.log(`批量删除完成: success=${success}, failed=${failed}`, 'UserService');
+    return { success, failed };
+  }
+
+  // 调整用户积分（管理员）
+  async adjustCredit(
+    userId: number,
+    amount: number,
+    reason?: string,
+  ): Promise<User> {
+    const user = await this.findOne(userId);
+    const oldCredit = user.credit;
+    user.credit = Number(user.credit) + amount;
+
+    if (user.credit < 0) {
+      user.credit = 0;
+    }
+
+    const updatedUser = await this.userRepository.save(user);
+
+    this.logger.log(
+      `管理员调整用户积分: userId=${userId}, oldCredit=${oldCredit}, amount=${amount}, newCredit=${updatedUser.credit}, reason=${reason || 'N/A'}`,
+      'UserService',
+    );
+
+    return updatedUser;
+  }
+
+  // 获取用户统计数据（管理员仪表板）
+  async getAdminStats(): Promise<{
+    total: number;
+    active: number;
+    newUsers: number;
+    vipUsers: number;
+    bannedUsers: number;
+  }> {
+    const total = await this.userRepository.count();
+    const bannedUsers = await this.userRepository.count({
+      where: { is_banned: true },
+    });
+    const vipUsers = await this.userRepository.count({
+      where: { user_type: 'vip' },
+    });
+
+    // 活跃用户：30天内登录过
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const active = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.last_login_at >= :thirtyDaysAgo', { thirtyDaysAgo })
+      .andWhere('user.is_banned = :is_banned', { is_banned: false })
+      .getCount();
+
+    // 新用户：7天内注册
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const newUsers = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.created_at >= :sevenDaysAgo', { sevenDaysAgo })
+      .getCount();
+
+    return {
+      total,
+      active,
+      newUsers,
+      vipUsers,
+      bannedUsers,
+    };
+  }
+
+  // 更新最后登录时间
+  async updateLastLogin(userId: number): Promise<void> {
+    await this.userRepository.update(userId, {
+      last_login_at: new Date(),
+    });
+  }
 }

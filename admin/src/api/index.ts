@@ -291,53 +291,54 @@ export const authAPI = {
 }
 // Admin User API
 export const adminUserAPI = {
-  // 获取用户列表
-  getUserList: (params: any): Promise<PaginatedApiResponse<any>> =>
-    paginatedRequest.get('/admin/users', params),
+  // 获取用户统计数据
+  getStats: (): Promise<ApiResponse<any>> =>
+    apiRequest.get('/admin/users/stats'),
+  
+  // 获取用户列表（带高级筛选）
+  getUserList: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: 'active' | 'inactive' | 'banned' | 'pending';
+    userType?: 'free' | 'vip' | 'admin';
+    registrationSource?: 'wechat' | 'web' | 'mobile' | 'unknown';
+    sortBy?: string;
+    sortOrder?: 'ASC' | 'DESC';
+  }): Promise<ApiResponse<any>> =>
+    apiRequest.get('/admin/users', params),
     
   // 获取用户详情
-  getUserById: (id: string): Promise<ApiResponse<any>> =>
+  getUserById: (id: number | string): Promise<ApiResponse<any>> =>
     apiRequest.get(`/admin/users/${id}`),
     
-  // 创建用户
-  createUser: (data: any): Promise<ApiResponse<any>> =>
-    apiRequest.post('/admin/users', data),
-    
-  // 更新用户
-  updateUser: (id: string, data: any): Promise<ApiResponse<any>> =>
-    apiRequest.put(`/admin/users/${id}`, data),
+  // 更新用户信息
+  updateUser: (id: number | string, data: any): Promise<ApiResponse<any>> =>
+    apiRequest.patch(`/admin/users/${id}`, data),
     
   // 删除用户
-  deleteUser: (id: string): Promise<ApiResponse> =>
+  deleteUser: (id: number | string): Promise<ApiResponse> =>
     apiRequest.delete(`/admin/users/${id}`),
     
-  // 切换用户状态
-  toggleUserStatus: (id: string): Promise<ApiResponse<any>> =>
-    apiRequest.post(`/admin/users/${id}/toggle-status`),
+  // 切换用户封禁状态
+  toggleBan: (id: number | string): Promise<ApiResponse<any>> =>
+    apiRequest.post(`/admin/users/${id}/toggle-ban`, {}),
     
-  // 重置密码
-  resetPassword: (id: string): Promise<ApiResponse<any>> =>
-    apiRequest.post(`/admin/users/${id}/reset-password`),
+  // 调整用户积分
+  adjustCredit: (id: number | string, amount: number, reason?: string): Promise<ApiResponse<any>> =>
+    apiRequest.post(`/admin/users/${id}/adjust-credit`, { amount, reason }),
     
-  // 调整积分
-  adjustCredits: (id: string, data: { amount: number; reason: string }): Promise<ApiResponse<any>> =>
-    apiRequest.post(`/admin/users/${id}/adjust-credits`, data),
+  // 批量封禁用户
+  batchBan: (userIds: number[]): Promise<ApiResponse<any>> =>
+    apiRequest.post('/admin/users/batch/ban', { userIds }),
     
-  // 批量操作
-  bulkOperation: (data: any): Promise<ApiResponse<any>> =>
-    apiRequest.post('/admin/users/bulk-operation', data),
+  // 批量激活用户
+  batchActivate: (userIds: number[]): Promise<ApiResponse<any>> =>
+    apiRequest.post('/admin/users/batch/activate', { userIds }),
     
-  // 用户统计
-  getUserStats: (): Promise<ApiResponse<any>> =>
-    apiRequest.get('/admin/users/stats/overview'),
-    
-  // 用户增长统计
-  getUserGrowthStats: (params: any): Promise<ApiResponse<any>> =>
-    apiRequest.get('/admin/users/stats/growth', params),
-    
-  // 导出用户
-  exportUsers: (data: any): Promise<ApiResponse<any>> =>
-    apiRequest.post('/admin/users/export', data)
+  // 批量删除用户
+  batchDelete: (userIds: number[]): Promise<ApiResponse<any>> =>
+    apiRequest.post('/admin/users/batch/delete', { userIds })
 }
 
 // Admin Work API

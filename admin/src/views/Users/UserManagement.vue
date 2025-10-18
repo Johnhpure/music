@@ -254,15 +254,15 @@
               <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">操作</th>
             </tr>
           </thead>
-          <!-- 移除 tbody 外层，直接使用 tbody 作为 TransitionGroup -->
-          <TransitionGroup
-            enter-active-class="transition-all duration-300"
-            leave-active-class="transition-all duration-300"
-            enter-from-class="opacity-0 translate-y-4"
-            leave-to-class="opacity-0 -translate-y-4"
-            move-class="transition-transform duration-300"
-            tag="tbody"
-          >
+          <!-- 使用 tbody 包裹 TransitionGroup -->
+          <tbody>
+            <TransitionGroup
+              enter-active-class="transition-all duration-300"
+              leave-active-class="transition-all duration-300"
+              enter-from-class="opacity-0 translate-y-4"
+              leave-to-class="opacity-0 -translate-y-4"
+              move-class="transition-transform duration-300"
+            >
               <!-- 使用 v-memo 优化行渲染，只在关键数据变化时更新 -->
               <tr
                 v-for="(user, index) in paginatedUsers"
@@ -520,13 +520,14 @@
 </template>
 
 <script setup lang="ts">
-import { shallowRef, computed, onMounted, watch } from 'vue'
+import { ref, shallowRef, computed, onMounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import CyberCard from '@/components/UI/CyberCard.vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
 import CyberInput from '@/components/UI/CyberInput.vue'
 import StatsCard from '@/views/Dashboard/components/StatsCard.vue'
 import ConfirmModal from '@/components/UI/ConfirmModal.vue'
+import { adminUserAPI } from '@/api'
 import type { User } from '@/types'
 
 // State
@@ -567,58 +568,9 @@ const stats = shallowRef({
   bannedUsers: '12'
 })
 
-// Computed
-const filteredUsers = computed(() => {
-  let result = users.value
-  
-  if (filters.value.search) {
-    const search = filters.value.search.toLowerCase()
-    result = result.filter(user => 
-      user.username.toLowerCase().includes(search) ||
-      user.email?.toLowerCase().includes(search) ||
-      user.phone?.includes(search)
-    )
-  }
-  
-  if (filters.value.status) {
-    result = result.filter(user => user.status === filters.value.status)
-  }
-  
-  if (filters.value.userType) {
-    result = result.filter(user => user.userType === filters.value.userType)
-  }
-  
-  if (filters.value.registrationSource) {
-    result = result.filter(user => user.registrationSource === filters.value.registrationSource)
-  }
-  
-  // Sort
-  result.sort((a, b) => {
-    const field = filters.value.sortBy
-    const order = filters.value.sortOrder === 'asc' ? 1 : -1
-    
-    switch (field) {
-      case 'username':
-        return a.username.localeCompare(b.username) * order
-      case 'totalCredits':
-        return (a.totalCredits - b.totalCredits) * order
-      case 'lastLoginAt':
-        const aLogin = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0
-        const bLogin = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0
-        return (aLogin - bLogin) * order
-      case 'createdAt':
-      default:
-        return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * order
-    }
-  })
-  
-  return result
-})
-
+// Computed - 后端已经处理筛选和分页，前端直接显示
 const paginatedUsers = computed(() => {
-  const start = (pagination.value.current - 1) * pagination.value.pageSize
-  const end = start + pagination.value.pageSize
-  return filteredUsers.value.slice(start, end)
+  return users.value
 })
 
 const hasFilters = computed(() => {
@@ -698,42 +650,46 @@ const formatDate = (dateString: string) => {
 const loadUsers = async () => {
   loading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const response = await adminUserAPI.getUserList({
+      page: pagination.value.current,
+      limit: pagination.value.pageSize,
+      search: filters.value.search || undefined,
+      status: filters.value.status || undefined,
+      userType: filters.value.userType || undefined,
+      registrationSource: filters.value.registrationSource || undefined,
+      sortBy: filters.value.sortBy,
+      sortOrder: filters.value.sortOrder === 'asc' ? 'ASC' : 'DESC'
+    })
     
-    // Generate mock users - 使用 shallowRef，需要整体替换
-    const newUsers = Array.from({ length: 150 }, (_, i) => ({
-      id: `user_${i + 1}`,
-      username: `用户${String(i + 1).padStart(3, '0')}`,
-      email: Math.random() > 0.3 ? `user${i + 1}@example.com` : undefined,
-      phone: Math.random() > 0.4 ? `138${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}` : undefined,
-      role: 'user' as const,
-      status: (['active', 'inactive', 'banned', 'pending'] as const)[Math.floor(Math.random() * 4)],
-      userType: (['free', 'vip', 'admin'] as const)[Math.floor(Math.random() * 10) < 7 ? 0 : Math.floor(Math.random() * 10) < 9 ? 1 : 2],
-      registrationSource: (['wechat', 'web', 'mobile'] as const)[Math.floor(Math.random() * 3)],
-      totalCredits: Math.floor(Math.random() * 10000) + 100,
-      createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date().toISOString(),
-      lastLoginAt: Math.random() > 0.2 ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() : undefined
-    }))
-    
-    // shallowRef 需要整体替换数组
-    users.value = newUsers
-    
-    updatePagination()
-  } catch (error) {
+    if (response.success && response.data) {
+      users.value = response.data.map((user: any) => ({
+        id: user.id,
+        username: user.username || user.nickname,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        status: user.status,
+        userType: user.user_type,
+        registrationSource: user.registration_source,
+        totalCredits: user.credit,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at,
+        lastLoginAt: user.last_login_at
+      }))
+      
+      pagination.value.total = response.total || users.value.length
+      pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.pageSize)
+    }
+  } catch (error: any) {
     console.error('Failed to load users:', error)
+    alert(error.message || '加载用户列表失败')
   } finally {
     loading.value = false
   }
 }
 
 const updatePagination = () => {
-  pagination.value.total = filteredUsers.value.length
-  pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.pageSize)
-  
-  if (pagination.value.current > pagination.value.totalPages) {
-    pagination.value.current = Math.max(1, pagination.value.totalPages)
-  }
+  // 分页信息已在loadUsers中设置，无需重新计算
 }
 
 const refreshData = () => {
@@ -742,12 +698,12 @@ const refreshData = () => {
 
 const handleSearch = () => {
   pagination.value.current = 1
-  updatePagination()
+  loadUsers()
 }
 
 const handleFilter = () => {
   pagination.value.current = 1
-  updatePagination()
+  loadUsers()
 }
 
 const clearFilters = () => {
@@ -760,16 +716,17 @@ const clearFilters = () => {
     sortOrder: 'desc'
   }
   pagination.value.current = 1
-  updatePagination()
+  loadUsers()
 }
 
 const handlePageChange = (page: number) => {
   pagination.value.current = page
+  loadUsers()
 }
 
 const handlePageSizeChange = () => {
   pagination.value.current = 1
-  updatePagination()
+  loadUsers()
 }
 
 const handleSelectAll = () => {
@@ -792,17 +749,13 @@ const handleEditUser = (user: User) => {
 
 const handleToggleStatus = async (user: User) => {
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // shallowRef 需要创建新数组来触发更新
-    const index = users.value.findIndex(u => u.id === user.id)
-    if (index > -1) {
-      const newUsers = [...users.value]
-      newUsers[index] = { ...newUsers[index], status: user.status === 'banned' ? 'active' : 'banned' }
-      users.value = newUsers
+    const response = await adminUserAPI.toggleBan(user.id)
+    if (response.success) {
+      await loadUsers()
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to toggle user status:', error)
+    alert(error.message || '切换用户状态失败')
   }
 }
 
@@ -815,16 +768,15 @@ const confirmDelete = async () => {
   if (!deletingUser.value) return
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // shallowRef 需要创建新数组
-    users.value = users.value.filter(u => u.id !== deletingUser.value!.id)
-    
-    showDeleteModal.value = false
-    deletingUser.value = null
-    updatePagination()
-  } catch (error) {
+    const response = await adminUserAPI.deleteUser(deletingUser.value.id)
+    if (response.success) {
+      showDeleteModal.value = false
+      deletingUser.value = null
+      await loadUsers()
+    }
+  } catch (error: any) {
     console.error('Failed to delete user:', error)
+    alert(error.message || '删除用户失败')
   }
 }
 
@@ -836,64 +788,77 @@ const batchSendEmail = () => {
 const batchBanUsers = async () => {
   if (confirm(`确定要封禁选中的 ${selectedItems.value.length} 个用户吗？`)) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // shallowRef 需要创建新数组
-      users.value = users.value.map(u => 
-        selectedItems.value.includes(u.id) ? { ...u, status: 'banned' as const } : u
-      )
-      
-      selectedItems.value = []
-      selectAll.value = false
-    } catch (error) {
+      const response = await adminUserAPI.batchBan(selectedItems.value.map(id => Number(id)))
+      if (response.success) {
+        selectedItems.value = []
+        selectAll.value = false
+        await loadUsers()
+      }
+    } catch (error: any) {
       console.error('Failed to batch ban users:', error)
+      alert(error.message || '批量封禁失败')
     }
   }
 }
 
 const batchActivateUsers = async () => {
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // shallowRef 需要创建新数组
-    users.value = users.value.map(u => 
-      selectedItems.value.includes(u.id) ? { ...u, status: 'active' as const } : u
-    )
-    
-    selectedItems.value = []
-    selectAll.value = false
-  } catch (error) {
+    const response = await adminUserAPI.batchActivate(selectedItems.value.map(id => Number(id)))
+    if (response.success) {
+      selectedItems.value = []
+      selectAll.value = false
+      await loadUsers()
+    }
+  } catch (error: any) {
     console.error('Failed to batch activate users:', error)
+    alert(error.message || '批量激活失败')
   }
 }
 
 const batchDeleteUsers = async () => {
   if (confirm(`确定要删除选中的 ${selectedItems.value.length} 个用户吗？此操作不可撤销。`)) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      users.value = users.value.filter(u => !selectedItems.value.includes(u.id))
-      selectedItems.value = []
-      selectAll.value = false
-      updatePagination()
-    } catch (error) {
+      const response = await adminUserAPI.batchDelete(selectedItems.value.map(id => Number(id)))
+      if (response.success) {
+        selectedItems.value = []
+        selectAll.value = false
+        await loadUsers()
+      }
+    } catch (error: any) {
       console.error('Failed to batch delete users:', error)
+      alert(error.message || '批量删除失败')
     }
   }
 }
 
-// Watch filters for auto-update
-watch(() => filters.value, () => {
-  updatePagination()
-}, { deep: true })
+// Watch filters removed - 现在通过handleSearch/handleFilter手动触发
 
 // Watch selectedItems to update selectAll
 watch(() => selectedItems.value, () => {
   selectAll.value = selectedItems.value.length === paginatedUsers.value.length && paginatedUsers.value.length > 0
 }, { deep: true })
 
+// 加载统计数据
+const loadStats = async () => {
+  try {
+    const response = await adminUserAPI.getStats()
+    if (response.success && response.data) {
+      stats.value = {
+        total: response.data.total,
+        active: response.data.active,
+        newUsers: response.data.newUsers.toString(),
+        vipUsers: response.data.vipUsers,
+        bannedUsers: response.data.bannedUsers.toString()
+      }
+    }
+  } catch (error: any) {
+    console.error('Failed to load stats:', error)
+  }
+}
+
 // Lifecycle
 onMounted(() => {
+  loadStats()
   loadUsers()
 })
 </script>
