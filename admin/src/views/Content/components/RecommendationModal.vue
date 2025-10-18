@@ -106,25 +106,208 @@
                       pattern="[0-9]:[0-5][0-9]"
                     />
                     
-                    <!-- Cover URL -->
-                    <CyberInput
-                      v-model="form.coverUrl"
-                      label="封面图片"
-                      placeholder="输入图片URL或点击上传"
-                      required
-                      :error="errors.coverUrl"
-                      left-icon="mdi:image"
-                    />
+                    <!-- Cover Upload/URL -->
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">
+                        封面图片 <span class="text-red-400">*</span>
+                      </label>
+                      
+                      <!-- 上传方式切换 -->
+                      <div class="flex items-center space-x-4 mb-3">
+                        <button
+                          type="button"
+                          @click="coverUploadMode = 'file'"
+                          class="px-3 py-1 rounded text-sm transition-colors"
+                          :class="coverUploadMode === 'file' ? 'bg-cyber-purple text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'"
+                        >
+                          本地上传
+                        </button>
+                        <button
+                          type="button"
+                          @click="coverUploadMode = 'url'"
+                          class="px-3 py-1 rounded text-sm transition-colors"
+                          :class="coverUploadMode === 'url' ? 'bg-cyber-purple text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'"
+                        >
+                          URL输入
+                        </button>
+                      </div>
+                      
+                      <!-- 文件上传 -->
+                      <div v-if="coverUploadMode === 'file'" class="space-y-3">
+                        <div
+                          class="relative border-2 border-dashed border-gray-600 rounded-lg p-4 hover:border-cyber-purple transition-colors"
+                          :class="{ 'border-cyber-purple bg-cyber-purple/5': isCoverDragOver }"
+                          @dragover.prevent="isCoverDragOver = true"
+                          @dragleave.prevent="isCoverDragOver = false"
+                          @drop.prevent="handleCoverDrop"
+                        >
+                          <input
+                            ref="coverInput"
+                            type="file"
+                            accept="image/*"
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            @change="handleCoverSelect"
+                          />
+                          
+                          <div v-if="!form.coverUrl" class="text-center">
+                            <Icon icon="mdi:cloud-upload" class="w-10 h-10 text-gray-500 mx-auto mb-2" />
+                            <p class="text-gray-400 text-sm mb-1">点击或拖拽上传封面</p>
+                            <p class="text-xs text-gray-500">支持 JPG、PNG、WebP，最大 5MB</p>
+                          </div>
+                          
+                          <div v-else class="relative">
+                            <img
+                              :src="form.coverUrl"
+                              alt="封面预览"
+                              class="w-full h-32 object-cover rounded"
+                              @error="handleImageError"
+                            />
+                            <div class="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                              <button
+                                type="button"
+                                @click.stop="coverInput?.click()"
+                                class="px-2 py-1 bg-cyber-purple rounded text-white text-sm mr-2"
+                              >
+                                重新上传
+                              </button>
+                              <button
+                                type="button"
+                                @click.stop="form.coverUrl = ''"
+                                class="px-2 py-1 bg-red-500 rounded text-white text-sm"
+                              >
+                                移除
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- 上传进度 -->
+                        <div v-if="coverUploadProgress > 0 && coverUploadProgress < 100" class="space-y-1">
+                          <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-400">上传进度</span>
+                            <span class="text-cyber-purple">{{ coverUploadProgress }}%</span>
+                          </div>
+                          <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div
+                              class="bg-gradient-to-r from-cyber-purple to-purple-600 h-2 rounded-full transition-all"
+                              :style="{ width: `${coverUploadProgress}%` }"
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- URL输入 -->
+                      <CyberInput
+                        v-else
+                        v-model="form.coverUrl"
+                        placeholder="输入图片URL地址"
+                        left-icon="mdi:link"
+                      />
+                      
+                      <p v-if="errors.coverUrl" class="text-red-400 text-xs mt-1">{{ errors.coverUrl }}</p>
+                    </div>
                     
-                    <!-- Audio URL -->
-                    <CyberInput
-                      v-model="form.audioUrl"
-                      label="音频文件"
-                      placeholder="输入音频URL或点击上传"
-                      required
-                      :error="errors.audioUrl"
-                      left-icon="mdi:file-music"
-                    />
+                    <!-- Audio Upload/URL -->
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">
+                        音频文件 <span class="text-red-400">*</span>
+                      </label>
+                      
+                      <!-- 上传方式切换 -->
+                      <div class="flex items-center space-x-4 mb-3">
+                        <button
+                          type="button"
+                          @click="audioUploadMode = 'file'"
+                          class="px-3 py-1 rounded text-sm transition-colors"
+                          :class="audioUploadMode === 'file' ? 'bg-cyber-purple text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'"
+                        >
+                          本地上传
+                        </button>
+                        <button
+                          type="button"
+                          @click="audioUploadMode = 'url'"
+                          class="px-3 py-1 rounded text-sm transition-colors"
+                          :class="audioUploadMode === 'url' ? 'bg-cyber-purple text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'"
+                        >
+                          URL输入
+                        </button>
+                      </div>
+                      
+                      <!-- 文件上传 -->
+                      <div v-if="audioUploadMode === 'file'" class="space-y-3">
+                        <div
+                          class="relative border-2 border-dashed border-gray-600 rounded-lg p-4 hover:border-cyber-purple transition-colors"
+                          :class="{ 'border-cyber-purple bg-cyber-purple/5': isAudioDragOver }"
+                          @dragover.prevent="isAudioDragOver = true"
+                          @dragleave.prevent="isAudioDragOver = false"
+                          @drop.prevent="handleAudioDrop"
+                        >
+                          <input
+                            ref="audioInput"
+                            type="file"
+                            accept="audio/*"
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            @change="handleAudioSelect"
+                          />
+                          
+                          <div v-if="!form.audioUrl" class="text-center">
+                            <Icon icon="mdi:music-box-outline" class="w-10 h-10 text-gray-500 mx-auto mb-2" />
+                            <p class="text-gray-400 text-sm mb-1">点击或拖拽上传音频</p>
+                            <p class="text-xs text-gray-500">支持 MP3、WAV、OGG，最大 50MB</p>
+                          </div>
+                          
+                          <div v-else class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                              <Icon icon="mdi:file-music" class="w-8 h-8 text-cyan-400" />
+                              <div>
+                                <p class="text-white text-sm">{{ audioFileName }}</p>
+                                <p class="text-gray-400 text-xs">{{ audioDuration || '时长未知' }}</p>
+                              </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                @click.stop="audioInput?.click()"
+                                class="px-2 py-1 bg-cyber-purple rounded text-white text-sm"
+                              >
+                                重新上传
+                              </button>
+                              <button
+                                type="button"
+                                @click.stop="form.audioUrl = ''; audioFileName = ''; audioDuration = ''"
+                                class="px-2 py-1 bg-red-500 rounded text-white text-sm"
+                              >
+                                移除
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- 上传进度 -->
+                        <div v-if="audioUploadProgress > 0 && audioUploadProgress < 100" class="space-y-1">
+                          <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-400">上传进度</span>
+                            <span class="text-cyber-purple">{{ audioUploadProgress }}%</span>
+                          </div>
+                          <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div
+                              class="bg-gradient-to-r from-cyan-500 to-blue-600 h-2 rounded-full transition-all"
+                              :style="{ width: `${audioUploadProgress}%` }"
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- URL输入 -->
+                      <CyberInput
+                        v-else
+                        v-model="form.audioUrl"
+                        placeholder="输入音频URL地址"
+                        left-icon="mdi:link"
+                      />
+                      
+                      <p v-if="errors.audioUrl" class="text-red-400 text-xs mt-1">{{ errors.audioUrl }}</p>
+                    </div>
                     
                     <!-- Description -->
                     <div>
@@ -257,6 +440,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import CyberInput from '@/components/UI/CyberInput.vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
+import { fileAPI } from '@/api'
 import type { HotRecommendation } from '@/types'
 
 interface Props {
@@ -276,6 +460,18 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+// State
+const coverInput = ref<HTMLInputElement>()
+const audioInput = ref<HTMLInputElement>()
+const isCoverDragOver = ref(false)
+const isAudioDragOver = ref(false)
+const coverUploadProgress = ref(0)
+const audioUploadProgress = ref(0)
+const coverUploadMode = ref<'file' | 'url'>('file')
+const audioUploadMode = ref<'file' | 'url'>('file')
+const audioFileName = ref('')
+const audioDuration = ref('')
+
 const form = ref({
   title: '',
   artist: '',
@@ -292,7 +488,187 @@ const errors = ref<Record<string, string>>({})
 
 const isEditing = computed(() => !!props.recommendation?.id)
 
+// 获取API基础URL
+const getApiBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL.replace('/api', '')
+  }
+  const hostname = window.location.hostname
+  if (hostname === 'admin.jianzhile.vip') {
+    return 'https://adminapi.jianzhile.vip'
+  }
+  return 'http://localhost:3000'
+}
 
+// File upload handlers
+const handleCoverSelect = (event: Event) => {
+  const files = (event.target as HTMLInputElement).files
+  if (files && files[0]) {
+    uploadCoverFile(files[0])
+  }
+}
+
+const handleCoverDrop = (event: DragEvent) => {
+  isCoverDragOver.value = false
+  const files = event.dataTransfer?.files
+  if (files && files[0]) {
+    uploadCoverFile(files[0])
+  }
+}
+
+const uploadCoverFile = async (file: File) => {
+  if (!file.type.startsWith('image/')) {
+    errors.value.coverUrl = '只能上传图片文件'
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    errors.value.coverUrl = '图片大小不能超过 5MB'
+    return
+  }
+  
+  delete errors.value.coverUrl
+  coverUploadProgress.value = 0
+  
+  try {
+    const result = await fileAPI.uploadImage(file, (progress) => {
+      coverUploadProgress.value = progress
+    })
+    
+    let fileUrl = ''
+    if (result.code === 200 || result.code === 201) {
+      if (result.data?.data?.fileUrl) {
+        fileUrl = result.data.data.fileUrl
+      } else if (result.data?.fileUrl) {
+        fileUrl = result.data.fileUrl
+      } else if (typeof result.data === 'string') {
+        fileUrl = result.data
+      }
+    }
+    
+    if (fileUrl) {
+      if (!fileUrl.startsWith('http')) {
+        const apiBaseUrl = getApiBaseUrl()
+        form.value.coverUrl = `${apiBaseUrl}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`
+      } else {
+        form.value.coverUrl = fileUrl
+      }
+      coverUploadProgress.value = 100
+      setTimeout(() => { coverUploadProgress.value = 0 }, 1000)
+    } else {
+      throw new Error(result.message || '上传失败')
+    }
+  } catch (error: any) {
+    errors.value.coverUrl = error.message || '封面上传失败'
+    coverUploadProgress.value = 0
+  }
+}
+
+const handleAudioSelect = (event: Event) => {
+  const files = (event.target as HTMLInputElement).files
+  if (files && files[0]) {
+    uploadAudioFile(files[0])
+  }
+}
+
+const handleAudioDrop = (event: DragEvent) => {
+  isAudioDragOver.value = false
+  const files = event.dataTransfer?.files
+  if (files && files[0]) {
+    uploadAudioFile(files[0])
+  }
+}
+
+const uploadAudioFile = async (file: File) => {
+  if (!file.type.startsWith('audio/')) {
+    errors.value.audioUrl = '只能上传音频文件'
+    return
+  }
+  if (file.size > 50 * 1024 * 1024) {
+    errors.value.audioUrl = '音频大小不能超过 50MB'
+    return
+  }
+  
+  delete errors.value.audioUrl
+  audioUploadProgress.value = 0
+  audioFileName.value = file.name
+  
+  // 提取音频时长
+  try {
+    const duration = await getAudioDuration(file)
+    audioDuration.value = formatDuration(duration)
+    form.value.duration = formatDuration(duration)
+  } catch (err) {
+    console.warn('无法获取音频时长:', err)
+  }
+  
+  try {
+    const result = await fileAPI.uploadImage(file, (progress) => {
+      audioUploadProgress.value = progress
+    })
+    
+    let fileUrl = ''
+    if (result.code === 200 || result.code === 201) {
+      if (result.data?.data?.fileUrl) {
+        fileUrl = result.data.data.fileUrl
+      } else if (result.data?.fileUrl) {
+        fileUrl = result.data.fileUrl
+      } else if (typeof result.data === 'string') {
+        fileUrl = result.data
+      }
+    }
+    
+    if (fileUrl) {
+      if (!fileUrl.startsWith('http')) {
+        const apiBaseUrl = getApiBaseUrl()
+        form.value.audioUrl = `${apiBaseUrl}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`
+      } else {
+        form.value.audioUrl = fileUrl
+      }
+      audioUploadProgress.value = 100
+      setTimeout(() => { audioUploadProgress.value = 0 }, 1000)
+    } else {
+      throw new Error(result.message || '上传失败')
+    }
+  } catch (error: any) {
+    errors.value.audioUrl = error.message || '音频上传失败'
+    audioUploadProgress.value = 0
+  }
+}
+
+// 获取音频时长
+const getAudioDuration = (file: File): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio()
+    audio.preload = 'metadata'
+    
+    audio.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(audio.src)
+      resolve(audio.duration)
+    }
+    
+    audio.onerror = () => {
+      window.URL.revokeObjectURL(audio.src)
+      reject(new Error('无法加载音频'))
+    }
+    
+    audio.src = window.URL.createObjectURL(file)
+  })
+}
+
+// 格式化时长
+const formatDuration = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${minutes}:${secs.toString().padStart(2, '0')}`
+}
+
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  if (!img.dataset.fallback) {
+    img.dataset.fallback = 'true'
+    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjMzc0MTUxIiByeD0iOCIvPgo8Y2lyY2xlIGN4PSI0MCIgY3k9IjQwIiByPSIxNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNkI3Mjg0IiBzdHJva2Utd2lkdGg9IjIiLz4KPHA+4paqPC9wPgo8Y2lyY2xlIGN4PSI0MCIgY3k9IjQwIiByPSI0IiBmaWxsPSIjNkI3Mjg0Ii8+Cjwvc3ZnPgo='
+  }
+}
 
 const validateForm = (): boolean => {
   errors.value = {}
