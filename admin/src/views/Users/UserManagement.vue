@@ -901,9 +901,9 @@ const loadUsers = async () => {
         phone: user.phone,
         avatar: user.avatar,
         role: user.role,
-        status: user.status,
-        userType: user.user_type,
-        registrationSource: user.registration_source,
+        status: user.status as 'active' | 'inactive' | 'banned' | 'pending',
+        userType: user.user_type as 'free' | 'vip' | 'admin',
+        registrationSource: user.registration_source as 'wechat' | 'web' | 'mobile',
         totalCredits: user.credit,
         createdAt: user.created_at,
         updatedAt: user.updated_at,
@@ -974,21 +974,23 @@ const handleSelectAll = () => {
 const handleViewUser = async (user: User) => {
   try {
     const response = await adminUserAPI.getUserById(user.id)
-    if (response.success && response.data) {
+    // 后端返回的数据在 response.data.data 中
+    if (response.data && response.data.success && response.data.data) {
+      const userData = response.data.data
       selectedUser.value = {
-        id: response.data.id,
-        username: response.data.username || response.data.nickname,
-        email: response.data.email,
-        phone: response.data.phone,
-        avatar: response.data.avatar,
-        role: response.data.role,
-        status: response.data.status,
-        userType: response.data.user_type,
-        registrationSource: response.data.registration_source,
-        totalCredits: response.data.credit,
-        createdAt: response.data.created_at,
-        updatedAt: response.data.updated_at,
-        lastLoginAt: response.data.last_login_at
+        id: userData.id,
+        username: userData.username || userData.nickname,
+        email: userData.email,
+        phone: userData.phone,
+        avatar: userData.avatar,
+        role: userData.role,
+        status: userData.status,
+        userType: userData.user_type,
+        registrationSource: userData.registration_source,
+        totalCredits: userData.credit,
+        createdAt: userData.created_at,
+        updatedAt: userData.updated_at,
+        lastLoginAt: userData.last_login_at
       }
       showDetailModal.value = true
     }
@@ -1001,21 +1003,23 @@ const handleViewUser = async (user: User) => {
 const handleEditUser = async (user: User) => {
   try {
     const response = await adminUserAPI.getUserById(user.id)
-    if (response.success && response.data) {
+    // 后端返回的数据在 response.data.data 中
+    if (response.data && response.data.success && response.data.data) {
+      const userData = response.data.data
       editingUser.value = {
-        id: response.data.id,
-        username: response.data.username || response.data.nickname,
-        email: response.data.email,
-        phone: response.data.phone,
-        avatar: response.data.avatar,
-        role: response.data.role,
-        status: response.data.status,
-        userType: response.data.user_type,
-        registrationSource: response.data.registration_source,
-        totalCredits: response.data.credit,
-        createdAt: response.data.created_at,
-        updatedAt: response.data.updated_at,
-        lastLoginAt: response.data.last_login_at
+        id: userData.id,
+        username: userData.username || userData.nickname,
+        email: userData.email,
+        phone: userData.phone,
+        avatar: userData.avatar,
+        role: userData.role,
+        status: userData.status,
+        userType: userData.user_type,
+        registrationSource: userData.registration_source,
+        totalCredits: userData.credit,
+        createdAt: userData.created_at,
+        updatedAt: userData.updated_at,
+        lastLoginAt: userData.last_login_at
       }
       showEditModal.value = true
     }
@@ -1046,7 +1050,7 @@ const confirmEdit = async () => {
       credit: editingUser.value.totalCredits
     })
     
-    if (response.success) {
+    if (response.data && response.data.success) {
       showEditModal.value = false
       editingUser.value = null
       await loadUsers()
@@ -1063,7 +1067,12 @@ const confirmEdit = async () => {
 const handleToggleStatus = async (user: User) => {
   try {
     const response = await adminUserAPI.toggleBan(user.id)
-    if (response.success) {
+    if (response.data && response.data.success) {
+      // 如果在详情弹窗中，关闭弹窗
+      if (showDetailModal.value) {
+        showDetailModal.value = false
+        selectedUser.value = null
+      }
       await loadUsers()
     }
   } catch (error: any) {
@@ -1082,7 +1091,7 @@ const confirmDelete = async () => {
   
   try {
     const response = await adminUserAPI.deleteUser(deletingUser.value.id)
-    if (response.success) {
+    if (response.data && response.data.success) {
       showDeleteModal.value = false
       deletingUser.value = null
       await loadUsers()
@@ -1102,7 +1111,7 @@ const batchBanUsers = async () => {
   if (confirm(`确定要封禁选中的 ${selectedItems.value.length} 个用户吗？`)) {
     try {
       const response = await adminUserAPI.batchBan(selectedItems.value.map(id => Number(id)))
-      if (response.success) {
+      if (response.data && response.data.success) {
         selectedItems.value = []
         selectAll.value = false
         await loadUsers()
@@ -1117,7 +1126,7 @@ const batchBanUsers = async () => {
 const batchActivateUsers = async () => {
   try {
     const response = await adminUserAPI.batchActivate(selectedItems.value.map(id => Number(id)))
-    if (response.success) {
+    if (response.data && response.data.success) {
       selectedItems.value = []
       selectAll.value = false
       await loadUsers()
@@ -1132,7 +1141,7 @@ const batchDeleteUsers = async () => {
   if (confirm(`确定要删除选中的 ${selectedItems.value.length} 个用户吗？此操作不可撤销。`)) {
     try {
       const response = await adminUserAPI.batchDelete(selectedItems.value.map(id => Number(id)))
-      if (response.success) {
+      if (response.data && response.data.success) {
         selectedItems.value = []
         selectAll.value = false
         await loadUsers()
@@ -1155,13 +1164,14 @@ watch(() => selectedItems.value, () => {
 const loadStats = async () => {
   try {
     const response = await adminUserAPI.getStats()
-    if (response.success && response.data) {
+    if (response.data && response.data.data) {
+      const statsData = response.data.data
       stats.value = {
-        total: response.data.total,
-        active: response.data.active,
-        newUsers: response.data.newUsers.toString(),
-        vipUsers: response.data.vipUsers,
-        bannedUsers: response.data.bannedUsers.toString()
+        total: statsData.total,
+        active: statsData.active,
+        newUsers: statsData.newUsers.toString(),
+        vipUsers: statsData.vipUsers,
+        bannedUsers: statsData.bannedUsers.toString()
       }
     }
   } catch (error: any) {
