@@ -80,3 +80,5 @@ coverage/
 .nyc_output/
 .serena/
 .cursor/
+backend/src/database/migrations/17-insert-suno-config.sql
+backend/insert-suno-config.sh
