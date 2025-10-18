@@ -130,8 +130,33 @@ export default {
 	onLoad(options) {
 		if (options.id) {
 			this.id = options.id;
+		}
+		
+		// 尝试从eventChannel接收传递的完整数据
+		const eventChannel = this.getOpenerEventChannel();
+		if (eventChannel) {
+			eventChannel.on('musicData', (data) => {
+				console.log('[WorkDetail] 接收到音乐数据:', data);
+				// 直接使用传递的数据
+				this.workDetail = data;
+				
+				// 如果是当前正在播放的歌曲，同步状态
+				const playState = this.$audioManager.getPlayState();
+				if (playState.currentMusic && playState.currentMusic.id === this.id) {
+					this.isPlaying = playState.isPlaying;
+					this.currentTime = playState.currentTime;
+					this.totalTime = playState.duration;
+					this.progress = playState.progress;
+				} else {
+					// 自动播放
+					this.playMusic();
+				}
+			});
+		} else {
+			// 没有eventChannel，使用API获取（降级方案）
 			this.getWorkDetail();
 		}
+	}
 		
 		// 监听全局音频管理器事件
 		this.$audioManager.on('play', this.onAudioPlay);
@@ -162,34 +187,28 @@ export default {
 			uni.navigateBack();
 		},
 		async getWorkDetail() {
-			try {
-				// 这里应该调用真实API获取详情
-				// const res = await this.$minApi.getWorkDetail(this.id);
-				
-				// 模拟数据（实际项目中应该从API获取）
-				setTimeout(() => {
-					this.workDetail = {
-						id: this.id,
-						title: '夏日海风',
-						artist: 'AI创作',
-						style: '电子',
-						coverUrl: '/static/img/covers/cover2.jpg',
-						audioUrl: 'https://example.com/sample-music.mp3',
-						likeCount: 128
-					};
-					
-					// 如果是当前正在播放的歌曲，同步状态
-					const playState = this.$audioManager.getPlayState();
-					if (playState.currentMusic && playState.currentMusic.id === this.id) {
-						this.isPlaying = playState.isPlaying;
-						this.currentTime = playState.currentTime;
-						this.totalTime = playState.duration;
-						this.progress = playState.progress;
-					} else {
-						// 自动播放
-						this.playMusic();
-					}
-				}, 500);
+		try {
+			// 降级方案：当没有从eventChannel接收到数据时才调用
+			// 注意：当前后端没有单独的作品详情接口，这里使用默认数据
+			// TODO: 后续如果后端添加了 /public/work/:id 接口，应该调用它
+			console.warn('[WorkDetail] 未从eventChannel接收到数据，使用默认数据');
+			
+			uni.showToast({
+				title: '数据加载失败',
+				icon: 'none',
+				duration: 2000
+			});
+			
+			// 使用默认数据作为兜底
+			this.workDetail = {
+				id: this.id,
+				title: '音乐作品',
+				artist: 'AI创作',
+				style: '未知',
+				coverUrl: '/static/img/covers/cover2.jpg',
+				audioUrl: '',  // 空的audioUrl，避免404错误
+				likeCount: 0
+			};
 			} catch (err) {
 				console.error('获取作品详情失败:', err);
 				uni.showToast({

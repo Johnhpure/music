@@ -401,10 +401,24 @@
 				});
 			},
 			viewMusicDetail(item) {
-				uni.navigateTo({
-					url: `/pages/user/work-detail?id=${item.id}`
-				});
-			},
+			// 使用eventChannel传递完整的音乐数据
+			uni.navigateTo({
+				url: `/pages/user/work-detail?id=${item.id}`,
+				success: (res) => {
+					// 通过eventChannel传递完整数据，避免URL长度限制
+					res.eventChannel.emit('musicData', {
+						id: item.id,
+						title: item.title,
+						artist: item.artist || 'AI创作',
+						style: item.genre || '未知',
+						coverUrl: item.coverUrl,
+						audioUrl: item.audioUrl,
+						likeCount: item.playCount || 0,
+						duration: item.duration
+					});
+				}
+			});
+		},
 			selectEmotion(index) {
 				this.selectedEmotion = index;
 				// 根据选中的情感标签过滤灵感
