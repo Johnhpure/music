@@ -304,7 +304,9 @@ const loadConfigs = async () => {
     const res = await sunoConfigAPI.getConfigs()
     console.log('✅ API响应:', res)
     if (res.code === 200) {
-      configs.value = res.data
+      // 处理嵌套响应结构：res.data 可能是 {code, message, data}
+      const actualData = res.data?.data || res.data
+      configs.value = Array.isArray(actualData) ? actualData : []
       console.log('✅ 配置列表:', configs.value)
     } else {
       const msg = res.message || '加载配置失败'
