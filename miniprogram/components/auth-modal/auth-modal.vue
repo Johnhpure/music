@@ -140,6 +140,7 @@ export default {
 					if (e.detail.code) {
 						try {
 							// 传入刚获取的token，确保请求带上Authorization header
+							console.log('调用getUserPhone，token:', token ? '已提供' : '未提供')
 							const phoneResult = await this.$minApi.getUserPhone({
 								code: e.detail.code
 							}, token)

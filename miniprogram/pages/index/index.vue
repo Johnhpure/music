@@ -36,31 +36,6 @@
 			<text class="section-title">为您推荐创作作品</text>
 		</view>
 		
-		<!-- 新手指引 -->
-		<view class="guide-section">
-			<view class="section-header">
-				<text class="section-title">新手指引</text>
-			</view>
-			<view class="guide-cards">
-				<view class="guide-card breathe-effect-blue" @click="goToTutorial('self')">
-					<view class="guide-icon bg-theme-blue">
-						<!-- <text class="iconfont icon-edit"></text> -->
-						<image src="/static/img/icon/pen.svg" class="guide-icon-image"></image>
-					</view>
-					<text class="guide-title">自主创作教程</text>
-					<text class="guide-desc">学习如何自己创作歌曲</text>
-				</view>
-				<view class="guide-card breathe-effect-purple" @click="goToTutorial('ai')">
-					<view class="guide-icon bg-theme-purple">
-						<!-- <text class="iconfont icon-ai"></text> -->
-						 <image src="/static/img/icon/ai.svg" class="guide-icon-image"></image>
-					</view>
-					<text class="guide-title">AI辅助创作教程</text>
-					<text class="guide-desc">了解AI如何帮助创作</text>
-				</view>
-			</view>
-		</view>
-		
 		<!-- 创作灵感区 -->
 		<view class="inspiration-section">
 			<view class="section-header">
@@ -124,22 +99,29 @@
 			</view>
 		</view>
 		
-		<!-- 创作教程 -->
-		<view class="tutorial-section">
+		<!-- 新手指引 -->
+		<view class="guide-section">
 			<view class="section-header">
-				<text class="section-title">创作教程</text>
+				<text class="section-title">新手指引</text>
 			</view>
-			<scroll-view class="scroll-view-x" scroll-x enable-flex>
-				<view class="tutorial-card" v-for="(tutorial, index) in tutorials" :key="index" @click="viewTutorial(tutorial)">
-					<view class="tutorial-cover">
-						<image :src="tutorial.coverUrl" mode="aspectFill"></image>
+			<view class="guide-cards">
+				<view class="guide-card breathe-effect-blue" @click="goToTutorial('self')">
+					<view class="guide-icon bg-theme-blue">
+						<!-- <text class="iconfont icon-edit"></text> -->
+						<image src="/static/img/icon/pen.svg" class="guide-icon-image"></image>
 					</view>
-					<view class="tutorial-info">
-						<text class="tutorial-title">{{tutorial.title}}</text>
-						<text class="tutorial-meta">{{tutorial.duration}} · {{tutorial.level}}</text>
-					</view>
+					<text class="guide-title">自主创作教程</text>
+					<text class="guide-desc">学习如何自己创作歌曲</text>
 				</view>
-			</scroll-view>
+				<view class="guide-card breathe-effect-purple" @click="goToTutorial('ai')">
+					<view class="guide-icon bg-theme-purple">
+						<!-- <text class="iconfont icon-ai"></text> -->
+						 <image src="/static/img/icon/ai.svg" class="guide-icon-image"></image>
+					</view>
+					<text class="guide-title">AI辅助创作教程</text>
+					<text class="guide-desc">了解AI如何帮助创作</text>
+				</view>
+			</view>
 		</view>
 	</view>
 </template>
@@ -204,30 +186,7 @@
 				],
 				// 热门推荐列表
 				hotRecommendations: [],
-				// 创作教程
-				tutorials: [
-					{
-						id: "1",
-						title: "AI音乐创作入门指南",
-						duration: "10分钟",
-						level: "初级",
-						coverUrl: "/static/img/banner/banner1.jpg"
-					},
-					{
-						id: "2",
-						title: "如何创作一首流行歌曲",
-						duration: "15分钟",
-						level: "中级",
-						coverUrl: "/static/img/banner/banner2.jpg"
-					},
-					{
-						id: "3",
-						title: "混音技巧大揭秘",
-						duration: "20分钟",
-						level: "高级",
-						coverUrl: "/static/img/banner/banner3.jpg"
-					}
-				],
+
 				emotionTags: [
 					{ name: "快乐", id: "happy" },
 					{ name: "悲伤", id: "sad" },
@@ -517,11 +476,7 @@
 				duration: 1500
 			});
 		},
-			viewTutorial(tutorial) {
-				uni.navigateTo({
-					url: `/pages/tutorial/index`
-				});
-			}
+
 		}
 	}
 </script>
@@ -1161,53 +1116,6 @@
 
 .play-count text:first-child {
 	margin-right: 8rpx;
-}
-
-/* 创作教程 */
-.tutorial-section {
-	margin-top: 24rpx;
-	padding: 0 16rpx;
-}
-
-.tutorial-card {
-	display: inline-block;
-	width: 470rpx;
-	background-color: #1E1E1E;
-	border-radius: 20rpx;
-	overflow: hidden;
-	margin-right: 16rpx;
-}
-
-.tutorial-cover {
-	height: 240rpx;
-	overflow: hidden;
-}
-
-.tutorial-cover image {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-}
-
-.tutorial-info {
-	padding: 16rpx;
-}
-
-.tutorial-title {
-	font-size: 28rpx;
-	font-weight: 500;
-	color: #FFFFFF;
-	margin-bottom: 4rpx;
-	white-space: normal;
-	display: -webkit-box;
-	-webkit-line-clamp: 1;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-}
-
-.tutorial-meta {
-	font-size: 24rpx;
-	color: #ACACAC;
 }
 
 /* 通用颜色类 */

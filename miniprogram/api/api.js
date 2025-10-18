@@ -56,7 +56,9 @@ export default {
 		// 获取用户手机号
 		getUserPhone(params, token) {
 			// 如果提供了token，手动添加到header
+			console.log('getUserPhone调用，token:', token ? '已接收' : '未接收', 'params:', params)
 			if (token) {
+				console.log('使用手动添加的token')
 				return minRequest.request({
 					url: '/auth/wechat/phone',
 					method: 'POST',

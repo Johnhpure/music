@@ -7,24 +7,6 @@
 			}
 		},
 		{
-			"path": "pages/tutorial/index",
-			"style": {
-				"navigationBarTitleText": "自主创作完整指南"
-			}
-		},
-		{
-			"path": "pages/tutorial/ai",
-			"style": {
-				"navigationBarTitleText": "AI辅助创作完整指南"
-			}
-		},
-		{
-			"path": "pages/tutorial/self",
-			"style": {
-				"navigationBarTitleText": "自主创作完整指南"
-			}
-		},
-		{
 			"path": "pages/creation/select",
 			"style": {
 				"navigationBarTitleText": "创作歌曲"
