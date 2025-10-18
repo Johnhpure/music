@@ -5,12 +5,15 @@ import { MusicController } from './music.controller';
 import { PublicMusicController } from './public-music.controller';
 import { SunoController } from './suno.controller';
 import { SunoAdminController } from './suno-admin.controller';
+import { SunoMiniprogramController } from './suno-miniprogram.controller';
 import { MusicService } from './music.service';
 import { SunoService } from './suno.service';
 import { SunoAdminService } from './suno-admin.service';
+import { SunoMiniprogramService } from './suno-miniprogram.service';
 import { MusicTaskProcessor } from './processors/music-task.processor';
 import { MusicTask } from './entities/music-task.entity';
 import { UserMusicLike } from './entities/user-music-like.entity';
+import { User } from '../user/entities/user.entity';
 import { SunoApiLog } from './entities/suno-api-log.entity';
 import { SunoLyricsTask } from './entities/suno-lyrics-task.entity';
 import { SunoExtendTask } from './entities/suno-extend-task.entity';
@@ -34,6 +37,7 @@ import { FileModule } from '@modules/file/file.module';
     TypeOrmModule.forFeature([
       MusicTask,
       UserMusicLike,
+      User,
       SunoApiLog,
       SunoLyricsTask,
       SunoExtendTask,
@@ -61,8 +65,20 @@ import { FileModule } from '@modules/file/file.module';
     PublicMusicController,
     SunoController,
     SunoAdminController,
+    SunoMiniprogramController,
   ],
-  providers: [MusicService, SunoService, SunoAdminService, MusicTaskProcessor],
-  exports: [MusicService, SunoService, SunoAdminService],
+  providers: [
+    MusicService, 
+    SunoService, 
+    SunoAdminService, 
+    SunoMiniprogramService,
+    MusicTaskProcessor,
+  ],
+  exports: [
+    MusicService, 
+    SunoService, 
+    SunoAdminService, 
+    SunoMiniprogramService,
+  ],
 })
 export class MusicModule {}
