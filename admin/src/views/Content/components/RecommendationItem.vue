@@ -262,6 +262,7 @@ defineExpose({
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
   opacity: 0;
   transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .recommendation-item:hover::before {
