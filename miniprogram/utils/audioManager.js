@@ -14,8 +14,7 @@ class AudioManager {
 		this.currentTime = 0;
 		this.duration = 0;
 		this.listeners = {}; // 事件监听器
-		
-		this._initAudioContext();
+		this.initialized = false; // 是否已初始化
 		
 		AudioManager.instance = this;
 	}
@@ -24,7 +23,15 @@ class AudioManager {
 	 * 初始化音频上下文
 	 */
 	_initAudioContext() {
-		this.audioContext = uni.createInnerAudioContext();
+		if (this.initialized) return;
+		
+		try {
+			this.audioContext = uni.createInnerAudioContext();
+			this.initialized = true;
+		} catch (err) {
+			console.error('音频上下文初始化失败:', err);
+			return;
+		}
 		
 		// 监听播放进度更新
 		this.audioContext.onTimeUpdate(() => {
@@ -68,6 +75,16 @@ class AudioManager {
 	 * @param {Object} music - 音乐对象 {id, title, audioUrl, coverUrl, ...}
 	 */
 	play(music) {
+		// 确保音频上下文已初始化
+		if (!this.initialized) {
+			this._initAudioContext();
+		}
+		
+		if (!this.audioContext) {
+			console.error('音频上下文初始化失败');
+			return;
+		}
+		
 		if (!music || !music.audioUrl) {
 			console.error('音乐信息或音频URL不存在');
 			return;
@@ -113,6 +130,11 @@ class AudioManager {
 	 * 切换播放/暂停
 	 */
 	togglePlay() {
+		if (!this.audioContext) {
+			console.error('音频上下文未初始化');
+			return;
+		}
+		
 		if (this.isPlaying) {
 			this.pause();
 		} else {

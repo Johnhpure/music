@@ -24,7 +24,12 @@ Vue.use(MinRequest)
 App.mpType = 'app'
 Vue.prototype._i18n = i18n
 Vue.prototype.$_ = _
+// 挂载音频管理器到Vue原型
 Vue.prototype.$audioManager = audioManager
+
+// 调试：检查audioManager是否正确加载
+console.log('[Main.js] audioManager:', audioManager)
+console.log('[Main.js] Vue.prototype.$audioManager:', Vue.prototype.$audioManager)
 
 const app = new Vue({
 	store,

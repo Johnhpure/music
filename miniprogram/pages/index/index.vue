@@ -450,6 +450,20 @@
 				});
 			},
 			previewMusic(item) {
+			// 调试信息
+			console.log('[Index] this.$audioManager:', this.$audioManager);
+			console.log('[Index] item:', item);
+			
+			// 检查audioManager是否存在
+			if (!this.$audioManager) {
+				console.error('[Index] $audioManager is undefined!');
+				uni.showToast({
+					title: '音频管理器未初始化',
+					icon: 'none'
+				});
+				return;
+			}
+			
 			// 使用全局音频管理器播放音乐
 			if (!item.audioUrl) {
 				uni.showToast({
