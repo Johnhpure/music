@@ -218,9 +218,7 @@ export class SunoMiniprogramController {
     },
   })
   async getLyricsStatus(@Request() req, @Param('taskId') taskId: string) {
-    const result = await this.sunoMiniprogramService.getLyricsStatus(
-      taskId,
-    );
+    const result = await this.sunoMiniprogramService.getLyricsStatus(taskId);
 
     return {
       code: 200,

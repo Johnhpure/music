@@ -19,17 +19,19 @@ export class ValidationPipe implements PipeTransform<any> {
     if (!metatype || !this.toValidate(metatype)) {
       return value;
     }
-    
+
     // 跳过实体类（Entity）的验证，只验证DTO
     const className = metatype.name;
-    if (className === 'User' || 
-        className === 'PromptTemplate' || 
-        className === 'HotRecommendation' ||
-        className === 'Banner' ||
-        className === 'Order' ||
-        className === 'CreditLog' ||
-        className === 'MusicTask' ||
-        className.endsWith('Entity')) {
+    if (
+      className === 'User' ||
+      className === 'PromptTemplate' ||
+      className === 'HotRecommendation' ||
+      className === 'Banner' ||
+      className === 'Order' ||
+      className === 'CreditLog' ||
+      className === 'MusicTask' ||
+      className.endsWith('Entity')
+    ) {
       console.log(`🔓 跳过实体类验证: ${className}`);
       return value;
     }
@@ -39,10 +41,10 @@ export class ValidationPipe implements PipeTransform<any> {
       rawData: value,
       targetType: metatype?.name,
     };
-    
+
     console.log('🔍 ValidationPipe - 原始数据:', JSON.stringify(value));
     console.log('🔍 ValidationPipe - 目标类型:', metatype?.name);
-    
+
     // 写入调试日志文件
     try {
       const logFile = path.join(process.cwd(), 'logs', 'validation-debug.log');
@@ -66,15 +68,22 @@ export class ValidationPipe implements PipeTransform<any> {
         object,
         errors,
       };
-      
+
       console.log('❌ 参数验证失败:', messages);
       console.log('❌ 验证对象:', JSON.stringify(object));
       console.log('❌ 详细错误:', JSON.stringify(errors, null, 2));
-      
+
       // 写入错误日志文件
       try {
-        const logFile = path.join(process.cwd(), 'logs', 'validation-debug.log');
-        fs.appendFileSync(logFile, 'ERROR: ' + JSON.stringify(errorData, null, 2) + '\n');
+        const logFile = path.join(
+          process.cwd(),
+          'logs',
+          'validation-debug.log',
+        );
+        fs.appendFileSync(
+          logFile,
+          'ERROR: ' + JSON.stringify(errorData, null, 2) + '\n',
+        );
       } catch (e) {
         console.error('写入错误日志失败:', e.message);
       }
@@ -99,12 +108,14 @@ export class ValidationPipe implements PipeTransform<any> {
     const types: Function[] = [String, Boolean, Number, Array, Object];
     return !types.includes(metatype);
   }
-  
+
   private isEntity(metatype: Function): boolean {
     // 检查是否是实体类
     const className = metatype.name;
-    return className === 'User' || 
-           className.endsWith('Entity') ||
-           Reflect.hasMetadata('design:type', metatype);
+    return (
+      className === 'User' ||
+      className.endsWith('Entity') ||
+      Reflect.hasMetadata('design:type', metatype)
+    );
   }
 }

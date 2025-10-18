@@ -263,24 +263,39 @@ const loadConfigs = async () => {
   try {
     // === 调试信息：检查Token和用户权限 ===
     console.log('='.repeat(60))
-    console.log('🔍 Token存在:', !!localStorage.getItem('token'))
-    
-    const userStr = localStorage.getItem('user')
-    if (userStr) {
-      const user = JSON.parse(userStr)
-      console.log('👤 当前用户:', user)
-    }
     
     const token = localStorage.getItem('token')
-    if (token) {
+    console.log('🔍 Token存在:', !!token)
+    console.log('🔑 Token值:', token)
+    console.log('🔑 Token类型:', typeof token)
+    console.log('🔑 Token长度:', token?.length)
+    
+    const userStr = localStorage.getItem('user')
+    console.log('👤 User字符串:', userStr)
+    if (userStr) {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        console.log('🎫 JWT Payload:', payload)
+        const user = JSON.parse(userStr)
+        console.log('👤 当前用户:', user)
+      } catch (e) {
+        console.error('❌ User JSON解析失败:', e)
+      }
+    }
+    
+    if (token && token !== 'undefined' && token !== 'null') {
+      try {
+        const parts = token.split('.')
+        console.log('🎫 JWT parts数量:', parts.length)
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]))
+          console.log('🎫 JWT Payload:', payload)
+        } else {
+          console.error('❌ JWT格式错误，应该有3部分')
+        }
       } catch (e) {
         console.error('❌ JWT解析失败:', e)
       }
     } else {
-      console.warn('⚠️ 未找到Token，请先登录')
+      console.warn('⚠️ Token无效或未找到，值为:', token)
     }
     console.log('='.repeat(60))
     // === 调试信息结束 ===

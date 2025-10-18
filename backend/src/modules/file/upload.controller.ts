@@ -28,7 +28,10 @@ export class UploadController {
   @Public()
   @Post('avatar')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Request() req) {
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
+  ) {
     if (!file) {
       throw new BadRequestException('请上传头像');
     }

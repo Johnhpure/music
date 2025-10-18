@@ -87,7 +87,10 @@ export class WechatService {
       const phoneData = phoneResponse.data;
 
       if (phoneData.errcode && phoneData.errcode !== 0) {
-        this.logger.error(`获取手机号失败: ${phoneData.errmsg}`, 'WechatService');
+        this.logger.error(
+          `获取手机号失败: ${phoneData.errmsg}`,
+          'WechatService',
+        );
         throw new UnauthorizedException('获取手机号失败');
       }
 

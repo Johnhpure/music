@@ -43,7 +43,11 @@ export class UserController {
 
   // 更新当前用户信息
   @Put('profile')
-  async updateProfile(@Request() req, @Body() updateProfileDto: { phone?: string; avatar?: string; nickname?: string }) {
+  async updateProfile(
+    @Request() req,
+    @Body()
+    updateProfileDto: { phone?: string; avatar?: string; nickname?: string },
+  ) {
     const updatedUser = await this.userService.updateProfile(
       req.user.id,
       updateProfileDto,

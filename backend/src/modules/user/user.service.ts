@@ -85,21 +85,45 @@ export class UserService {
   async findByUsername(username: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { username },
-      select: ['id', 'username', 'email', 'password', 'nickname', 'avatar', 'credit', 'is_admin', 'is_banned', 'openid'],
+      select: [
+        'id',
+        'username',
+        'email',
+        'password',
+        'nickname',
+        'avatar',
+        'credit',
+        'is_admin',
+        'is_banned',
+        'openid',
+      ],
     });
   }
 
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { email },
-      select: ['id', 'username', 'email', 'password', 'nickname', 'avatar', 'credit', 'is_admin', 'is_banned', 'openid'],
+      select: [
+        'id',
+        'username',
+        'email',
+        'password',
+        'nickname',
+        'avatar',
+        'credit',
+        'is_admin',
+        'is_banned',
+        'openid',
+      ],
     });
   }
 
   async findByUsernameOrEmail(identifier: string): Promise<User | null> {
     const user = await this.userRepository
       .createQueryBuilder('user')
-      .where('user.username = :identifier OR user.email = :identifier', { identifier })
+      .where('user.username = :identifier OR user.email = :identifier', {
+        identifier,
+      })
       .addSelect('user.password')
       .getOne();
     return user;
@@ -110,7 +134,10 @@ export class UserService {
     return bcrypt.hash(password, saltRounds);
   }
 
-  async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+  async validatePassword(
+    plainPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
     return bcrypt.compare(plainPassword, hashedPassword);
   }
 
@@ -272,7 +299,9 @@ export class UserService {
     // 状态筛选
     if (status) {
       if (status === 'banned') {
-        queryBuilder.andWhere('user.is_banned = :is_banned', { is_banned: true });
+        queryBuilder.andWhere('user.is_banned = :is_banned', {
+          is_banned: true,
+        });
       } else if (status === 'pending') {
         queryBuilder.andWhere('user.last_login_at IS NULL');
       } else if (status === 'inactive') {
@@ -280,19 +309,30 @@ export class UserService {
         queryBuilder.andWhere('user.last_login_at < :thirtyDaysAgo', {
           thirtyDaysAgo: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         });
-        queryBuilder.andWhere('user.is_banned = :is_banned', { is_banned: false });
+        queryBuilder.andWhere('user.is_banned = :is_banned', {
+          is_banned: false,
+        });
       } else if (status === 'active') {
         queryBuilder.andWhere('user.last_login_at IS NOT NULL');
         queryBuilder.andWhere('user.last_login_at >= :thirtyDaysAgo', {
           thirtyDaysAgo: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         });
-        queryBuilder.andWhere('user.is_banned = :is_banned', { is_banned: false });
+        queryBuilder.andWhere('user.is_banned = :is_banned', {
+          is_banned: false,
+        });
       }
     }
 
     // 排序
-    const allowedSortFields = ['created_at', 'last_login_at', 'credit_balance', 'username'];
-    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
+    const allowedSortFields = [
+      'created_at',
+      'last_login_at',
+      'credit_balance',
+      'username',
+    ];
+    const sortField = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : 'created_at';
     queryBuilder.orderBy(`user.${sortField}`, sortOrder);
 
     // 分页
@@ -325,7 +365,9 @@ export class UserService {
   }
 
   // 批量封禁用户
-  async batchBan(userIds: number[]): Promise<{ success: number; failed: number }> {
+  async batchBan(
+    userIds: number[],
+  ): Promise<{ success: number; failed: number }> {
     let success = 0;
     let failed = 0;
 
@@ -338,17 +380,25 @@ export class UserService {
           success++;
         }
       } catch (error) {
-        this.logger.error(`批量封禁失败: userId=${userId}, error=${error.message}`, 'UserService');
+        this.logger.error(
+          `批量封禁失败: userId=${userId}, error=${error.message}`,
+          'UserService',
+        );
         failed++;
       }
     }
 
-    this.logger.log(`批量封禁完成: success=${success}, failed=${failed}`, 'UserService');
+    this.logger.log(
+      `批量封禁完成: success=${success}, failed=${failed}`,
+      'UserService',
+    );
     return { success, failed };
   }
 
   // 批量激活用户
-  async batchActivate(userIds: number[]): Promise<{ success: number; failed: number }> {
+  async batchActivate(
+    userIds: number[],
+  ): Promise<{ success: number; failed: number }> {
     let success = 0;
     let failed = 0;
 
@@ -361,17 +411,25 @@ export class UserService {
           success++;
         }
       } catch (error) {
-        this.logger.error(`批量激活失败: userId=${userId}, error=${error.message}`, 'UserService');
+        this.logger.error(
+          `批量激活失败: userId=${userId}, error=${error.message}`,
+          'UserService',
+        );
         failed++;
       }
     }
 
-    this.logger.log(`批量激活完成: success=${success}, failed=${failed}`, 'UserService');
+    this.logger.log(
+      `批量激活完成: success=${success}, failed=${failed}`,
+      'UserService',
+    );
     return { success, failed };
   }
 
   // 批量删除用户
-  async batchDelete(userIds: number[]): Promise<{ success: number; failed: number }> {
+  async batchDelete(
+    userIds: number[],
+  ): Promise<{ success: number; failed: number }> {
     let success = 0;
     let failed = 0;
 
@@ -380,12 +438,18 @@ export class UserService {
         await this.remove(userId);
         success++;
       } catch (error) {
-        this.logger.error(`批量删除失败: userId=${userId}, error=${error.message}`, 'UserService');
+        this.logger.error(
+          `批量删除失败: userId=${userId}, error=${error.message}`,
+          'UserService',
+        );
         failed++;
       }
     }
 
-    this.logger.log(`批量删除完成: success=${success}, failed=${failed}`, 'UserService');
+    this.logger.log(
+      `批量删除完成: success=${success}, failed=${failed}`,
+      'UserService',
+    );
     return { success, failed };
   }
 
@@ -466,7 +530,7 @@ export class UserService {
     const latestUser = await this.userRepository
       .createQueryBuilder('user')
       .where("user.nickname LIKE 'MusiCer%'")
-      .orderBy("CAST(SUBSTRING(user.nickname, 8) AS UNSIGNED)", 'DESC')
+      .orderBy('CAST(SUBSTRING(user.nickname, 8) AS UNSIGNED)', 'DESC')
       .limit(1)
       .getOne();
 

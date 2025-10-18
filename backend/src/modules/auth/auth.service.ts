@@ -28,19 +28,13 @@ export class AuthService {
     const user = await this.userService.findByUsernameOrEmail(username);
 
     if (!user) {
-      this.logger.warn(
-        `登录失败：用户不存在 - ${username}`,
-        'AuthService',
-      );
+      this.logger.warn(`登录失败：用户不存在 - ${username}`, 'AuthService');
       return null;
     }
 
     // 检查是否有密码
     if (!user.password) {
-      this.logger.warn(
-        `登录失败：用户未设置密码 - ${username}`,
-        'AuthService',
-      );
+      this.logger.warn(`登录失败：用户未设置密码 - ${username}`, 'AuthService');
       return null;
     }
 
@@ -51,10 +45,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      this.logger.warn(
-        `登录失败：密码错误 - ${username}`,
-        'AuthService',
-      );
+      this.logger.warn(`登录失败：密码错误 - ${username}`, 'AuthService');
       return null;
     }
 
@@ -87,7 +78,8 @@ export class AuthService {
           role: user.role,
           credit: user.credit,
         },
-        user: { // 向后兼容
+        user: {
+          // 向后兼容
           id: user.id,
           nickname: user.nickname,
           avatar: user.avatar,
@@ -139,10 +131,10 @@ export class AuthService {
     if (!user) {
       // 生成默认昵称
       const defaultNickname = await this.userService.generateDefaultNickname();
-      
+
       // 默认头像（小程序静态资源路径）
       const defaultAvatar = '/static/img/profile.svg';
-      
+
       user = await this.userService.create({
         openid,
         nickname: defaultNickname,
@@ -150,13 +142,19 @@ export class AuthService {
         registration_source: 'wechat',
       });
       isNewUser = true;
-      this.logger.log(`微信新用户注册: ${user.id}, nickname: ${defaultNickname}`, 'AuthService');
+      this.logger.log(
+        `微信新用户注册: ${user.id}, nickname: ${defaultNickname}`,
+        'AuthService',
+      );
     }
 
     // 更新最后登录时间
     await this.userService.updateLastLogin(user.id);
 
-    this.logger.log(`微信用户登录: ${user.id}, isNewUser: ${isNewUser}`, 'AuthService');
+    this.logger.log(
+      `微信用户登录: ${user.id}, isNewUser: ${isNewUser}`,
+      'AuthService',
+    );
 
     return this.login(user);
   }
@@ -210,7 +208,10 @@ export class AuthService {
     // 更新用户手机号
     await this.userService.updateProfile(userId, { phone: phoneNumber });
 
-    this.logger.log(`用户绑定手机号: ${userId}, phone: ${phoneNumber}`, 'AuthService');
+    this.logger.log(
+      `用户绑定手机号: ${userId}, phone: ${phoneNumber}`,
+      'AuthService',
+    );
 
     return {
       code: 200,
