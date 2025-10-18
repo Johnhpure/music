@@ -306,8 +306,23 @@
 					const avatar = userInfo.avatar
 					console.log('loadUserInfo - avatar类型:', typeof avatar, 'avatar值:', avatar)
 					
-					if (typeof avatar === 'string') {
-						this.userImage = avatar || '/static/img/profile.svg'
+					let avatarUrl = '/static/img/profile.svg'
+					
+					if (typeof avatar === 'string' && avatar) {
+						// 如果是相对路径（以/uploads开头），拼接完整URL
+						if (avatar.startsWith('/uploads/')) {
+							avatarUrl = `${this.baseUrl}${avatar}`
+							console.log('相对路径转完整URL:', avatarUrl)
+						} else if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+							// 已经是完整URL
+							avatarUrl = avatar
+						} else if (avatar.startsWith('/static/')) {
+							// 静态资源路径
+							avatarUrl = avatar
+						} else {
+							avatarUrl = avatar || '/static/img/profile.svg'
+						}
+						this.userImage = avatarUrl
 					} else if (avatar && typeof avatar === 'object') {
 						// 如果是对象，尝试提取url
 						this.userImage = avatar.url || avatar.avatarUrl || '/static/img/profile.svg'
