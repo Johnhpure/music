@@ -126,6 +126,7 @@
 				lyrics: '', // 歌词
 				styleId: 'pop', // 风格ID
 				voiceId: 'female', // 声音ID
+				vocalGender: 'f', // 人声性别参数（后端需要的格式：m/f）
 				songCover: '/static/img/covers/default.jpg', // 封面图片
 				
 				isConfirmGenerat: false,
@@ -141,7 +142,9 @@
 				
 				audioContext: null, // 音频上下文
 				progressTimer: null, // 进度条定时器
-				generatingTimer: null // 生成进度定时器
+				generatingTimer: null, // 生成进度定时器
+				currentTaskId: '', // 当前任务ID
+				audioUrl: '' // 音频URL
 			}
 		},
 		computed: {
@@ -194,6 +197,9 @@
 			}
 			if(options.voice) {
 				this.voiceId = options.voice;
+			}
+			if(options.vocalGender) {
+				this.vocalGender = options.vocalGender;
 			}
 			
 			// 初始化音频上下文

@@ -310,6 +310,59 @@ export default {
 					}
 				})
 			})
+		},
+		
+		// Suno音乐生成相关接口
+		/**
+		 * 生成音乐
+		 * @param {Object} params - 生成参数
+		 * @param {String} params.title - 歌曲标题
+		 * @param {String} params.lyrics - 歌词内容（可选）
+		 * @param {String} params.style - 音乐风格
+		 * @param {String} params.prompt - 创意描述（可选）
+		 * @param {String} params.vocalGender - 人声性别：m/f（可选）
+		 * @param {Boolean} params.instrumental - 是否纯音乐（可选）
+		 * @param {String} params.model - AI模型版本（可选）
+		 * @returns {Promise}
+		 */
+		generateMusic(params) {
+			return minRequest.post('/suno/miniprogram/generate', params)
+		},
+		
+		/**
+		 * 查询音乐生成任务状态
+		 * @param {String} taskId - 任务ID
+		 * @returns {Promise}
+		 */
+		getMusicTaskStatus(taskId) {
+			return minRequest.get(`/suno/miniprogram/task/${taskId}`)
+		},
+		
+		/**
+		 * 查询用户剩余音乐积分
+		 * @returns {Promise}
+		 */
+		getUserMusicCredits() {
+			return minRequest.get('/suno/miniprogram/credits')
+		},
+		
+		/**
+		 * 生成歌词
+		 * @param {Object} params - 生成参数
+		 * @param {String} params.prompt - 歌词创意描述
+		 * @returns {Promise}
+		 */
+		generateLyrics(params) {
+			return minRequest.post('/suno/miniprogram/lyrics/generate', params)
+		},
+		
+		/**
+		 * 查询歌词生成状态
+		 * @param {String} taskId - 任务ID
+		 * @returns {Promise}
+		 */
+		getLyricsTaskStatus(taskId) {
+			return minRequest.get(`/suno/miniprogram/lyrics/${taskId}`)
 		}
 	}
 }

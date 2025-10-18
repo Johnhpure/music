@@ -198,9 +198,17 @@
 			proceedToNext() {
 				if(!this.canProceed) return;
 				
+				// 映射声音性别参数：male→m, female→f
+				const vocalGenderMap = {
+					'male': 'm',
+					'female': 'f',
+					'neutral': 'f' // 中性默认使用女声
+				};
+				const vocalGender = vocalGenderMap[this.selectedVoice] || 'f';
+				
 				// 跳转到音乐预览页面
 				uni.navigateTo({
-					url: `/pages/creation/preview?type=${this.creationType}&title=${encodeURIComponent(this.songTitle)}&style=${this.selectedStyle}&voice=${this.selectedVoice}` + 
+					url: `/pages/creation/preview?type=${this.creationType}&title=${encodeURIComponent(this.songTitle)}&style=${this.selectedStyle}&voice=${this.selectedVoice}&vocalGender=${vocalGender}` + 
 						 (this.lyrics ? `&lyrics=${encodeURIComponent(this.lyrics)}` : '')
 				});
 			}
