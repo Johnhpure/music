@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
+import { BanGuard } from '@common/guards/ban.guard';
 import { PaymentService } from './payment.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { WechatPaymentDto } from './dto/wechat-payment.dto';
@@ -21,6 +22,7 @@ export class PaymentController {
 
   // 创建订单
   @Post('order')
+  @UseGuards(BanGuard)
   async createOrder(@Request() req, @Body() createOrderDto: CreateOrderDto) {
     const order = await this.paymentService.createOrder(
       req.user.id,
@@ -43,6 +45,7 @@ export class PaymentController {
 
   // 获取微信支付参数
   @Post('wechat-pay')
+  @UseGuards(BanGuard)
   async getWechatPayment(
     @Request() req,
     @Body() wechatPaymentDto: WechatPaymentDto,

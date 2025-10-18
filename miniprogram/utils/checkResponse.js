@@ -156,7 +156,7 @@ export const checkResult = (result) => {
 	if (!result.isOk) {
 		showErrorMsg(result.errMsg)
 	}
-	let { code } = result
+	let { code, msg } = result
 	result.ok = function() {
 		return false
 	}
@@ -165,7 +165,12 @@ export const checkResult = (result) => {
 			return true
 		}
 	} else {
-		showErrorMsg(result.msg || HttpErrorCode[code])
+		// 特殊处理用户封禁错误
+		if (code === 403 && msg && (msg.includes('封禁') || msg.includes('banned'))) {
+			showErrorMsg('您的账号已被封禁，无法使用此功能。如有疑问，请联系客服')
+		} else {
+			showErrorMsg(msg || HttpErrorCode[code])
+		}
 	}
 	return result
 }

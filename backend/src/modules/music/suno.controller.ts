@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { SunoService } from './suno.service';
 import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
+import { BanGuard } from '@common/guards/ban.guard';
 import { CreateMusicDto } from './dto/create-music.dto';
 import { ExtendMusicDto } from './dto/extend-music.dto';
 import { GenerateSunoLyricsDto } from './dto/generate-suno-lyrics.dto';
@@ -41,6 +42,7 @@ export class SunoController {
   // =====================================================
 
   @Post('generate')
+  @UseGuards(BanGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '生成音乐（SUNO API）',
@@ -135,6 +137,7 @@ export class SunoController {
   // =====================================================
 
   @Post('extend')
+  @UseGuards(BanGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '扩展现有音乐',
@@ -191,6 +194,7 @@ export class SunoController {
   // =====================================================
 
   @Post('lyrics/generate')
+  @UseGuards(BanGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '生成AI歌词（SUNO）',
@@ -310,6 +314,7 @@ export class SunoController {
   // =====================================================
 
   @Post('vocal-separation')
+  @UseGuards(BanGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '人声音乐分离',
@@ -379,6 +384,7 @@ export class SunoController {
   // =====================================================
 
   @Post('convert-to-wav')
+  @UseGuards(BanGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '转换为WAV格式',
@@ -446,6 +452,7 @@ export class SunoController {
   // =====================================================
 
   @Post('music-video')
+  @UseGuards(BanGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '创建音乐视频',
@@ -516,6 +523,7 @@ export class SunoController {
   // =====================================================
 
   @Post('upload-cover')
+  @UseGuards(BanGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '上传音频并生成翻唱',
@@ -579,6 +587,7 @@ export class SunoController {
   // =====================================================
 
   @Post('cover')
+  @UseGuards(BanGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '生成音乐封面图',

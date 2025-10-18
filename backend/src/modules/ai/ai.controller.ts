@@ -12,6 +12,7 @@ import { AIService } from './ai.service';
 import { GenerateLyricsDto } from './dto/generate-lyrics.dto';
 import { ExpandInspirationDto } from './dto/expand-inspiration.dto';
 import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
+import { BanGuard } from '@common/guards/ban.guard';
 
 @Controller('user/ai')
 @UseGuards(JwtAuthGuard)
@@ -19,11 +20,13 @@ export class AIController {
   constructor(private readonly aiService: AIService) {}
 
   @Post('lyrics/generate')
+  @UseGuards(BanGuard)
   async generateLyrics(@Request() req, @Body() dto: GenerateLyricsDto) {
     return this.aiService.generateLyrics(req.user.id, dto);
   }
 
   @Post('expand-inspiration')
+  @UseGuards(BanGuard)
   async expandInspiration(@Request() req, @Body() dto: ExpandInspirationDto) {
     return this.aiService.expandInspiration(req.user.id, dto);
   }
