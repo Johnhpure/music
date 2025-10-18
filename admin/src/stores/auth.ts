@@ -21,16 +21,25 @@ export const useAuthStore = defineStore('auth', () => {
       
       console.log('🔍 登录API响应:', response)
       console.log('🔍 response.data:', response.data)
-      console.log('🔍 access_token:', response.data?.access_token)
-      console.log('🔍 token字段:', response.data?.token)
       
       if (response.code === 200 && response.data) {
+        // 处理嵌套的响应结构: response.data 可能本身就包含 code/message/data
+        const actualData = response.data.data || response.data
+        console.log('🔍 实际数据层:', actualData)
+        
         // 兼容token和access_token两种字段
-        const accessToken = response.data.token || response.data.access_token
-        console.log('🔑 实际使用的token:', accessToken)
+        const accessToken = actualData.token || actualData.access_token
+        const userData = actualData.user || actualData.userInfo
+        
+        console.log('🔑 提取的token:', accessToken)
+        console.log('👤 提取的用户:', userData)
+        
+        if (!accessToken) {
+          throw new Error('登录响应中未找到token')
+        }
         
         token.value = accessToken
-        user.value = response.data.user || response.data.userInfo
+        user.value = userData
         setToken(accessToken)
         
         console.log('✅ 登录成功:', user.value)
