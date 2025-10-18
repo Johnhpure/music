@@ -76,7 +76,9 @@ export class SunoMiniprogramService {
         credit_cost: creditCost,
       });
 
-      this.logger.log(`Created music task ${(musicTask as any).id} for user ${userId}`);
+      this.logger.log(
+        `Created music task ${(musicTask as any).id} for user ${userId}`,
+      );
 
       // 调用SunoService生成音乐
       const taskId = await this.sunoService.generateMusic({
@@ -86,6 +88,7 @@ export class SunoMiniprogramService {
         lyrics: dto.lyrics,
         prompt: dto.prompt,
         instrumental: dto.instrumental,
+        vocalGender: dto.vocalGender,
         model: dto.model,
       });
 

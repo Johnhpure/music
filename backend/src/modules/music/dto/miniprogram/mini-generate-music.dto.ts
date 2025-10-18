@@ -53,6 +53,15 @@ export class MiniGenerateMusicDto {
   prompt?: string;
 
   @ApiPropertyOptional({
+    description: '人声性别',
+    enum: ['m', 'f'],
+    example: 'm',
+  })
+  @IsOptional()
+  @IsString()
+  vocalGender?: 'm' | 'f';
+
+  @ApiPropertyOptional({
     description: '是否生成纯音乐（无人声）',
     default: false,
   })
