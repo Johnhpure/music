@@ -300,8 +300,22 @@
 			 */
 			loadUserInfo() {
 				const userInfo = uni.getStorageSync('userInfo')
+				console.log('loadUserInfo - 原始userInfo:', userInfo)
 				if (userInfo) {
-					this.userImage = userInfo.avatar || '/static/img/profile.svg'
+					// 确保avatar是字符串
+					const avatar = userInfo.avatar
+					console.log('loadUserInfo - avatar类型:', typeof avatar, 'avatar值:', avatar)
+					
+					if (typeof avatar === 'string') {
+						this.userImage = avatar || '/static/img/profile.svg'
+					} else if (avatar && typeof avatar === 'object') {
+						// 如果是对象，尝试提取url
+						this.userImage = avatar.url || avatar.avatarUrl || '/static/img/profile.svg'
+						console.warn('警告：avatar是对象，已提取URL:', this.userImage)
+					} else {
+						this.userImage = '/static/img/profile.svg'
+					}
+					
 					this.userName = userInfo.nickname || '音乐创作者'
 				}
 			},
