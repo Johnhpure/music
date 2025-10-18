@@ -76,11 +76,11 @@ export default {
 		},
 		// 获取用户信息
 		getUserInfo() {
-			return minRequest.get('/v1/user/info')
+			return minRequest.get('/user/profile')
 		},
 		// 获取用户点数
 		getUserPoints() {
-			return minRequest.get('/v1/user/points')
+			return minRequest.get('/user/profile')
 		},
 		// Banner相关接口
 		// 获取首页Banner列表
