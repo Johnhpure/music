@@ -17,6 +17,23 @@
 
     <!-- Config List -->
     <div class="glass-panel p-6">
+      <!-- Error Message -->
+      <div v-if="errorMessage" class="mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
+        <div class="flex items-start space-x-3">
+          <Icon icon="mdi:alert-circle" class="text-red-500 text-2xl flex-shrink-0" />
+          <div class="flex-1">
+            <h4 class="text-red-400 font-semibold mb-1">加载失败</h4>
+            <p class="text-gray-300 text-sm">{{ errorMessage }}</p>
+            <button 
+              @click="loadConfigs" 
+              class="mt-2 text-sm text-primary-400 hover:text-primary-300 underline"
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div v-if="loading" class="text-center py-8">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
         <p class="text-gray-400 mt-2">加载中...</p>
@@ -211,9 +228,9 @@ import {
   TransitionChild,
   TransitionRoot,
 } from '@headlessui/vue'
-import CyberButton from '@/components/ui/CyberButton.vue'
-import { sunoConfigAPI } from '@/api'
-import { showNotification } from '@/utils/notification'
+import CyberButton from "@/components/UI/CyberButton.vue"
+
+import { sunoConfigAPI, showNotification } from "@/api"
 import { format } from 'date-fns'
 
 interface SunoConfig {
@@ -229,6 +246,7 @@ interface SunoConfig {
 const loading = ref(false)
 const submitting = ref(false)
 const configs = ref<SunoConfig[]>([])
+const errorMessage = ref('')
 const isModalOpen = ref(false)
 const isEdit = ref(false)
 const formData = ref({
@@ -241,13 +259,26 @@ const formData = ref({
 
 const loadConfigs = async () => {
   loading.value = true
+  errorMessage.value = ''
   try {
+    console.log('🔄 开始加载SUNO配置...')
     const res = await sunoConfigAPI.getConfigs()
+    console.log('✅ API响应:', res)
     if (res.code === 200) {
       configs.value = res.data
+      console.log('✅ 配置列表:', configs.value)
+    } else {
+      const msg = res.message || '加载配置失败'
+      console.error('❌ API返回非200状态码:', res)
+      errorMessage.value = msg
+      showNotification('error', msg)
     }
   } catch (error: any) {
-    showNotification('error', error.message || '加载配置失败')
+    console.error('❌ 加载配置失败:', error)
+    console.error('错误详情:', error.response || error)
+    const msg = error.response?.data?.message || error.message || '加载配置失败'
+    errorMessage.value = `${msg}${error.response?.status ? ` (${error.response.status})` : ''}`
+    showNotification('error', msg)
   } finally {
     loading.value = false
   }
@@ -346,6 +377,6 @@ onMounted(() => {
 
 <style scoped>
 .glass-panel {
-  @apply bg-dark-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg;
+  @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg;
 }
 </style>
