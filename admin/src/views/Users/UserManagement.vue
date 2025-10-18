@@ -661,8 +661,9 @@ const loadUsers = async () => {
       sortOrder: filters.value.sortOrder === 'asc' ? 'ASC' : 'DESC'
     })
     
-    if (response.success && response.data) {
-      users.value = response.data.map((user: any) => ({
+    if (response.data && response.data.success && response.data.data) {
+      // 修复：数据在 response.data.data 中，不是 response.data
+      users.value = response.data.data.map((user: any) => ({
         id: user.id,
         username: user.username || user.nickname,
         email: user.email,
@@ -677,7 +678,8 @@ const loadUsers = async () => {
         lastLoginAt: user.last_login_at
       }))
       
-      pagination.value.total = response.total || users.value.length
+      // 修复：total在 response.data.total 中
+      pagination.value.total = response.data.total || users.value.length
       pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.pageSize)
     }
   } catch (error: any) {
