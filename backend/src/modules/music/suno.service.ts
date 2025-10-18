@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -18,6 +23,7 @@ import { SunoCreditUsageLog } from './entities/suno-credit-usage-log.entity';
 import { SunoUserStats } from './entities/suno-user-stats.entity';
 import { SunoTimestampedLyrics } from './entities/suno-timestamped-lyrics.entity';
 import { TaskStatus } from './music.types';
+import { SunoConfigService } from '../suno-config/suno-config.service';
 import {
   GenerateMusicParams,
   ExtendMusicParams,
@@ -47,15 +53,16 @@ import {
 } from './music.types';
 
 @Injectable()
-export class SunoService {
+export class SunoService implements OnModuleInit {
   private readonly logger = new Logger(SunoService.name);
-  private readonly client: AxiosInstance;
-  private readonly apiKey: string;
-  private readonly baseUrl: string;
+  private client: AxiosInstance;
+  private apiKey: string;
+  private baseUrl: string;
 
   constructor(
     private configService: ConfigService,
     private dataSource: DataSource,
+    private sunoConfigService: SunoConfigService,
     @InjectRepository(SunoApiLog)
     private sunoApiLogRepository: Repository<SunoApiLog>,
     @InjectRepository(SunoLyricsTask)
@@ -84,14 +91,29 @@ export class SunoService {
     private sunoUserStatsRepository: Repository<SunoUserStats>,
     @InjectRepository(SunoTimestampedLyrics)
     private sunoTimestampedLyricsRepository: Repository<SunoTimestampedLyrics>,
-  ) {
-    this.apiKey = this.configService.get<string>('SUNO_API_KEY');
-    this.baseUrl =
-      this.configService.get<string>('SUNO_API_BASE_URL') ||
-      'https://api.sunoapi.org';
+  ) {}
+
+  async onModuleInit() {
+    await this.initializeClient();
+  }
+
+  private async initializeClient(): Promise<void> {
+    const config = await this.sunoConfigService.getActiveConfig();
+
+    if (config) {
+      this.apiKey = config.api_key;
+      this.baseUrl = config.api_url;
+    } else {
+      this.apiKey = this.configService.get<string>('SUNO_API_KEY') || '';
+      this.baseUrl =
+        this.configService.get<string>('SUNO_API_BASE_URL') ||
+        'https://api.sunoapi.org';
+    }
 
     if (!this.apiKey) {
-      this.logger.warn('SUNO_API_KEY not configured');
+      this.logger.warn(
+        'SUNO_API_KEY not configured in database or environment',
+      );
     }
 
     this.client = axios.create({

@@ -389,6 +389,37 @@ export const adminWorkAPI = {
 }
 
 // Admin Content API (for existing content management)
+// SUNO Config API
+export const sunoConfigAPI = {
+  // 获取所有配置
+  getConfigs: (): Promise<ApiResponse<any[]>> =>
+    apiRequest.get('/admin/suno-config'),
+    
+  // 获取当前激活的配置
+  getActiveConfig: (): Promise<ApiResponse<any>> =>
+    apiRequest.get('/admin/suno-config/active'),
+    
+  // 获取单个配置详情
+  getConfig: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.get(`/admin/suno-config/${id}`),
+    
+  // 创建配置
+  createConfig: (data: any): Promise<ApiResponse<any>> =>
+    apiRequest.post('/admin/suno-config', data),
+    
+  // 更新配置
+  updateConfig: (id: number, data: any): Promise<ApiResponse<any>> =>
+    apiRequest.put(`/admin/suno-config/${id}`, data),
+    
+  // 激活配置
+  activateConfig: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.put(`/admin/suno-config/${id}/activate`, {}),
+    
+  // 删除配置
+  deleteConfig: (id: number): Promise<ApiResponse> =>
+    apiRequest.delete(`/admin/suno-config/${id}`)
+}
+
 export const adminContentAPI = {
   // Banner management
   getBanners: (params?: any): Promise<PaginatedApiResponse<any>> =>

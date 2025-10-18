@@ -31,6 +31,7 @@ import { SunoUserStats } from './entities/suno-user-stats.entity';
 import { SunoTimestampedLyrics } from './entities/suno-timestamped-lyrics.entity';
 import { CreditModule } from '@modules/credit/credit.module';
 import { FileModule } from '@modules/file/file.module';
+import { SunoConfigModule } from '@modules/suno-config/suno-config.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { FileModule } from '@modules/file/file.module';
     }),
     CreditModule,
     FileModule,
+    SunoConfigModule,
   ],
   controllers: [
     MusicController,
@@ -68,16 +70,16 @@ import { FileModule } from '@modules/file/file.module';
     SunoMiniprogramController,
   ],
   providers: [
-    MusicService, 
-    SunoService, 
-    SunoAdminService, 
+    MusicService,
+    SunoService,
+    SunoAdminService,
     SunoMiniprogramService,
     MusicTaskProcessor,
   ],
   exports: [
-    MusicService, 
-    SunoService, 
-    SunoAdminService, 
+    MusicService,
+    SunoService,
+    SunoAdminService,
     SunoMiniprogramService,
   ],
 })

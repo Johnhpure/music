@@ -164,6 +164,16 @@ const routes: RouteRecordRaw[] = [
               icon: 'mdi:coin',
               requiresAuth: true
             }
+          },
+          {
+            path: '/settings/suno',
+            name: 'SunoConfig',
+            component: () => import('@/views/Settings/SunoConfig.vue'),
+            meta: {
+              title: 'SUNO配置',
+              icon: 'mdi:api',
+              requiresAuth: true
+            }
           }
         ]
       }
