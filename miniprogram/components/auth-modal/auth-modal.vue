@@ -128,9 +128,12 @@ export default {
 				})
 				
 				console.log('微信登录结果:', loginResult)
+				console.log('loginResult.data:', loginResult.data)
 				
 				if (loginResult && loginResult.code === 200) {
 					const { token, userInfo } = loginResult.data
+					console.log('提取的token:', token)
+					console.log('提取的userInfo:', userInfo)
 					
 					// 保存token和用户信息
 					uni.setStorageSync('token', token)

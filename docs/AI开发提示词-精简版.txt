@@ -1,0 +1,18 @@
+---开发任务开始---
+
+【必读】先用Serena读取记忆：project_critical_rules_database_api_2025 和 project_tech_stack_directory_structure_2025
+
+【核心约束】
+❌ 严禁本地创建数据库（使用阿里云MySQL）
+❌ 严禁修改数据库/API配置地址
+❌ 严禁改动任务范围外的代码
+❌ 不在项目目录生成文档/测试脚本
+
+【开发规范】
+✅ 使用Sequential Thinking规划和调试
+✅ 调用Context7获取小程序/Vue3/NestJS最佳实践
+✅ 仅在Serena MCP写入记忆
+✅ 遵循项目现有技术栈和代码风格
+✅ 完成后清理临时文件并git commit
+
+【任务】：[在此填写具体任务]
