@@ -34,15 +34,27 @@
 				<text class="title-text">描述你的灵感</text>
 			</view>
 			
-			<view class="input-container">
-				<textarea 
-					class="inspiration-input"
-					v-model="inspiration"
-					placeholder="在此处输入您的灵感，例如：写一首关于爱情的、中国风的、快乐的歌曲。"
-					:maxlength="200"
-					@input="onInputChange"
-				></textarea>
-				<view class="char-count">{{ charCount }}/200</view>
+			<view class="input-wrapper">
+				<view class="input-container">
+					<textarea 
+						class="inspiration-input"
+						v-model="inspiration"
+						placeholder="在此处输入您的灵感，例如：写一首关于爱情的、中国风的、快乐的歌曲。"
+						:maxlength="200"
+						@input="onInputChange"
+					></textarea>
+					<view class="char-count">{{ charCount }}/200</view>
+				</view>
+				
+				<!-- Gemini AI按钮 -->
+				<button 
+					class="gemini-ai-btn"
+					:disabled="aiExpanding || !inspiration.trim()"
+					@click="handleAIExpand"
+				>
+					<view class="gemini-icon">✨</view>
+					<view class="gemini-glow"></view>
+				</button>
 			</view>
 		</view>
 
@@ -53,16 +65,19 @@
 				<text class="title-text">热门主题推荐</text>
 			</view>
 			
-			<view class="themes-grid">
-				<view 
-					class="theme-card"
-					v-for="(theme, index) in hotThemes"
-					:key="index"
-					@click="selectTheme(theme)"
-				>
-					<view class="theme-emoji">{{ theme.emoji }}</view>
-					<view class="theme-title">{{ theme.title }}</view>
-					<view class="theme-desc">{{ theme.description }}</view>
+			<view class="marquee-container">
+				<view class="marquee-track">
+					<view 
+						class="theme-card-marquee"
+						v-for="(theme, index) in doubleThemes"
+						:key="index"
+						:style="{ background: theme.bgColor }"
+						@click="selectTheme(theme)"
+					>
+						<view class="theme-emoji">{{ theme.emoji }}</view>
+						<view class="theme-title">{{ theme.title }}</view>
+						<view class="theme-desc">{{ theme.description }}</view>
+					</view>
 				</view>
 			</view>
 		</view>
@@ -90,6 +105,17 @@ export default {
 			currentMode: 'simple',
 			inspiration: '',
 			generating: false,
+			aiExpanding: false,
+			cardColors: [
+				'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+				'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+				'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+				'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+				'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+				'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+				'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+				'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)'
+			],
 			hotThemes: [
 				{
 					emoji: '🌊',
@@ -118,6 +144,14 @@ export default {
 		},
 		canGenerate() {
 			return this.inspiration.trim().length > 0 && !this.generating;
+		},
+		doubleThemes() {
+			// 拼接两份主题列表实现无缝循环
+			const themesWithColors = this.hotThemes.map((theme, index) => ({
+				...theme,
+				bgColor: this.cardColors[index % this.cardColors.length]
+			}));
+			return [...themesWithColors, ...themesWithColors];
 		}
 	},
 	methods: {
@@ -147,6 +181,55 @@ export default {
 		// 选择主题
 		selectTheme(theme) {
 			this.inspiration = theme.prompt;
+		},
+		
+		// AI扩展灵感
+		async handleAIExpand() {
+			if (!this.inspiration.trim() || this.aiExpanding) return;
+			
+			try {
+				this.aiExpanding = true;
+				
+				uni.showLoading({
+					title: 'AI思考中...',
+					mask: true
+				});
+				
+				// 调用歌词生成接口扩展灵感
+				const result = await api.apis.generateLyrics({
+					prompt: this.inspiration
+				});
+				
+				uni.hideLoading();
+				
+				if (result && result.code === 200) {
+					// 将AI扩展的内容填充到输入框
+					if (result.data && result.data.text) {
+						this.inspiration = result.data.text;
+						uni.showToast({
+							title: 'AI已为您扩展灵感',
+							icon: 'success',
+							duration: 1500
+						});
+					}
+				} else {
+					uni.showToast({
+						title: result.msg || 'AI扩展失败',
+						icon: 'none',
+						duration: 2000
+					});
+				}
+			} catch (error) {
+				console.error('AI扩展灵感失败:', error);
+				uni.hideLoading();
+				uni.showToast({
+					title: '扩展失败，请重试',
+					icon: 'none',
+					duration: 2000
+				});
+			} finally {
+				this.aiExpanding = false;
+			}
 		},
 		
 		// 处理生成
@@ -275,7 +358,14 @@ export default {
 	font-weight: bold;
 }
 
+.input-wrapper {
+	display: flex;
+	align-items: flex-start;
+	gap: 20rpx;
+}
+
 .input-container {
+	flex: 1;
 	position: relative;
 	background-color: rgba(255, 255, 255, 0.05);
 	border-radius: 20rpx;
@@ -301,45 +391,183 @@ export default {
 	color: rgba(255, 255, 255, 0.5);
 }
 
+// Gemini AI按钮
+.gemini-ai-btn {
+	position: relative;
+	width: 100rpx;
+	height: 100rpx;
+	border-radius: 50%;
+	border: none;
+	padding: 0;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: visible;
+	box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.4);
+	animation: gemini-breathe 2s ease-in-out infinite;
+	
+	&::before {
+		content: '';
+		position: absolute;
+		top: -4rpx;
+		left: -4rpx;
+		right: -4rpx;
+		bottom: -4rpx;
+		border-radius: 50%;
+		background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #667eea);
+		background-size: 300% 300%;
+		animation: gemini-rotate 3s linear infinite;
+		opacity: 0.6;
+		z-index: -1;
+		filter: blur(8rpx);
+	}
+	
+	&:disabled {
+		opacity: 0.5;
+		animation: none;
+	}
+	
+	&:not(:disabled):active {
+		transform: scale(0.95);
+	}
+}
+
+.gemini-icon {
+	font-size: 48rpx;
+	z-index: 1;
+	animation: gemini-pulse 2s ease-in-out infinite;
+}
+
+.gemini-glow {
+	position: absolute;
+	width: 80%;
+	height: 80%;
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+	animation: gemini-glow 2s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes gemini-breathe {
+	0%, 100% {
+		transform: scale(1);
+		box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.4);
+	}
+	50% {
+		transform: scale(1.05);
+		box-shadow: 0 12rpx 32rpx rgba(102, 126, 234, 0.6);
+	}
+}
+
+@keyframes gemini-rotate {
+	0% {
+		background-position: 0% 50%;
+	}
+	100% {
+		background-position: 100% 50%;
+	}
+}
+
+@keyframes gemini-pulse {
+	0%, 100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+	50% {
+		transform: scale(1.1);
+		opacity: 0.9;
+	}
+}
+
+@keyframes gemini-glow {
+	0%, 100% {
+		opacity: 0.3;
+		transform: scale(0.8);
+	}
+	50% {
+		opacity: 0.6;
+		transform: scale(1.2);
+	}
+}
+
 // 热门主题区域
 .themes-section {
 	margin-bottom: 40rpx;
 }
 
-.themes-grid {
-	display: flex;
-	flex-direction: column;
-	gap: 20rpx;
+// 跑马灯容器
+.marquee-container {
+	width: 100%;
+	overflow: hidden;
+	position: relative;
 }
 
-.theme-card {
-	background: linear-gradient(135deg, rgba(115, 66, 204, 0.3) 0%, rgba(95, 53, 168, 0.3) 100%);
+.marquee-track {
+	display: flex;
+	gap: 20rpx;
+	animation: marquee-scroll 30s linear infinite;
+	
+	&:hover {
+		animation-play-state: paused;
+	}
+}
+
+@keyframes marquee-scroll {
+	0% {
+		transform: translateX(0);
+	}
+	100% {
+		transform: translateX(-50%);
+	}
+}
+
+.theme-card-marquee {
+	flex-shrink: 0;
+	width: 400rpx;
 	border-radius: 20rpx;
 	padding: 30rpx;
+	box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.3);
 	border: 2rpx solid rgba(255, 255, 255, 0.1);
-	transition: all 0.3s ease;
+	animation: card-breathe 2s ease-in-out infinite;
+	transition: transform 0.3s ease;
 	
 	&:active {
-		transform: scale(0.98);
-		opacity: 0.8;
+		transform: scale(0.95);
+		animation-play-state: paused;
+	}
+}
+
+@keyframes card-breathe {
+	0%, 100% {
+		transform: scale(1);
+		opacity: 0.9;
+	}
+	50% {
+		transform: scale(1.05);
+		opacity: 1;
 	}
 }
 
 .theme-emoji {
-	font-size: 40rpx;
-	margin-bottom: 10rpx;
+	font-size: 48rpx;
+	margin-bottom: 15rpx;
+	text-align: center;
 }
 
 .theme-title {
 	font-size: 30rpx;
 	font-weight: bold;
-	margin-bottom: 8rpx;
+	margin-bottom: 10rpx;
+	text-align: center;
+	color: #FFFFFF;
 }
 
 .theme-desc {
 	font-size: 26rpx;
-	color: rgba(255, 255, 255, 0.7);
+	color: rgba(255, 255, 255, 0.85);
 	line-height: 1.4;
+	text-align: center;
 }
 
 // 生成按钮区域
