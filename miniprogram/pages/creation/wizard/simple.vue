@@ -30,20 +30,9 @@
 		<!-- 灵感输入区域 -->
 		<view class="inspiration-section">
 			<view class="section-title">
-				<text class="title-icon">✨</text>
-				<text class="title-text">描述你的灵感</text>
-			</view>
-			
-			<view class="input-wrapper">
-				<view class="input-container">
-					<textarea 
-						class="inspiration-input"
-						v-model="inspiration"
-						placeholder="在此处输入您的灵感，例如：写一首关于爱情的、中国风的、快乐的歌曲。"
-						:maxlength="200"
-						@input="onInputChange"
-					></textarea>
-					<view class="char-count">{{ charCount }}/200</view>
+				<view class="title-left">
+					<text class="title-icon">✨</text>
+					<text class="title-text">描述你的灵感</text>
 				</view>
 				
 				<!-- Gemini AI按钮 -->
@@ -56,29 +45,54 @@
 					<view class="gemini-glow"></view>
 				</button>
 			</view>
+			
+			<view class="input-container">
+				<textarea 
+					class="inspiration-input"
+					v-model="inspiration"
+					placeholder="在此处输入您的灵感，例如：写一首关于爱情的、中国风的、快乐的歌曲。"
+					:maxlength="200"
+					@input="onInputChange"
+				></textarea>
+				<view class="char-count">{{ charCount }}/200</view>
+			</view>
 		</view>
 
 		<!-- 热门主题推荐区域 -->
 		<view class="themes-section">
 			<view class="section-title">
-				<text class="title-icon">🔥</text>
-				<text class="title-text">热门主题推荐</text>
+				<view class="title-left">
+					<text class="title-icon">🔥</text>
+					<text class="title-text">热门主题推荐</text>
+				</view>
 			</view>
 			
-			<view class="marquee-container">
-				<view class="marquee-track">
-					<view 
-						class="theme-card-marquee"
-						v-for="(theme, index) in doubleThemes"
-						:key="index"
-						:style="{ background: theme.bgColor }"
-						@click="selectTheme(theme)"
-					>
-						<view class="theme-emoji">{{ theme.emoji }}</view>
-						<view class="theme-title">{{ theme.title }}</view>
-						<view class="theme-desc">{{ theme.description }}</view>
+			<view class="card-stack-container">
+				<view 
+					class="theme-card-stack"
+					v-for="(theme, index) in hotThemes"
+					:key="index"
+					:class="{ 'active': index === activeCardIndex, 'prev': isPrevCard(index), 'next': isNextCard(index) }"
+					:style="getCardStyle(index)"
+					@click="selectTheme(theme)"
+				>
+					<view class="card-content-wrapper">
+						<view class="theme-emoji-large">{{ theme.emoji }}</view>
+						<view class="theme-title-large">{{ theme.title }}</view>
+						<view class="theme-desc-large">{{ theme.description }}</view>
 					</view>
 				</view>
+			</view>
+			
+			<!-- 指示器 -->
+			<view class="card-indicators">
+				<view 
+					class="indicator-dot"
+					v-for="(theme, index) in hotThemes"
+					:key="index"
+					:class="{ 'active': index === activeCardIndex }"
+					@click="switchToCard(index)"
+				></view>
 			</view>
 		</view>
 
@@ -106,6 +120,8 @@ export default {
 			inspiration: '',
 			generating: false,
 			aiExpanding: false,
+			activeCardIndex: 0,
+			cardTimer: null,
 			cardColors: [
 				'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
 				'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
@@ -144,14 +160,16 @@ export default {
 		},
 		canGenerate() {
 			return this.inspiration.trim().length > 0 && !this.generating;
-		},
-		doubleThemes() {
-			// 拼接两份主题列表实现无缝循环
-			const themesWithColors = this.hotThemes.map((theme, index) => ({
-				...theme,
-				bgColor: this.cardColors[index % this.cardColors.length]
-			}));
-			return [...themesWithColors, ...themesWithColors];
+		}
+	},
+	mounted() {
+		// 启动自动切换卡片
+		this.startCardAutoSwitch();
+	},
+	beforeDestroy() {
+		// 清理定时器
+		if (this.cardTimer) {
+			clearInterval(this.cardTimer);
 		}
 	},
 	methods: {
@@ -181,6 +199,43 @@ export default {
 		// 选择主题
 		selectTheme(theme) {
 			this.inspiration = theme.prompt;
+		},
+		
+		// 启动卡片自动切换
+		startCardAutoSwitch() {
+			this.cardTimer = setInterval(() => {
+				this.activeCardIndex = (this.activeCardIndex + 1) % this.hotThemes.length;
+			}, 4000); // 每4秒切换一次
+		},
+		
+		// 切换到指定卡片
+		switchToCard(index) {
+			this.activeCardIndex = index;
+			// 重置定时器
+			if (this.cardTimer) {
+				clearInterval(this.cardTimer);
+			}
+			this.startCardAutoSwitch();
+		},
+		
+		// 判断是否为前一张卡片
+		isPrevCard(index) {
+			const prev = (this.activeCardIndex - 1 + this.hotThemes.length) % this.hotThemes.length;
+			return index === prev;
+		},
+		
+		// 判断是否为后一张卡片
+		isNextCard(index) {
+			const next = (this.activeCardIndex + 1) % this.hotThemes.length;
+			return index === next;
+		},
+		
+		// 获取卡片样式
+		getCardStyle(index) {
+			const bgColor = this.cardColors[index % this.cardColors.length];
+			return {
+				background: bgColor
+			};
 		},
 		
 		// AI扩展灵感
@@ -345,7 +400,13 @@ export default {
 .section-title {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	margin-bottom: 20rpx;
+}
+
+.title-left {
+	display: flex;
+	align-items: center;
 }
 
 .title-icon {
@@ -358,14 +419,7 @@ export default {
 	font-weight: bold;
 }
 
-.input-wrapper {
-	display: flex;
-	align-items: flex-start;
-	gap: 20rpx;
-}
-
 .input-container {
-	flex: 1;
 	position: relative;
 	background-color: rgba(255, 255, 255, 0.05);
 	border-radius: 20rpx;
@@ -394,8 +448,8 @@ export default {
 // Gemini AI按钮
 .gemini-ai-btn {
 	position: relative;
-	width: 100rpx;
-	height: 100rpx;
+	width: 80rpx;
+	height: 80rpx;
 	border-radius: 50%;
 	border: none;
 	padding: 0;
@@ -434,7 +488,7 @@ export default {
 }
 
 .gemini-icon {
-	font-size: 48rpx;
+	font-size: 40rpx;
 	z-index: 1;
 	animation: gemini-pulse 2s ease-in-out infinite;
 }
@@ -496,78 +550,123 @@ export default {
 	margin-bottom: 40rpx;
 }
 
-// 跑马灯容器
-.marquee-container {
-	width: 100%;
-	overflow: hidden;
+// 3D层叠卡片容器
+.card-stack-container {
 	position: relative;
+	height: 500rpx;
+	margin-bottom: 40rpx;
+	perspective: 1500rpx;
 }
 
-.marquee-track {
-	display: flex;
-	gap: 20rpx;
-	animation: marquee-scroll 30s linear infinite;
+.theme-card-stack {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 600rpx;
+	min-height: 400rpx;
+	border-radius: 30rpx;
+	padding: 50rpx 40rpx;
+	box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.4);
+	transform-origin: center center;
+	transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+	cursor: pointer;
 	
-	&:hover {
-		animation-play-state: paused;
+	// 默认状态：隐藏在后面
+	opacity: 0;
+	transform: translate(-50%, -50%) scale(0.7) translateZ(-300rpx) rotateY(20deg);
+	z-index: 1;
+	pointer-events: none;
+	
+	// 当前激活卡片
+	&.active {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1) translateZ(0) rotateY(0deg);
+		z-index: 3;
+		pointer-events: auto;
+		animation: card-float 3s ease-in-out infinite;
 	}
-}
-
-@keyframes marquee-scroll {
-	0% {
-		transform: translateX(0);
+	
+	// 前一张卡片（左侧）
+	&.prev {
+		opacity: 0.5;
+		transform: translate(-50%, -50%) scale(0.85) translateZ(-200rpx) translateX(-150rpx) rotateY(25deg);
+		z-index: 2;
+		pointer-events: auto;
 	}
-	100% {
-		transform: translateX(-50%);
+	
+	// 后一张卡片（右侧）
+	&.next {
+		opacity: 0.5;
+		transform: translate(-50%, -50%) scale(0.85) translateZ(-200rpx) translateX(150rpx) rotateY(-25deg);
+		z-index: 2;
+		pointer-events: auto;
 	}
-}
-
-.theme-card-marquee {
-	flex-shrink: 0;
-	width: 400rpx;
-	border-radius: 20rpx;
-	padding: 30rpx;
-	box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.3);
-	border: 2rpx solid rgba(255, 255, 255, 0.1);
-	animation: card-breathe 2s ease-in-out infinite;
-	transition: transform 0.3s ease;
 	
 	&:active {
-		transform: scale(0.95);
-		animation-play-state: paused;
+		transform: translate(-50%, -50%) scale(0.95) translateZ(0) rotateY(0deg);
 	}
 }
 
-@keyframes card-breathe {
+@keyframes card-float {
 	0%, 100% {
-		transform: scale(1);
-		opacity: 0.9;
+		transform: translate(-50%, -50%) scale(1) translateZ(0) rotateY(0deg) translateY(0);
 	}
 	50% {
-		transform: scale(1.05);
-		opacity: 1;
+		transform: translate(-50%, -50%) scale(1) translateZ(0) rotateY(0deg) translateY(-10rpx);
 	}
 }
 
-.theme-emoji {
-	font-size: 48rpx;
-	margin-bottom: 15rpx;
-	text-align: center;
+.card-content-wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
 }
 
-.theme-title {
-	font-size: 30rpx;
+.theme-emoji-large {
+	font-size: 100rpx;
+	margin-bottom: 30rpx;
+	filter: drop-shadow(0 4rpx 8rpx rgba(0, 0, 0, 0.2));
+}
+
+.theme-title-large {
+	font-size: 40rpx;
 	font-weight: bold;
-	margin-bottom: 10rpx;
+	margin-bottom: 20rpx;
 	text-align: center;
 	color: #FFFFFF;
+	text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
 }
 
-.theme-desc {
-	font-size: 26rpx;
-	color: rgba(255, 255, 255, 0.85);
-	line-height: 1.4;
+.theme-desc-large {
+	font-size: 28rpx;
+	color: rgba(255, 255, 255, 0.9);
+	line-height: 1.6;
 	text-align: center;
+	text-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.2);
+}
+
+// 指示器
+.card-indicators {
+	display: flex;
+	justify-content: center;
+	gap: 15rpx;
+}
+
+.indicator-dot {
+	width: 16rpx;
+	height: 16rpx;
+	border-radius: 50%;
+	background-color: rgba(255, 255, 255, 0.3);
+	transition: all 0.3s ease;
+	cursor: pointer;
+	
+	&.active {
+		width: 40rpx;
+		border-radius: 8rpx;
+		background-color: rgba(255, 255, 255, 0.9);
+	}
 }
 
 // 生成按钮区域
