@@ -42,6 +42,10 @@ export class AuthController {
 
   @Post('wechat/phone')
   async bindPhoneNumber(@Request() req, @Body() wechatPhoneDto: WechatPhoneDto) {
+    // 从JWT中获取用户ID（需要已登录）
+    if (!req.user || !req.user.id) {
+      throw new Error('用户未登录，请先完成微信登录');
+    }
     return this.authService.bindPhoneNumber(req.user.id, wechatPhoneDto.code);
   }
 }

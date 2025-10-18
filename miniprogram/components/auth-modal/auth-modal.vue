@@ -139,9 +139,10 @@ export default {
 					// 步骤3: 如果有手机号code，调用获取手机号接口
 					if (e.detail.code) {
 						try {
+							// 传入刚获取的token，确保请求带上Authorization header
 							const phoneResult = await this.$minApi.getUserPhone({
 								code: e.detail.code
-							})
+							}, token)
 							
 							if (phoneResult && phoneResult.code === 200) {
 								console.log('手机号获取成功:', phoneResult.data)

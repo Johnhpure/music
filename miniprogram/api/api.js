@@ -54,7 +54,18 @@ export default {
 			return minRequest.post('/auth/wechat-login', params)
 		},
 		// 获取用户手机号
-		getUserPhone(params) {
+		getUserPhone(params, token) {
+			// 如果提供了token，手动添加到header
+			if (token) {
+				return minRequest.request({
+					url: '/auth/wechat/phone',
+					method: 'POST',
+					data: params,
+					header: {
+						'Authorization': `Bearer ${token}`
+					}
+				})
+			}
 			return minRequest.post('/auth/wechat/phone', params)
 		},
 		// 更新用户资料
