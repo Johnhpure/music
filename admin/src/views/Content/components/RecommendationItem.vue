@@ -152,7 +152,7 @@
     <!-- Inactive Overlay -->
     <div 
       v-if="!recommendation.isActive"
-      class="absolute inset-0 bg-gray-900/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      class="absolute inset-0 bg-gray-900/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
     >
       <div class="bg-gray-800/90 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-600">
         <span class="text-xs text-gray-400 font-medium">已禁用</span>
