@@ -1,136 +1,105 @@
 <template>
-	<view class="container">
+	<view class="music-player-container">
+		<!-- 渐变背景 -->
+		<view class="background-gradient"></view>
 		
-		<view class="content">
-			<!-- 音乐封面和基本信息 -->
-			<view class="music-cover-section">
-				<view class="cover-container">
-					<image :src="workDetail.coverUrl" mode="aspectFill" class="cover-image"></image>
-				</view>
-				
-				<view class="music-basic-info">
-					<text class="music-title">{{workDetail.title}}</text>
-					<text class="music-style">{{workDetail.style}}</text>
-					<view class="music-meta">
-						<text class="creation-date">创作于 {{formatDate(workDetail.createdAt)}}</text>
-						<text class="meta-divider">·</text>
-						<text class="duration">{{formatTime(totalTime)}}</text>
-					</view>
-				</view>
+		<!-- 顶部导航栏 -->
+		<view class="top-nav">
+			<view class="nav-button" @click="navigateBack">
+				<image src="/static/img/icon/back.svg" class="nav-icon"></image>
+			</view>
+			<text class="nav-title">音乐播放</text>
+			<view class="nav-button" @click="showActionSheet">
+				<image src="/static/img/icon/more.svg" class="nav-icon"></image>
+			</view>
+		</view>
+		
+		<!-- 黑胶唱片区域 -->
+		<view class="vinyl-section">
+			<!-- 唱针 -->
+			<view class="tonearm" :class="{'playing': isPlaying}">
+				<view class="tonearm-body"></view>
+				<view class="tonearm-head"></view>
 			</view>
 			
-			<!-- 播放控制 -->
-			<view class="playback-control">
-				<!-- 进度条和时间 -->
-				<view class="time-progress">
-					<text class="current-time">{{formatTime(currentTime)}}</text>
-					<view class="progress-bar">
-						<view class="progress-fill" :style="{width: progress + '%'}"></view>
+			<!-- 黑胶唱片 -->
+			<view class="vinyl-wrapper">
+				<view class="vinyl-disc" :class="{'rotating': isPlaying}">
+					<!-- 唱片外圈 -->
+					<view class="vinyl-outer"></view>
+					<!-- 唱片纹路 -->
+					<view class="vinyl-groove vinyl-groove-1"></view>
+					<view class="vinyl-groove vinyl-groove-2"></view>
+					<view class="vinyl-groove vinyl-groove-3"></view>
+					<!-- 专辑封面 -->
+					<view class="album-cover">
+						<image :src="workDetail.coverUrl" mode="aspectFill" class="cover-image"></image>
 					</view>
-					<text class="total-time">{{formatTime(totalTime)}}</text>
-				</view>
-				
-				<!-- 波形图 -->
-				<view class="waveform">
-					<view v-for="(height, index) in waveformHeights" :key="index" 
-					      class="waveform-bar" :style="{ height: height + 'rpx' }"></view>
-				</view>
-				
-				<!-- 控制按钮 -->
-				<view class="control-buttons">
-					<view class="control-button prev" @click="handlePrev">
-						<image src="/static/img/icon/pre.svg" class="control-icon"></image>
-					</view>
-					<view class="play-button" @click="togglePlay">
-						<image v-if="!isPlaying" src="/static/img/icon/play.svg" class="play-icon"></image>
-						<image v-else src="/static/img/icon/pause.svg" class="pause-icon"></image>
-					</view>
-					<view class="control-button next" @click="handleNext">
-						<image src="/static/img/icon/next.svg" class="control-icon"></image>
-					</view>
+					<!-- 中心圆点 -->
+					<view class="vinyl-center"></view>
 				</view>
 			</view>
-			
-			<!-- 功能按钮 -->
-			<view class="function-buttons">
-				<view class="function-button" @click="toggleFavorite">
-					<view class="function-icon" :class="{'active': isFavorite}">
-						<image src="/static/img/icon/like.svg" class="function-img"></image>
-					</view>
-					<text class="function-text">收藏</text>
-				</view>
-				<view class="function-button" @click="downloadWork">
-					<view class="function-icon">
-						<image src="/static/img/icon/download.svg" class="function-img"></image>
-					</view>
-					<text class="function-text">下载</text>
-				</view>
-				<view class="function-button" @click="editMusic">
-					<view class="function-icon">
-						<image src="/static/img/icon/edit.svg" class="function-img"></image>
-					</view>
-					<text class="function-text">编辑</text>
-				</view>
-				<view class="function-button" @click="shareWork">
-					<view class="function-icon">
-						<image src="/static/img/icon/share.svg" class="function-img"></image>
-					</view>
-					<text class="function-text">分享</text>
+		</view>
+		
+		<!-- 歌曲信息 -->
+		<view class="song-info">
+			<text class="song-title">{{workDetail.title}}</text>
+			<view class="song-meta">
+				<text class="artist-name">{{workDetail.artist}}</text>
+				<view class="genre-tag">
+					<text>{{workDetail.style}}</text>
 				</view>
 			</view>
-			
-			<!-- 音乐信息 -->
-			<view class="music-info-section">
-				<text class="section-title">音乐信息</text>
-				
-				<view class="info-grid">
-					<view class="info-item">
-						<text class="info-label">创作模式</text>
-						<text class="info-value">{{workDetail.creationMode}}</text>
-					</view>
-					<view class="info-item">
-						<text class="info-label">音乐风格</text>
-						<text class="info-value">{{workDetail.style}}</text>
-					</view>
-					<view class="info-item">
-						<text class="info-label">BPM</text>
-						<text class="info-value">{{workDetail.bpm}}</text>
-					</view>
-					<view class="info-item">
-						<text class="info-label">调性</text>
-						<text class="info-value">{{workDetail.key}}</text>
-					</view>
-					<view class="info-item">
-						<text class="info-label">创作提示词</text>
-						<text class="info-value">{{workDetail.prompt}}</text>
-					</view>
-					<view class="info-item">
-						<text class="info-label">播放次数</text>
-						<text class="info-value">{{workDetail.playCount}}</text>
-					</view>
-				</view>
+		</view>
+		
+		<!-- 互动区 -->
+		<view class="interaction-section">
+			<view class="interaction-button" @click="toggleFavorite">
+				<image :src="isFavorite ? '/static/img/icon/like-fill.svg' : '/static/img/icon/like.svg'" 
+				       class="interaction-icon" :class="{'liked': isFavorite}"></image>
+				<text class="interaction-count">{{workDetail.likeCount || 0}}</text>
+			</view>
+			<view class="interaction-button" @click="shareWork">
+				<image src="/static/img/icon/share.svg" class="interaction-icon"></image>
+				<text class="interaction-count">分享</text>
+			</view>
+			<view class="interaction-button" @click="downloadWork">
+				<image src="/static/img/icon/download.svg" class="interaction-icon"></image>
+				<text class="interaction-count">下载</text>
+			</view>
+		</view>
+		
+		<!-- 播放控制区 -->
+		<view class="playback-section">
+			<!-- 音质标识 -->
+			<view class="quality-tag">
+				<text>标准音质</text>
 			</view>
 			
-			<!-- 相似推荐 -->
-			<view class="similar-section">
-				<view class="section-header">
-					<text class="section-title">相似推荐</text>
-					<text class="view-more" @click="viewMoreSimilar">查看更多</text>
-				</view>
-				
-				<view class="similar-grid">
-					<view v-for="(item, index) in similarMusic" :key="index" class="similar-item" @click="playSimilar(item)">
-						<view class="similar-cover">
-							<image :src="item.coverUrl" mode="aspectFill" class="similar-image"></image>
-							<view class="play-icon-similar">
-								<image src="/static/img/icon/play.svg" class="play-icon"></image>
-							</view>
-						</view>
-						<view class="similar-info">
-							<text class="similar-title">{{item.title}}</text>
-							<text class="similar-meta">{{item.style}} · {{item.duration}}</text>
+			<!-- 进度条 -->
+			<view class="progress-section">
+				<text class="time-text">{{formatTime(currentTime)}}</text>
+				<view class="progress-bar" @click="handleProgressClick">
+					<view class="progress-bg">
+						<view class="progress-fill" :style="{width: progress + '%'}">
+							<view class="progress-thumb"></view>
 						</view>
 					</view>
+				</view>
+				<text class="time-text">{{formatTime(totalTime)}}</text>
+			</view>
+			
+			<!-- 控制按钮 -->
+			<view class="control-buttons">
+				<view class="control-btn" @click="handlePrev">
+					<image src="/static/img/icon/pre.svg" class="control-icon"></image>
+				</view>
+				<view class="play-btn" @click="togglePlay">
+					<image v-if="!isPlaying" src="/static/img/icon/play.svg" class="play-icon"></image>
+					<image v-else src="/static/img/icon/pause.svg" class="play-icon"></image>
+				</view>
+				<view class="control-btn" @click="handleNext">
+					<image src="/static/img/icon/next.svg" class="control-icon"></image>
 				</view>
 			</view>
 		</view>
@@ -143,26 +112,19 @@ export default {
 		return {
 			id: '',
 			isPlaying: false,
-			progress: 35, // 默认进度35%
-			currentTime: 75, // 默认1:15
-			totalTime: 225, // 默认3:45
+			progress: 0,
+			currentTime: 0,
+			totalTime: 0,
 			isFavorite: false,
 			workDetail: {
 				id: '',
 				title: '加载中...',
-				style: '加载中...',
+				artist: '未知艺术家',
+				style: '流行',
 				coverUrl: '/static/img/covers/default.jpg',
-				createdAt: new Date(),
-				creationMode: '加载中...',
-				bpm: 0,
-				key: '',
-				prompt: '',
-				playCount: 0,
-				audioUrl: ''
-			},
-			audioContext: null,
-			waveformHeights: [],
-			similarMusic: []
+				audioUrl: '',
+				likeCount: 0
+			}
 		}
 	},
 	onLoad(options) {
@@ -171,107 +133,122 @@ export default {
 			this.getWorkDetail();
 		}
 		
-		// 生成波形图高度
-		this.generateWaveform();
+		// 监听全局音频管理器事件
+		this.$audioManager.on('play', this.onAudioPlay);
+		this.$audioManager.on('pause', this.onAudioPause);
+		this.$audioManager.on('timeUpdate', this.onTimeUpdate);
+		this.$audioManager.on('ended', this.onAudioEnded);
 		
-		// 创建音频上下文
-		this.audioContext = uni.createInnerAudioContext();
-		this.audioContext.onTimeUpdate(() => {
-			this.currentTime = this.audioContext.currentTime;
-			this.progress = (this.currentTime / this.totalTime) * 100;
-		});
-		this.audioContext.onEnded(() => {
-			this.isPlaying = false;
-			this.progress = 0;
-			this.currentTime = 0;
-		});
-		
-		// 加载相似推荐
-		this.loadSimilarMusic();
+		// 检查当前是否有正在播放的音乐
+		const playState = this.$audioManager.getPlayState();
+		if (playState.currentMusic && playState.currentMusic.id === this.id) {
+			this.isPlaying = playState.isPlaying;
+			this.currentTime = playState.currentTime;
+			this.totalTime = playState.duration;
+			this.progress = playState.progress;
+		}
 	},
 	onUnload() {
-		// 页面卸载时停止和释放音频
-		if (this.audioContext) {
-			this.audioContext.stop();
-			this.audioContext.destroy();
-		}
+		// 移除事件监听
+		this.$audioManager.off('play', this.onAudioPlay);
+		this.$audioManager.off('pause', this.onAudioPause);
+		this.$audioManager.off('timeUpdate', this.onTimeUpdate);
+		this.$audioManager.off('ended', this.onAudioEnded);
 	},
 	methods: {
 		navigateBack() {
 			uni.navigateBack();
 		},
-		getWorkDetail() {
-			// 模拟从API获取数据
-			setTimeout(() => {
-				this.workDetail = {
-					id: this.id,
-					title: '夏日海风',
-					style: '电子 · 轻松',
-					coverUrl: '/static/img/covers/cover2.jpg',
-					createdAt: new Date('2023-11-20 03:45'),
-					creationMode: 'AI创作',
-					bpm: 120,
-					key: 'C大调',
-					prompt: '夏日海边，轻松愉快的电子音乐',
-					playCount: 128,
-					audioUrl: 'https://example.com/sample-music.mp3'
-				};
+		async getWorkDetail() {
+			try {
+				// 这里应该调用真实API获取详情
+				// const res = await this.$minApi.getWorkDetail(this.id);
 				
-				// 设置音频源
-				if (this.workDetail.audioUrl) {
-					this.audioContext.src = this.workDetail.audioUrl;
-				}
-			}, 500);
+				// 模拟数据（实际项目中应该从API获取）
+				setTimeout(() => {
+					this.workDetail = {
+						id: this.id,
+						title: '夏日海风',
+						artist: 'AI创作',
+						style: '电子',
+						coverUrl: '/static/img/covers/cover2.jpg',
+						audioUrl: 'https://example.com/sample-music.mp3',
+						likeCount: 128
+					};
+					
+					// 如果是当前正在播放的歌曲，同步状态
+					const playState = this.$audioManager.getPlayState();
+					if (playState.currentMusic && playState.currentMusic.id === this.id) {
+						this.isPlaying = playState.isPlaying;
+						this.currentTime = playState.currentTime;
+						this.totalTime = playState.duration;
+						this.progress = playState.progress;
+					} else {
+						// 自动播放
+						this.playMusic();
+					}
+				}, 500);
+			} catch (err) {
+				console.error('获取作品详情失败:', err);
+				uni.showToast({
+					title: '加载失败',
+					icon: 'none'
+				});
+			}
 		},
-		generateWaveform() {
-			// 生成随机波形图高度
-			const barCount = 40; // 波形图柱子数量
-			const heights = [];
-			
-			for (let i = 0; i < barCount; i++) {
-				// 生成8-72之间的随机高度
-				let height;
-				if (i < 5 || i > barCount - 5) {
-					// 两端高度较低
-					height = Math.floor(Math.random() * 20) + 8;
-				} else if (i > 10 && i < barCount - 10) {
-					// 中间高度较高
-					height = Math.floor(Math.random() * 40) + 32;
-				} else {
-					// 过渡区域
-					height = Math.floor(Math.random() * 30) + 20;
-				}
-				heights.push(height);
+		playMusic() {
+			if (!this.workDetail.audioUrl) {
+				uni.showToast({
+					title: '音频地址不存在',
+					icon: 'none'
+				});
+				return;
 			}
 			
-			this.waveformHeights = heights;
-		},
-		loadSimilarMusic() {
-			// 模拟加载相似推荐
-			this.similarMusic = [
-				{
-					id: 's1',
-					title: '海浪声音',
-					style: '环境',
-					duration: '2:30',
-					coverUrl: '/static/img/covers/cover1.jpg'
-				},
-				{
-					id: 's2',
-					title: '电子节拍',
-					style: '电子',
-					duration: '3:15',
-					coverUrl: '/static/img/covers/cover1.jpg'
-				}
-			];
+			this.$audioManager.play({
+				id: this.workDetail.id,
+				title: this.workDetail.title,
+				audioUrl: this.workDetail.audioUrl,
+				coverUrl: this.workDetail.coverUrl,
+				artist: this.workDetail.artist
+			});
 		},
 		togglePlay() {
-			if (this.isPlaying) {
-				this.audioContext.pause();
+			const playState = this.$audioManager.getPlayState();
+			
+			// 如果当前没有播放任何音乐，或播放的不是本页面的音乐
+			if (!playState.currentMusic || playState.currentMusic.id !== this.id) {
+				this.playMusic();
 			} else {
-				this.audioContext.play();
+				this.$audioManager.togglePlay();
 			}
-			this.isPlaying = !this.isPlaying;
+		},
+		handlePrev() {
+			uni.showToast({
+				title: '这是第一首作品',
+				icon: 'none'
+			});
+		},
+		handleNext() {
+			uni.showToast({
+				title: '这是最后一首作品',
+				icon: 'none'
+			});
+		},
+		handleProgressClick(e) {
+			// 获取点击位置的百分比
+			const query = uni.createSelectorQuery().in(this);
+			query.select('.progress-bg').boundingClientRect();
+			query.exec((res) => {
+				if (res[0]) {
+					const clickX = e.detail.x;
+					const barLeft = res[0].left;
+					const barWidth = res[0].width;
+					const percent = (clickX - barLeft) / barWidth;
+					const newTime = this.totalTime * percent;
+					this.$audioManager.seek(newTime);
+				}
+			});
 		},
 		toggleFavorite() {
 			this.isFavorite = !this.isFavorite;
@@ -281,36 +258,8 @@ export default {
 				title: message,
 				icon: 'none'
 			});
-		},
-		formatTime(seconds) {
-			const min = Math.floor(seconds / 60);
-			const sec = Math.floor(seconds % 60);
-			return `${min}:${sec.toString().padStart(2, '0')}`;
-		},
-		formatDate(date) {
-			if (!date) return '';
-			const d = new Date(date);
-			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-		},
-		handlePrev() {
-			// 在实际应用中，这里可以切换到上一首歌
-			uni.showToast({
-				title: '这是第一首作品',
-				icon: 'none'
-			});
-		},
-		handleNext() {
-			// 在实际应用中，这里可以切换到下一首歌
-			uni.showToast({
-				title: '这是最后一首作品',
-				icon: 'none'
-			});
-		},
-		editMusic() {
-			uni.showToast({
-				title: '音乐编辑功能开发中',
-				icon: 'none'
-			});
+			
+			// 这里应该调用API保存收藏状态
 		},
 		shareWork() {
 			uni.showShareMenu({
@@ -323,7 +272,7 @@ export default {
 				title: '下载中...'
 			});
 			
-			// 模拟下载过程
+			// 模拟下载过程（实际项目中应该调用真实下载API）
 			setTimeout(() => {
 				uni.hideLoading();
 				uni.showToast({
@@ -334,16 +283,14 @@ export default {
 		},
 		showActionSheet() {
 			uni.showActionSheet({
-				itemList: ['重命名', '删除作品'],
+				itemList: ['编辑信息', '删除作品'],
 				success: (res) => {
 					if (res.tapIndex === 0) {
-						// 重命名
 						uni.showToast({
-							title: '重命名功能开发中',
+							title: '编辑功能开发中',
 							icon: 'none'
 						});
 					} else if (res.tapIndex === 1) {
-						// 删除
 						this.confirmDelete();
 					}
 				}
@@ -360,7 +307,6 @@ export default {
 							title: '删除中...'
 						});
 						
-						// 模拟删除过程
 						setTimeout(() => {
 							uni.hideLoading();
 							uni.showToast({
@@ -368,7 +314,6 @@ export default {
 								icon: 'success'
 							});
 							
-							// 返回上一页
 							setTimeout(() => {
 								uni.navigateBack();
 							}, 1500);
@@ -377,98 +322,214 @@ export default {
 				}
 			});
 		},
-		viewMoreSimilar() {
-			uni.showToast({
-				title: '查看更多推荐功能开发中',
-				icon: 'none'
-			});
+		formatTime(seconds) {
+			if (!seconds || isNaN(seconds)) return '00:00';
+			const min = Math.floor(seconds / 60);
+			const sec = Math.floor(seconds % 60);
+			return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 		},
-		playSimilar(item) {
-			uni.showToast({
-				title: `播放${item.title}`,
-				icon: 'none'
-			});
+		// 音频事件监听器
+		onAudioPlay() {
+			this.isPlaying = true;
+		},
+		onAudioPause() {
+			this.isPlaying = false;
+		},
+		onTimeUpdate(data) {
+			this.currentTime = data.currentTime;
+			this.totalTime = data.duration;
+			this.progress = data.progress;
+		},
+		onAudioEnded() {
+			this.isPlaying = false;
+			this.progress = 0;
+			this.currentTime = 0;
 		}
 	}
 }
 </script>
 
 <style lang="scss">
-.container {
-	min-height: 100vh;
-	background-color: #121212;
-	padding-bottom: 50rpx;
-}
-
-.header {
+.music-player-container {
 	position: relative;
-	padding: 90rpx 30rpx 20rpx;
+	min-height: 100vh;
+	overflow: hidden;
+}
+
+/* 渐变背景 */
+.background-gradient {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(180deg, #000000 0%, #3E2723 100%);
+	z-index: -1;
+}
+
+/* 顶部导航栏 */
+.top-nav {
 	display: flex;
-	align-items: center;
 	justify-content: space-between;
+	align-items: center;
+	padding: 90rpx 30rpx 20rpx;
 }
 
-.back-button {
-	height: 60rpx;
+.nav-button {
 	width: 60rpx;
+	height: 60rpx;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 }
 
-.action-buttons-header {
-	display: flex;
-	align-items: center;
+.nav-icon {
+	width: 40rpx;
+	height: 40rpx;
+	filter: brightness(0) invert(1);
 }
 
-.share-button-header {
-	height: 60rpx;
-	width: 60rpx;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	margin-right: 20rpx;
-}
-
-.more-button {
-	height: 60rpx;
-	width: 60rpx;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.iconfont {
-	font-size: 40rpx;
-	color: #FFFFFF;
-}
-
-.title {
-	font-size: 36rpx;
+.nav-title {
+	font-size: 32rpx;
 	font-weight: 600;
 	color: #FFFFFF;
 }
 
-.content {
-	padding: 30rpx;
-}
-
-/* 音乐封面和基本信息 */
-.music-cover-section {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	margin-bottom: 40rpx;
-}
-
-.cover-container {
-	width: 480rpx;
-	height: 480rpx;
-	margin-bottom: 30rpx;
-	border-radius: 32rpx;
-	overflow: hidden;
-	box-shadow: 0 16rpx 48rpx rgba(11, 103, 236, 0.3);
+/* 黑胶唱片区域 */
+.vinyl-section {
 	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 60rpx 0;
+	margin-top: 40rpx;
+}
+
+/* 唱针 */
+.tonearm {
+	position: absolute;
+	top: 0;
+	right: 50%;
+	margin-right: -180rpx;
+	width: 240rpx;
+	height: 280rpx;
+	transform-origin: 40rpx 40rpx;
+	transform: rotate(-25deg);
+	transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	z-index: 10;
+}
+
+.tonearm.playing {
+	transform: rotate(0deg);
+}
+
+.tonearm-body {
+	position: absolute;
+	top: 40rpx;
+	left: 40rpx;
+	width: 8rpx;
+	height: 200rpx;
+	background: linear-gradient(180deg, #888888 0%, #333333 100%);
+	border-radius: 4rpx;
+	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.5);
+}
+
+.tonearm-head {
+	position: absolute;
+	top: 0;
+	left: 20rpx;
+	width: 48rpx;
+	height: 48rpx;
+	background: radial-gradient(circle, #666666 0%, #333333 100%);
+	border-radius: 50%;
+	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.5);
+}
+
+/* 黑胶唱片 */
+.vinyl-wrapper {
+	position: relative;
+	width: 540rpx;
+	height: 540rpx;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.vinyl-disc {
+	position: relative;
+	width: 540rpx;
+	height: 540rpx;
+	border-radius: 50%;
+	background: #1a1a1a;
+	box-shadow: 
+		0 0 40rpx rgba(0, 0, 0, 0.8),
+		inset 0 0 60rpx rgba(0, 0, 0, 0.6);
+}
+
+.vinyl-disc.rotating {
+	animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* 唱片外圈 */
+.vinyl-outer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	border-radius: 50%;
+	border: 20rpx solid #0a0a0a;
+	box-shadow: inset 0 0 20rpx rgba(255, 255, 255, 0.1);
+}
+
+/* 唱片纹路 */
+.vinyl-groove {
+	position: absolute;
+	border-radius: 50%;
+	border: 1rpx solid rgba(255, 255, 255, 0.05);
+}
+
+.vinyl-groove-1 {
+	top: 60rpx;
+	left: 60rpx;
+	right: 60rpx;
+	bottom: 60rpx;
+}
+
+.vinyl-groove-2 {
+	top: 90rpx;
+	left: 90rpx;
+	right: 90rpx;
+	bottom: 90rpx;
+}
+
+.vinyl-groove-3 {
+	top: 120rpx;
+	left: 120rpx;
+	right: 120rpx;
+	bottom: 120rpx;
+}
+
+/* 专辑封面 */
+.album-cover {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 320rpx;
+	height: 320rpx;
+	border-radius: 50%;
+	overflow: hidden;
+	box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.6);
 }
 
 .cover-image {
@@ -476,331 +537,199 @@ export default {
 	height: 100%;
 }
 
-.music-basic-info {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
+/* 中心圆点 */
+.vinyl-center {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 80rpx;
+	height: 80rpx;
+	border-radius: 50%;
+	background: radial-gradient(circle, #333333 0%, #000000 100%);
+	box-shadow: 
+		0 0 20rpx rgba(0, 0, 0, 0.8),
+		inset 0 0 10rpx rgba(255, 255, 255, 0.1);
 }
 
-.music-title {
-	font-size: 40rpx;
+/* 歌曲信息 */
+.song-info {
+	text-align: center;
+	padding: 40rpx 60rpx 20rpx;
+}
+
+.song-title {
+	display: block;
+	font-size: 44rpx;
 	font-weight: 600;
 	color: #FFFFFF;
-	margin-bottom: 10rpx;
-}
-
-.music-style {
-	font-size: 28rpx;
-	color: #ACACAC;
-	margin-bottom: 16rpx;
-}
-
-.music-meta {
-	display: flex;
-	align-items: center;
-}
-
-.creation-date, .duration {
-	font-size: 24rpx;
-	color: #787878;
-}
-
-.meta-divider {
-	margin: 0 10rpx;
-	color: #787878;
-	font-size: 24rpx;
-}
-
-/* 播放控制 */
-.playback-control {
-	margin-bottom: 60rpx;
-}
-
-.time-progress {
-	display: flex;
-	align-items: center;
 	margin-bottom: 20rpx;
 }
 
-.current-time, .total-time {
+.song-meta {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 20rpx;
+}
+
+.artist-name {
+	font-size: 28rpx;
+	color: rgba(255, 255, 255, 0.6);
+}
+
+.genre-tag {
+	padding: 6rpx 16rpx;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 20rpx;
+	border: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.genre-tag text {
 	font-size: 24rpx;
-	color: #787878;
-	width: 60rpx;
+	color: rgba(255, 255, 255, 0.8);
+}
+
+/* 互动区 */
+.interaction-section {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 80rpx;
+	padding: 40rpx 60rpx;
+}
+
+.interaction-button {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12rpx;
+}
+
+.interaction-icon {
+	width: 48rpx;
+	height: 48rpx;
+	filter: brightness(0) invert(1);
+	opacity: 0.7;
+	transition: opacity 0.3s;
+}
+
+.interaction-icon.liked {
+	opacity: 1;
+	filter: none;
+}
+
+.interaction-count {
+	font-size: 24rpx;
+	color: rgba(255, 255, 255, 0.6);
+}
+
+/* 播放控制区 */
+.playback-section {
+	padding: 0 60rpx 60rpx;
+}
+
+/* 音质标识 */
+.quality-tag {
+	display: inline-flex;
+	padding: 6rpx 16rpx;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 20rpx;
+	border: 1rpx solid rgba(255, 255, 255, 0.2);
+	margin-bottom: 40rpx;
+}
+
+.quality-tag text {
+	font-size: 24rpx;
+	color: rgba(255, 255, 255, 0.6);
+}
+
+/* 进度条 */
+.progress-section {
+	display: flex;
+	align-items: center;
+	gap: 20rpx;
+	margin-bottom: 50rpx;
+}
+
+.time-text {
+	font-size: 24rpx;
+	color: rgba(255, 255, 255, 0.5);
+	width: 80rpx;
+	text-align: center;
 }
 
 .progress-bar {
 	flex: 1;
-	height: 8rpx;
-	background-color: #3D3D3D;
-	border-radius: 4rpx;
-	margin: 0 16rpx;
-	overflow: hidden;
+	padding: 20rpx 0;
+}
+
+.progress-bg {
+	height: 6rpx;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 3rpx;
+	overflow: visible;
+	position: relative;
 }
 
 .progress-fill {
 	height: 100%;
-	background: linear-gradient(135deg, #0B67EC 0%, #7342CC 100%);
-}
-
-.waveform {
-	display: flex;
-	align-items: flex-end;
-	height: 120rpx;
-	padding: 10rpx;
-	background-color: rgba(18, 18, 18, 0.5);
-	border-radius: 16rpx;
-	margin-bottom: 40rpx;
-	justify-content: space-between;
-	position: relative;
-}
-
-.waveform::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: linear-gradient(90deg, rgba(11, 103, 236, 0.05) 0%, rgba(115, 66, 204, 0.05) 100%);
-	pointer-events: none;
-	border-radius: 16rpx;
-}
-
-.waveform-bar {
-	width: 6rpx;
-	background: linear-gradient(180deg, #0B67EC 0%, #7342CC 100%);
-	margin: 0 2rpx;
+	background: #FF4141;
 	border-radius: 3rpx;
-	transition: height 0.3s ease;
-	box-shadow: 0 0 16rpx rgba(11, 103, 236, 0.3);
+	position: relative;
+	transition: width 0.3s;
 }
 
+.progress-thumb {
+	position: absolute;
+	right: -8rpx;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 16rpx;
+	height: 16rpx;
+	background: #FFFFFF;
+	border-radius: 50%;
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
+}
+
+/* 控制按钮 */
 .control-buttons {
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	gap: 60rpx;
 }
 
-.control-button {
-	width: 96rpx;
-	height: 96rpx;
-	border-radius: 48rpx;
-	background-color: #2D2D2D;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	margin: 0 30rpx;
-}
-
-.play-button {
-	width: 128rpx;
-	height: 128rpx;
-	border-radius: 64rpx;
-	background: linear-gradient(135deg, #0B67EC 0%, #7342CC 100%);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	box-shadow: 0 8rpx 24rpx rgba(11, 103, 236, 0.3);
-}
-
-.play-button .iconfont {
-	font-size: 60rpx;
-}
-
-/* 功能按钮 */
-.function-buttons {
-	display: grid;
-	grid-template-columns: repeat(4, 1fr);
-	gap: 20rpx;
-	margin-bottom: 60rpx;
-}
-
-.function-button {
-	background-color: #1E1E1E;
-	border-radius: 24rpx;
-	padding: 24rpx 0;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-}
-
-.function-icon {
+.control-btn {
 	width: 80rpx;
 	height: 80rpx;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	margin-bottom: 12rpx;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 50%;
+	border: 1rpx solid rgba(255, 255, 255, 0.1);
 }
 
-.function-icon.active .iconfont {
-	color: #3B7EFF;
+.control-icon {
+	width: 36rpx;
+	height: 36rpx;
+	filter: brightness(0) invert(1);
 }
 
-.function-text {
-	font-size: 24rpx;
-	color: #ACACAC;
-}
-
-/* 音乐信息 */
-.music-info-section {
-	background-color: #1E1E1E;
-	border-radius: 32rpx;
-	padding: 30rpx;
-	margin-bottom: 60rpx;
-}
-
-.section-title {
-	font-size: 32rpx;
-	font-weight: 600;
-	color: #FFFFFF;
-	margin-bottom: 30rpx;
-	display: block;
-}
-
-.info-grid {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 30rpx;
-}
-
-.info-item {
-	display: flex;
-	flex-direction: column;
-}
-
-.info-label {
-	font-size: 24rpx;
-	color: #787878;
-	margin-bottom: 8rpx;
-}
-
-.info-value {
-	font-size: 28rpx;
-	color: #FFFFFF;
-}
-
-/* 相似推荐 */
-.similar-section {
-	margin-bottom: 40rpx;
-}
-
-.section-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 30rpx;
-}
-
-.view-more {
-	font-size: 28rpx;
-	color: #3B7EFF;
-}
-
-.similar-grid {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 30rpx;
-}
-
-.similar-item {
-	background-color: #1E1E1E;
-	border-radius: 24rpx;
-	overflow: hidden;
-}
-
-.similar-cover {
-	position: relative;
-	height: 180rpx;
-}
-
-.similar-image {
-	width: 100%;
-	height: 100%;
-}
-
-.play-icon {
-	// position: absolute;
-	// right: 16rpx;
-	// bottom: 16rpx;
-	width: 56rpx;
-	height: 56rpx;
-	border-radius: 28rpx;
-	// background-color: rgba(18, 18, 18, 0.7);
+.play-btn {
+	width: 120rpx;
+	height: 120rpx;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	margin-left: 4rpx;
-}
-.play-icon-similar{
-	position: absolute;
-	right: 16rpx;
-	bottom: 16rpx;
-	background-color: rgba(18, 18, 18, 0.7);
-	border-radius: 28rpx;
-	width: 56rpx;
-	height: 56rpx;
-	display: flex;
-    justify-content: center;
-    align-items: center;
+	background: #FFFFFF;
+	border-radius: 50%;
+	box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.3);
 }
 
-.play-icon .iconfont {
-	font-size: 24rpx;
+.play-icon {
+	width: 48rpx;
+	height: 48rpx;
 }
-
-.similar-info {
-	padding: 16rpx;
-	display: flex;
-    flex-direction: column;
-}
-
-.similar-title {
-	font-size: 28rpx;
-	color: #FFFFFF;
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.similar-meta {
-	font-size: 24rpx;
-	color: #787878;
-	line-height: 20rpx;
-}
-
-/* 导航栏图标 */
-.back-icon {
-	width: 40rpx;
-	height: 40rpx;
-}
-
-.share-icon, .more-icon {
-	width: 40rpx;
-	height: 40rpx;
-}
-
-/* 音乐控制器图标 */
-.control-icon {
-	width: 40rpx;
-	height: 40rpx;
-}
-
-.play-icon, .pause-icon {
-	width: 40rpx;
-	height: 40rpx;
-}
-
-/* 功能栏图标 */
-.function-img {
-	width: 40rpx;
-	height: 40rpx;
-}
-
-/* 相关作品图标 */
-.play-button .play-icon {
-	width: 40rpx;
-	height: 40rpx;
-}
-</style> 
+</style>

@@ -6,6 +6,7 @@ import _ from 'lodash'
 import MinRequest from './utils//MinRequest'
 import minApi from './api/api'
 import MinCache from './utils/MinCache'
+import audioManager from './utils/audioManager'
 // import minRouter from './router/router.js'
 
 // import cuCustom from './colorui/components/cu-custom.vue'
@@ -23,6 +24,7 @@ Vue.use(MinRequest)
 App.mpType = 'app'
 Vue.prototype._i18n = i18n
 Vue.prototype.$_ = _
+Vue.prototype.$audioManager = audioManager
 
 const app = new Vue({
 	store,

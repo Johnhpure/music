@@ -450,10 +450,31 @@
 				});
 			},
 			previewMusic(item) {
-				// 播放预览音乐
-				console.log('预览音乐', item);
-				// 实际项目中应调用播放器API
-			},
+			// 使用全局音频管理器播放音乐
+			if (!item.audioUrl) {
+				uni.showToast({
+					title: '音频地址不存在',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			// 调用全局音频管理器播放
+			this.$audioManager.play({
+				id: item.id,
+				title: item.title,
+				audioUrl: item.audioUrl,
+				coverUrl: item.coverUrl,
+				artist: item.artist || '未知',
+				duration: item.duration
+			});
+			
+			uni.showToast({
+				title: '开始播放',
+				icon: 'success',
+				duration: 1500
+			});
+		},
 			viewTutorial(tutorial) {
 				uni.navigateTo({
 					url: `/pages/tutorial/index`

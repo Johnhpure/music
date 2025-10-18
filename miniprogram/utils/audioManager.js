@@ -1,0 +1,202 @@
+/**
+ * 全局音频管理器
+ * 单例模式，确保全局只有一个音频实例
+ */
+class AudioManager {
+	constructor() {
+		if (AudioManager.instance) {
+			return AudioManager.instance;
+		}
+		
+		this.audioContext = null;
+		this.currentMusic = null; // 当前播放的音乐信息
+		this.isPlaying = false;
+		this.currentTime = 0;
+		this.duration = 0;
+		this.listeners = {}; // 事件监听器
+		
+		this._initAudioContext();
+		
+		AudioManager.instance = this;
+	}
+	
+	/**
+	 * 初始化音频上下文
+	 */
+	_initAudioContext() {
+		this.audioContext = uni.createInnerAudioContext();
+		
+		// 监听播放进度更新
+		this.audioContext.onTimeUpdate(() => {
+			this.currentTime = this.audioContext.currentTime;
+			this.duration = this.audioContext.duration;
+			this._emit('timeUpdate', {
+				currentTime: this.currentTime,
+				duration: this.duration,
+				progress: (this.currentTime / this.duration) * 100
+			});
+		});
+		
+		// 监听播放结束
+		this.audioContext.onEnded(() => {
+			this.isPlaying = false;
+			this._emit('ended');
+		});
+		
+		// 监听播放错误
+		this.audioContext.onError((err) => {
+			console.error('音频播放错误:', err);
+			this.isPlaying = false;
+			this._emit('error', err);
+		});
+		
+		// 监听播放开始
+		this.audioContext.onPlay(() => {
+			this.isPlaying = true;
+			this._emit('play');
+		});
+		
+		// 监听暂停
+		this.audioContext.onPause(() => {
+			this.isPlaying = false;
+			this._emit('pause');
+		});
+	}
+	
+	/**
+	 * 播放音乐
+	 * @param {Object} music - 音乐对象 {id, title, audioUrl, coverUrl, ...}
+	 */
+	play(music) {
+		if (!music || !music.audioUrl) {
+			console.error('音乐信息或音频URL不存在');
+			return;
+		}
+		
+		// 如果是同一首歌，继续播放
+		if (this.currentMusic && this.currentMusic.id === music.id) {
+			if (!this.isPlaying) {
+				this.audioContext.play();
+			}
+			return;
+		}
+		
+		// 切换歌曲
+		this.currentMusic = music;
+		this.audioContext.src = music.audioUrl;
+		this.audioContext.play();
+		
+		this._emit('musicChange', music);
+	}
+	
+	/**
+	 * 暂停播放
+	 */
+	pause() {
+		if (this.audioContext && this.isPlaying) {
+			this.audioContext.pause();
+		}
+	}
+	
+	/**
+	 * 停止播放
+	 */
+	stop() {
+		if (this.audioContext) {
+			this.audioContext.stop();
+			this.isPlaying = false;
+			this.currentTime = 0;
+		}
+	}
+	
+	/**
+	 * 切换播放/暂停
+	 */
+	togglePlay() {
+		if (this.isPlaying) {
+			this.pause();
+		} else {
+			if (this.currentMusic) {
+				this.audioContext.play();
+			}
+		}
+	}
+	
+	/**
+	 * 跳转到指定时间
+	 * @param {Number} time - 时间（秒）
+	 */
+	seek(time) {
+		if (this.audioContext) {
+			this.audioContext.seek(time);
+		}
+	}
+	
+	/**
+	 * 获取当前播放状态
+	 */
+	getPlayState() {
+		return {
+			isPlaying: this.isPlaying,
+			currentMusic: this.currentMusic,
+			currentTime: this.currentTime,
+			duration: this.duration,
+			progress: this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0
+		};
+	}
+	
+	/**
+	 * 注册事件监听
+	 * @param {String} event - 事件名：play, pause, ended, timeUpdate, error, musicChange
+	 * @param {Function} callback - 回调函数
+	 */
+	on(event, callback) {
+		if (!this.listeners[event]) {
+			this.listeners[event] = [];
+		}
+		this.listeners[event].push(callback);
+	}
+	
+	/**
+	 * 移除事件监听
+	 * @param {String} event - 事件名
+	 * @param {Function} callback - 回调函数
+	 */
+	off(event, callback) {
+		if (!this.listeners[event]) return;
+		
+		const index = this.listeners[event].indexOf(callback);
+		if (index > -1) {
+			this.listeners[event].splice(index, 1);
+		}
+	}
+	
+	/**
+	 * 触发事件
+	 * @param {String} event - 事件名
+	 * @param {*} data - 事件数据
+	 */
+	_emit(event, data) {
+		if (!this.listeners[event]) return;
+		
+		this.listeners[event].forEach(callback => {
+			callback(data);
+		});
+	}
+	
+	/**
+	 * 销毁音频上下文
+	 */
+	destroy() {
+		if (this.audioContext) {
+			this.audioContext.destroy();
+			this.audioContext = null;
+		}
+		this.listeners = {};
+		this.currentMusic = null;
+		this.isPlaying = false;
+	}
+}
+
+// 导出单例
+export default new AudioManager();
