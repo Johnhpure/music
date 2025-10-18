@@ -106,8 +106,6 @@
 </template>
 
 <script>
-import { api } from '@/api/api.js'
-
 export default {
 	data() {
 		return {
@@ -142,7 +140,7 @@ export default {
 			try {
 				// 获取热门推荐列表 - 使用公开的list接口
 				const params = this.currentCategory === 'all' ? {} : { category: this.currentCategory }
-				const res = await api.getHotRecommendations(params)
+				const res = await this.$minApi.getHotRecommendations(params)
 				
 				if (res.code === 200 && res.data) {
 					const allData = Array.isArray(res.data) ? res.data : []
