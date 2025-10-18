@@ -131,7 +131,8 @@ export default {
 				console.log('loginResult.data:', loginResult.data)
 				
 				if (loginResult && loginResult.code === 200) {
-					const { token, userInfo } = loginResult.data
+					// 修复：数据在 loginResult.data.data 中，而不是 loginResult.data
+					const { token, userInfo } = loginResult.data.data
 					console.log('提取的token:', token)
 					console.log('提取的userInfo:', userInfo)
 					
