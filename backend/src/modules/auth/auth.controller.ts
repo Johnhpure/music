@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { WechatLoginDto } from './dto/wechat-login.dto';
+import { WechatPhoneDto } from './dto/wechat-phone.dto';
 import { LoginDto } from './dto/login.dto';
 import { Public } from './decorators/public.decorator';
 
@@ -37,5 +38,10 @@ export class AuthController {
   @Post('logout')
   async logout(@Request() req) {
     return this.authService.logout(req.user.id);
+  }
+
+  @Post('wechat/phone')
+  async bindPhoneNumber(@Request() req, @Body() wechatPhoneDto: WechatPhoneDto) {
+    return this.authService.bindPhoneNumber(req.user.id, wechatPhoneDto.code);
   }
 }

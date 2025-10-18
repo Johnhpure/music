@@ -61,4 +61,46 @@ export class WechatService {
       throw new UnauthorizedException('微信登录失败');
     }
   }
+
+  async getPhoneNumber(code: string): Promise<{ phoneNumber: string }> {
+    try {
+      // 获取access_token
+      const tokenUrl = 'https://api.weixin.qq.com/cgi-bin/token';
+      const tokenResponse = await axios.get(tokenUrl, {
+        params: {
+          grant_type: 'client_credential',
+          appid: this.appId,
+          secret: this.appSecret,
+        },
+      });
+
+      const accessToken = tokenResponse.data.access_token;
+      if (!accessToken) {
+        this.logger.error('获取access_token失败', 'WechatService');
+        throw new UnauthorizedException('获取access_token失败');
+      }
+
+      // 获取手机号
+      const phoneUrl = `https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=${accessToken}`;
+      const phoneResponse = await axios.post(phoneUrl, { code });
+
+      const phoneData = phoneResponse.data;
+
+      if (phoneData.errcode && phoneData.errcode !== 0) {
+        this.logger.error(`获取手机号失败: ${phoneData.errmsg}`, 'WechatService');
+        throw new UnauthorizedException('获取手机号失败');
+      }
+
+      if (!phoneData.phone_info || !phoneData.phone_info.phoneNumber) {
+        throw new UnauthorizedException('手机号信息不存在');
+      }
+
+      return {
+        phoneNumber: phoneData.phone_info.phoneNumber,
+      };
+    } catch (error) {
+      this.logger.error(`获取手机号异常: ${error.message}`, 'WechatService');
+      throw new UnauthorizedException('获取手机号失败');
+    }
+  }
 }

@@ -34,6 +34,10 @@ export class CreateUserDto {
   password?: string;
 
   @IsOptional()
+  @IsEnum(['wechat', 'web', 'mobile', 'unknown'])
+  registration_source?: 'wechat' | 'web' | 'mobile' | 'unknown';
+
+  @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
 }

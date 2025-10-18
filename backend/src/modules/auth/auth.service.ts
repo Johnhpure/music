@@ -74,13 +74,26 @@ export class AuthService {
     this.logger.log(`用户登录成功: ${user.id}`, 'AuthService');
 
     return {
-      access_token: token,
-      user: {
-        id: user.id,
-        nickname: user.nickname,
-        avatar: user.avatar,
-        role: user.role,
-        credit: user.credit,
+      code: 200,
+      message: '登录成功',
+      data: {
+        token,
+        access_token: token, // 向后兼容
+        userInfo: {
+          id: user.id,
+          nickname: user.nickname,
+          avatar: user.avatar,
+          phone: user.phone,
+          role: user.role,
+          credit: user.credit,
+        },
+        user: { // 向后兼容
+          id: user.id,
+          nickname: user.nickname,
+          avatar: user.avatar,
+          role: user.role,
+          credit: user.credit,
+        },
       },
     };
   }
@@ -121,14 +134,29 @@ export class AuthService {
     const { openid } = await this.wechatService.getOpenId(code);
 
     let user = await this.userService.findByOpenid(openid);
+    let isNewUser = false;
 
     if (!user) {
+      // 生成默认昵称
+      const defaultNickname = await this.userService.generateDefaultNickname();
+      
+      // 默认头像（小程序静态资源路径）
+      const defaultAvatar = '/static/img/profile.svg';
+      
       user = await this.userService.create({
         openid,
-        nickname: `微信用户${openid.slice(-6)}`,
+        nickname: defaultNickname,
+        avatar: defaultAvatar,
+        registration_source: 'wechat',
       });
-      this.logger.log(`微信新用户创建: ${user.id}`, 'AuthService');
+      isNewUser = true;
+      this.logger.log(`微信新用户注册: ${user.id}, nickname: ${defaultNickname}`, 'AuthService');
     }
+
+    // 更新最后登录时间
+    await this.userService.updateLastLogin(user.id);
+
+    this.logger.log(`微信用户登录: ${user.id}, isNewUser: ${isNewUser}`, 'AuthService');
 
     return this.login(user);
   }
@@ -170,6 +198,26 @@ export class AuthService {
     // 如果将来需要实现token黑名单，可以在这里添加逻辑
     return {
       message: '退出登录成功',
+    };
+  }
+
+  async bindPhoneNumber(userId: number, code: string) {
+    const user = await this.userService.findOne(userId);
+
+    // 获取手机号
+    const { phoneNumber } = await this.wechatService.getPhoneNumber(code);
+
+    // 更新用户手机号
+    await this.userService.updateProfile(userId, { phone: phoneNumber });
+
+    this.logger.log(`用户绑定手机号: ${userId}, phone: ${phoneNumber}`, 'AuthService');
+
+    return {
+      code: 200,
+      message: '手机号绑定成功',
+      data: {
+        phone: phoneNumber,
+      },
     };
   }
 }

@@ -51,15 +51,15 @@ export default {
 		},
 		// 微信小程序登录
 		wechatLogin(params) {
-			return minRequest.post('/v1/auth/wechat/login', params)
+			return minRequest.post('/auth/wechat-login', params)
 		},
 		// 获取用户手机号
 		getUserPhone(params) {
-			return minRequest.post('/v1/auth/wechat/phone', params)
+			return minRequest.post('/auth/wechat/phone', params)
 		},
 		// 更新用户资料
 		updateUserProfile(params) {
-			return minRequest.post('/v1/user/profile', params)
+			return minRequest.put('/user/profile', params)
 		},
 		// 获取用户信息
 		getUserInfo() {

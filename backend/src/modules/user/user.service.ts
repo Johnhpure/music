@@ -459,4 +459,63 @@ export class UserService {
       last_login_at: new Date(),
     });
   }
+
+  // 生成默认昵称（MusiCer001格式）
+  async generateDefaultNickname(): Promise<string> {
+    // 查询最大序号
+    const latestUser = await this.userRepository
+      .createQueryBuilder('user')
+      .where("user.nickname LIKE 'MusiCer%'")
+      .orderBy("CAST(SUBSTRING(user.nickname, 8) AS UNSIGNED)", 'DESC')
+      .limit(1)
+      .getOne();
+
+    let nextNumber = 1;
+    if (latestUser && latestUser.nickname) {
+      const match = latestUser.nickname.match(/MusiCer(\d+)/);
+      if (match && match[1]) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    // 格式化为3位数字，不足补0
+    const formattedNumber = nextNumber.toString().padStart(3, '0');
+    return `MusiCer${formattedNumber}`;
+  }
+
+  // 更新用户资料（手机号、头像、昵称）
+  async updateProfile(
+    userId: number,
+    updates: { phone?: string; avatar?: string; nickname?: string },
+  ): Promise<User> {
+    const user = await this.findOne(userId);
+
+    // 如果更新手机号，检查是否已被使用
+    if (updates.phone && updates.phone !== user.phone) {
+      const existingUser = await this.findByPhone(updates.phone);
+      if (existingUser && existingUser.id !== userId) {
+        throw new ConflictException('手机号已被其他用户使用');
+      }
+      user.phone = updates.phone;
+    }
+
+    // 更新头像
+    if (updates.avatar !== undefined) {
+      user.avatar = updates.avatar;
+    }
+
+    // 更新昵称
+    if (updates.nickname !== undefined) {
+      user.nickname = updates.nickname;
+    }
+
+    const updatedUser = await this.userRepository.save(user);
+
+    this.logger.log(
+      `用户资料更新: userId=${userId}, updates=${JSON.stringify(updates)}`,
+      'UserService',
+    );
+
+    return updatedUser;
+  }
 }

@@ -43,13 +43,14 @@ export class UserController {
 
   // 更新当前用户信息
   @Put('profile')
-  async updateProfile(@Request() req, @Body() updateUserDto: UpdateUserDto) {
-    const updatedUser = await this.userService.update(
+  async updateProfile(@Request() req, @Body() updateProfileDto: { phone?: string; avatar?: string; nickname?: string }) {
+    const updatedUser = await this.userService.updateProfile(
       req.user.id,
-      updateUserDto,
+      updateProfileDto,
     );
     const { password, ...userProfile } = updatedUser as any;
     return {
+      code: 200,
       message: '用户信息更新成功',
       data: userProfile,
     };
