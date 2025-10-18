@@ -704,7 +704,13 @@ const validateForm = (): boolean => {
 
 const handleSubmit = () => {
   if (!validateForm()) return
-  emit('submit', form.value)
+  // 确保数据类型正确
+  const submitData = {
+    ...form.value,
+    isActive: Boolean(form.value.isActive),
+    sortOrder: Number(form.value.sortOrder)
+  }
+  emit('submit', submitData)
 }
 
 const handleCancel = () => {
@@ -729,7 +735,7 @@ watch(() => props.recommendation, () => {
           coverUrl: props.recommendation.coverUrl,
           audioUrl: props.recommendation.audioUrl,
           description: props.recommendation.description || '',
-          isActive: props.recommendation.isActive,
+          isActive: Boolean(props.recommendation.isActive),
           sortOrder: props.recommendation.sortOrder
         }
       } else {

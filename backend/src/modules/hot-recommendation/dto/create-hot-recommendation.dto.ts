@@ -5,6 +5,7 @@ import {
   IsBoolean,
   MaxLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateHotRecommendationDto {
   @IsString()
@@ -43,5 +44,11 @@ export class CreateHotRecommendationDto {
 
   @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') return value === 'true' || value === '1';
+    return Boolean(value);
+  })
   isActive?: boolean;
 }
