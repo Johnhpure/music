@@ -257,10 +257,10 @@
                           </div>
                           
                           <div v-else class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                              <Icon icon="mdi:file-music" class="w-8 h-8 text-cyan-400" />
-                              <div>
-                                <p class="text-white text-sm">{{ audioFileName }}</p>
+                            <div class="flex items-center space-x-3 flex-1 min-w-0">
+                              <Icon icon="mdi:file-music" class="w-8 h-8 text-cyan-400 flex-shrink-0" />
+                              <div class="flex-1 min-w-0">
+                                <p class="text-white text-sm truncate">{{ audioFileName }}</p>
                                 <p class="text-gray-400 text-xs">{{ audioDuration || '时长未知' }}</p>
                               </div>
                             </div>

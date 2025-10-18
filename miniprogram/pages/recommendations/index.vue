@@ -106,6 +106,8 @@
 </template>
 
 <script>
+import { api } from '@/api/api.js'
+
 export default {
 	data() {
 		return {
@@ -119,104 +121,77 @@ export default {
 				{ id: 'hiphop', name: '嘻哈' },
 				{ id: 'classical', name: '古典' }
 			],
-			weeklyHot: [
-				{
-					id: 'hot1',
-					title: '夏日晚风',
-					author: '小明',
-					coverUrl: '/static/img/covers/cover1.jpg',
-					playCount: 12000,
-					isHot: true
-				},
-				{
-					id: 'hot2',
-					title: '城市霓虹',
-					author: '小红',
-					coverUrl: '/static/img/covers/cover2.jpg',
-					playCount: 8500,
-					isHot: false
-				},
-				{
-					id: 'hot3',
-					title: '雨后彩虹',
-					author: '阿杰',
-					coverUrl: '/static/img/covers/cover3.jpg',
-					playCount: 6700,
-					isHot: false
-				},
-				{
-					id: 'hot4',
-					title: '电子梦境',
-					author: 'DJ小王',
-					coverUrl: '/static/img/covers/cover4.jpg',
-					playCount: 5300,
-					isHot: false
-				}
-			],
-			featured: [
-				{
-					id: 'feat1',
-					title: '青春回忆',
-					author: '小李',
-					coverUrl: '/static/img/covers/cover5.jpg',
-					playCount: 4800
-				},
-				{
-					id: 'feat2',
-					title: '星空漫步',
-					author: '星辰',
-					coverUrl: '/static/img/covers/cover6.jpg',
-					playCount: 3900
-				},
-				{
-					id: 'feat3',
-					title: '心跳节奏',
-					author: '节拍大师',
-					coverUrl: '/static/img/covers/cover7.jpg',
-					playCount: 3200
-				},
-				{
-					id: 'feat4',
-					title: '海浪声音',
-					author: '海风',
-					coverUrl: '/static/img/covers/cover8.jpg',
-					playCount: 2800
-				}
-			],
-			newArtists: [
-				{
-					id: 'new1',
-					title: '第一首歌',
-					author: '新手小张',
-					coverUrl: '/static/img/covers/cover9.jpg',
-					playCount: 856
-				},
-				{
-					id: 'new2',
-					title: '尝试创作',
-					author: '音乐小白',
-					coverUrl: '/static/img/covers/cover10.jpg',
-					playCount: 723
-				}
-			]
+			weeklyHot: [],
+			featured: [],
+			newArtists: [],
+			loading: false
 		}
 	},
+	onLoad() {
+		this.loadRecommendations()
+	},
 	methods: {
+		async loadRecommendations() {
+			if (this.loading) return
+			
+			this.loading = true
+			uni.showLoading({
+				title: '加载中...'
+			})
+			
+			try {
+				// 获取热门推荐列表
+				const res = await api.getRecommendationsByCategory(this.currentCategory === 'all' ? '' : this.currentCategory)
+				
+				if (res.code === 200 && res.data) {
+					const allData = Array.isArray(res.data) ? res.data : []
+					
+					// 转换数据格式，适配前端显示
+					const formattedData = allData.map(item => ({
+						id: item.id,
+						title: item.title,
+						author: item.artist || '未知艺术家',
+						coverUrl: item.coverUrl,
+						audioUrl: item.audioUrl,
+						playCount: item.playCount || 0,
+						duration: item.duration,
+						category: item.category,
+						isHot: item.playCount > 5000
+					}))
+					
+					// 分配到不同分组
+					// 本周热门：播放量前4的
+					this.weeklyHot = formattedData
+						.sort((a, b) => b.playCount - a.playCount)
+						.slice(0, 4)
+					
+					// 精选推荐：播放量5-8名的
+					this.featured = formattedData
+						.sort((a, b) => b.playCount - a.playCount)
+						.slice(4, 8)
+					
+					// 新人作品：播放量较低的后面几个
+					this.newArtists = formattedData
+						.sort((a, b) => a.playCount - b.playCount)
+						.slice(0, 2)
+				}
+			} catch (error) {
+				console.error('加载推荐失败:', error)
+				uni.showToast({
+					title: '加载失败，请重试',
+					icon: 'none'
+				})
+			} finally {
+				this.loading = false
+				uni.hideLoading()
+			}
+		},
 		navigateBack() {
 			uni.navigateBack();
 		},
 		switchCategory(categoryId) {
-			this.currentCategory = categoryId;
-			
-			// 模拟请求数据
-			uni.showLoading({
-				title: '加载中...'
-			});
-			
-			setTimeout(() => {
-				uni.hideLoading();
-				// 实际应用中这里应该根据分类过滤数据
-			}, 500);
+			this.currentCategory = categoryId
+			this.loadRecommendations()
 		},
 		formatPlayCount(count) {
 			if (count >= 10000) {
