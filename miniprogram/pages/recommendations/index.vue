@@ -219,9 +219,21 @@ export default {
 				icon: 'none'
 			});
 			
-			// 跳转到音乐详情页
+			// 跳转到音乐详情页，并通过eventChannel传递完整数据
 			uni.navigateTo({
-				url: `/pages/user/work-detail?id=${item.id}`
+				url: `/pages/user/work-detail?id=${item.id}`,
+				success: (res) => {
+					// 通过eventChannel向目标页面传送数据
+					res.eventChannel.emit('musicData', {
+						id: item.id,
+						title: item.title,
+						artist: item.author,
+						style: item.category || '流行',
+						coverUrl: item.coverUrl,
+						audioUrl: item.audioUrl,
+						likeCount: item.likeCount || 0
+					});
+				}
 			});
 		}
 	}
