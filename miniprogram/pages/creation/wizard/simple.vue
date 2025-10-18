@@ -67,32 +67,24 @@
 				</view>
 			</view>
 			
-			<view class="card-stack-container">
-				<view 
-					class="theme-card-stack"
-					v-for="(theme, index) in hotThemes"
-					:key="index"
-					:class="{ 'active': index === activeCardIndex, 'prev': isPrevCard(index), 'next': isNextCard(index) }"
-					:style="{ background: cardColors[index % cardColors.length] }"
-					@click="selectTheme(theme)"
-				>
-					<view class="card-content-wrapper">
-						<view class="theme-emoji-large">{{ theme.emoji }}</view>
-						<view class="theme-title-large">{{ theme.title }}</view>
-						<view class="theme-desc-large">{{ theme.description }}</view>
+			<!-- 跑马灯容器 -->
+			<view class="marquee-container">
+				<view class="marquee-track">
+					<view 
+						class="theme-card"
+						v-for="(theme, index) in doubledThemes"
+						:key="'theme-' + index"
+						:style="{ background: cardColors[index % cardColors.length] }"
+						@click="selectTheme(theme)"
+					>
+						<view class="card-glow"></view>
+						<view class="card-content">
+							<view class="theme-emoji">{{ theme.emoji }}</view>
+							<view class="theme-title">{{ theme.title }}</view>
+							<view class="theme-desc">{{ theme.description }}</view>
+						</view>
 					</view>
 				</view>
-			</view>
-			
-			<!-- 指示器 -->
-			<view class="card-indicators">
-				<view 
-					class="indicator-dot"
-					v-for="(theme, index) in hotThemes"
-					:key="index"
-					:class="{ 'active': index === activeCardIndex }"
-					@click="switchToCard(index)"
-				></view>
 			</view>
 		</view>
 
@@ -120,8 +112,6 @@ export default {
 			inspiration: '',
 			generating: false,
 			aiExpanding: false,
-			activeCardIndex: 0,
-			cardTimer: null,
 			cardColors: [
 				'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
 				'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
@@ -160,18 +150,13 @@ export default {
 		},
 		canGenerate() {
 			return this.inspiration.trim().length > 0 && !this.generating;
+		},
+		// 复制一份主题列表用于无缝滚动
+		doubledThemes() {
+			return this.hotThemes.concat(this.hotThemes);
 		}
 	},
-	mounted() {
-		// 启动自动切换卡片
-		this.startCardAutoSwitch();
-	},
-	beforeDestroy() {
-		// 清理定时器
-		if (this.cardTimer) {
-			clearInterval(this.cardTimer);
-		}
-	},
+	
 	methods: {
 		// 模式切换
 		switchMode(mode) {
@@ -200,37 +185,6 @@ export default {
 		selectTheme(theme) {
 			this.inspiration = theme.prompt;
 		},
-		
-		// 启动卡片自动切换
-		startCardAutoSwitch() {
-			this.cardTimer = setInterval(() => {
-				this.activeCardIndex = (this.activeCardIndex + 1) % this.hotThemes.length;
-			}, 4000); // 每4秒切换一次
-		},
-		
-		// 切换到指定卡片
-		switchToCard(index) {
-			this.activeCardIndex = index;
-			// 重置定时器
-			if (this.cardTimer) {
-				clearInterval(this.cardTimer);
-			}
-			this.startCardAutoSwitch();
-		},
-		
-		// 判断是否为前一张卡片
-		isPrevCard(index) {
-			const prev = (this.activeCardIndex - 1 + this.hotThemes.length) % this.hotThemes.length;
-			return index === prev;
-		},
-		
-		// 判断是否为后一张卡片
-		isNextCard(index) {
-			const next = (this.activeCardIndex + 1) % this.hotThemes.length;
-			return index === next;
-		},
-		
-		
 		
 		// AI扩展灵感
 		async handleAIExpand() {
@@ -541,126 +495,204 @@ export default {
 
 // 热门主题区域
 .themes-section {
-	margin-bottom: 40rpx;
+	margin-bottom: 60rpx;
 }
 
-// 3D层叠卡片容器
-.card-stack-container {
+// 跑马灯容器
+.marquee-container {
+	width: 100%;
+	overflow: hidden;
 	position: relative;
-	height: 500rpx;
-	margin-bottom: 40rpx;
-	perspective: 1500rpx;
+	padding: 30rpx 0;
+	
+	&::before,
+	&::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 100rpx;
+		z-index: 2;
+		pointer-events: none;
+	}
+	
+	&::before {
+		left: 0;
+		background: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+	}
+	
+	&::after {
+		right: 0;
+		background: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+	}
 }
 
-.theme-card-stack {
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	width: 600rpx;
-	min-height: 400rpx;
+.marquee-track {
+	display: flex;
+	gap: 30rpx;
+	animation: marquee-scroll 30s linear infinite;
+	
+	&:hover {
+		animation-play-state: paused;
+	}
+}
+
+@keyframes marquee-scroll {
+	0% {
+		transform: translateX(0);
+	}
+	100% {
+		transform: translateX(-50%);
+	}
+}
+
+// 主题卡片
+.theme-card {
+	flex-shrink: 0;
+	width: 420rpx;
+	min-height: 280rpx;
 	border-radius: 30rpx;
-	padding: 50rpx 40rpx;
-	box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.4);
-	transform-origin: center center;
-	transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+	padding: 40rpx 30rpx;
+	box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.6),
+	            0 0 40rpx rgba(102, 126, 234, 0.3);
+	position: relative;
+	overflow: hidden;
 	cursor: pointer;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	animation: card-breathe 4s ease-in-out infinite;
 	
-	// 默认状态：隐藏在后面
-	opacity: 0;
-	transform: translate(-50%, -50%) scale(0.7) translateZ(-300rpx) rotateY(20deg);
-	z-index: 1;
-	pointer-events: none;
-	
-	// 当前激活卡片
-	&.active {
-		opacity: 1;
-		transform: translate(-50%, -50%) scale(1) translateZ(0) rotateY(0deg);
-		z-index: 3;
-		pointer-events: auto;
-		animation: card-float 3s ease-in-out infinite;
+	// 渐变边框效果
+	&::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 30rpx;
+		padding: 3rpx;
+		background: linear-gradient(135deg, 
+			rgba(255, 255, 255, 0.6),
+			rgba(255, 255, 255, 0.1),
+			rgba(255, 255, 255, 0.6)
+		);
+		-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		opacity: 0.5;
+		animation: border-flow 3s linear infinite;
 	}
 	
-	// 前一张卡片（左侧）
-	&.prev {
-		opacity: 0.5;
-		transform: translate(-50%, -50%) scale(0.85) translateZ(-200rpx) translateX(-150rpx) rotateY(25deg);
-		z-index: 2;
-		pointer-events: auto;
-	}
-	
-	// 后一张卡片（右侧）
-	&.next {
-		opacity: 0.5;
-		transform: translate(-50%, -50%) scale(0.85) translateZ(-200rpx) translateX(150rpx) rotateY(-25deg);
-		z-index: 2;
-		pointer-events: auto;
+	&:hover {
+		transform: translateY(-10rpx) scale(1.05);
+		box-shadow: 0 30rpx 80rpx rgba(0, 0, 0, 0.8),
+		            0 0 60rpx rgba(102, 126, 234, 0.6);
+		animation-play-state: paused;
 	}
 	
 	&:active {
-		transform: translate(-50%, -50%) scale(0.95) translateZ(0) rotateY(0deg);
+		transform: translateY(-5rpx) scale(1.02);
 	}
 }
 
-@keyframes card-float {
+// 呼吸动画
+@keyframes card-breathe {
 	0%, 100% {
-		transform: translate(-50%, -50%) scale(1) translateZ(0) rotateY(0deg) translateY(0);
+		transform: scale(1);
+		box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.6),
+		            0 0 40rpx rgba(102, 126, 234, 0.3);
 	}
 	50% {
-		transform: translate(-50%, -50%) scale(1) translateZ(0) rotateY(0deg) translateY(-10rpx);
+		transform: scale(1.02);
+		box-shadow: 0 25rpx 70rpx rgba(0, 0, 0, 0.7),
+		            0 0 50rpx rgba(102, 126, 234, 0.5);
 	}
 }
 
-.card-content-wrapper {
+// 边框流动动画
+@keyframes border-flow {
+	0% {
+		background-position: 0% 50%;
+	}
+	100% {
+		background-position: 200% 50%;
+	}
+}
+
+// 光晕效果
+.card-glow {
+	position: absolute;
+	top: -50%;
+	left: -50%;
+	width: 200%;
+	height: 200%;
+	background: radial-gradient(
+		circle,
+		rgba(255, 255, 255, 0.3) 0%,
+		transparent 60%
+	);
+	opacity: 0;
+	transition: opacity 0.3s ease;
+	pointer-events: none;
+	animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.theme-card:hover .card-glow {
+	opacity: 1;
+}
+
+@keyframes glow-pulse {
+	0%, 100% {
+		opacity: 0.2;
+		transform: scale(0.8);
+	}
+	50% {
+		opacity: 0.4;
+		transform: scale(1.2);
+	}
+}
+
+// 卡片内容
+.card-content {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	height: 100%;
+	gap: 20rpx;
+	position: relative;
+	z-index: 1;
 }
 
-.theme-emoji-large {
-	font-size: 100rpx;
-	margin-bottom: 30rpx;
-	filter: drop-shadow(0 4rpx 8rpx rgba(0, 0, 0, 0.2));
+.theme-emoji {
+	font-size: 80rpx;
+	filter: drop-shadow(0 4rpx 12rpx rgba(0, 0, 0, 0.4));
+	animation: emoji-float 3s ease-in-out infinite;
 }
 
-.theme-title-large {
-	font-size: 40rpx;
-	font-weight: bold;
-	margin-bottom: 20rpx;
-	text-align: center;
-	color: #FFFFFF;
-	text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
-}
-
-.theme-desc-large {
-	font-size: 28rpx;
-	color: rgba(255, 255, 255, 0.9);
-	line-height: 1.6;
-	text-align: center;
-	text-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.2);
-}
-
-// 指示器
-.card-indicators {
-	display: flex;
-	justify-content: center;
-	gap: 15rpx;
-}
-
-.indicator-dot {
-	width: 16rpx;
-	height: 16rpx;
-	border-radius: 50%;
-	background-color: rgba(255, 255, 255, 0.3);
-	transition: all 0.3s ease;
-	cursor: pointer;
-	
-	&.active {
-		width: 40rpx;
-		border-radius: 8rpx;
-		background-color: rgba(255, 255, 255, 0.9);
+@keyframes emoji-float {
+	0%, 100% {
+		transform: translateY(0) rotate(0deg);
 	}
+	25% {
+		transform: translateY(-8rpx) rotate(-5deg);
+	}
+	75% {
+		transform: translateY(-8rpx) rotate(5deg);
+	}
+}
+
+.theme-title {
+	font-size: 36rpx;
+	font-weight: bold;
+	color: #FFFFFF;
+	text-align: center;
+	text-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.5);
+	letter-spacing: 1rpx;
+}
+
+.theme-desc {
+	font-size: 26rpx;
+	color: rgba(255, 255, 255, 0.9);
+	text-align: center;
+	line-height: 1.6;
+	text-shadow: 0 1rpx 5rpx rgba(0, 0, 0, 0.3);
 }
 
 // 生成按钮区域
