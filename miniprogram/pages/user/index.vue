@@ -22,7 +22,7 @@
 				<view class="points-info">
 					<view class="points-badge">
 						<text class="music-icon">🎵</text>
-						<text class="points-number">320点</text>
+						<text class="points-number">{{userPoints}}点</text>
 					</view>
 					<text class="view-details" @click="navigateTo('/pages/user/points?activeTab=history')">查看明细</text>
 				</view>
@@ -149,7 +149,7 @@
 						<text class="coin-icon">🪙</text>
 						<text>音乐点数余额</text>
 					</view>
-					<text class="balance-value">320</text>
+					<text class="balance-value">{{userPoints}}</text>
 				</view>
 				
 				<view class="divider"></view>
@@ -257,6 +257,7 @@
 				userImage: '/static/img/profile.svg', // 用户头像
 				userName: '音乐创作者', // 用户名称
 				userEmail: 'user@example.com', // 用户邮箱
+				userPoints: 0, // 用户音乐点数
 				works: [
 					{ id: 1, title: '夏日晚风', date: '2023-06-15', status: '已下载', genre: '流行' },
 					{ id: 2, title: '城市霓虹', date: '2023-06-10', status: '云端', genre: '电子' }
@@ -332,6 +333,30 @@
 					}
 					
 					this.userName = userInfo.nickname || '音乐创作者'
+					// 加载用户积分
+					this.userPoints = userInfo.credit || 0
+				}
+				
+				// 从API获取最新的用户信息和积分
+				this.fetchUserPoints()
+			},
+			
+			/**
+			 * 从API获取最新的用户积分
+			 */
+			async fetchUserPoints() {
+				try {
+					const res = await this.$minApi.getUserPoints()
+					if (res.code === 200 && res.data) {
+						// 后端返回的是 credit 字段
+						this.userPoints = res.data.credit || 0
+						// 更新本地存储
+						const userInfo = uni.getStorageSync('userInfo') || {}
+						userInfo.credit = this.userPoints
+						uni.setStorageSync('userInfo', userInfo)
+					}
+				} catch (err) {
+					console.error('获取用户积分失败:', err)
 				}
 			},
 			

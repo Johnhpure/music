@@ -160,7 +160,7 @@ const routes: RouteRecordRaw[] = [
             name: 'CreditConfig',
             component: () => import('@/views/Settings/CreditConfig.vue'),
             meta: {
-              title: '积分配置',
+              title: '音乐点数配置',
               icon: 'mdi:coin',
               requiresAuth: true
             }

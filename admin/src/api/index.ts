@@ -324,7 +324,7 @@ export const adminUserAPI = {
   toggleBan: (id: number | string): Promise<ApiResponse<any>> =>
     apiRequest.post(`/admin/users/${id}/toggle-ban`, {}),
     
-  // 调整用户积分
+  // 调整用户音乐点数
   adjustCredit: (id: number | string, amount: number, reason?: string): Promise<ApiResponse<any>> =>
     apiRequest.post(`/admin/users/${id}/adjust-credit`, { amount, reason }),
     

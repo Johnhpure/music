@@ -131,7 +131,7 @@
           >
             <option value="createdAt">按注册时间</option>
             <option value="lastLoginAt">按最后登录</option>
-            <option value="totalCredits">按积分总量</option>
+            <option value="totalCredits">按音乐点数总量</option>
             <option value="username">按用户名</option>
           </select>
           
@@ -247,8 +247,8 @@
               </th>
               <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">用户信息</th>
               <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">联系方式</th>
-              <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">状态</th>
-              <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">积分</th>
+              <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">用户类型</th>
+              <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">音乐点数</th>
               <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">注册信息</th>
               <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">最后登录</th>
               <th class="text-left py-4 px-4 text-sm font-medium text-gray-400">操作</th>
@@ -332,33 +332,21 @@
                   </div>
                 </td>
                 
-                <!-- Status -->
+                <!-- User Type -->
                 <td class="py-4 px-4">
                   <div class="flex items-center space-x-2">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      :class="{
-                        'bg-green-500/20 text-green-400 border border-green-500/30': user.status === 'active',
-                        'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30': user.status === 'inactive',
-                        'bg-red-500/20 text-red-400 border border-red-500/30': user.status === 'banned',
-                        'bg-gray-500/20 text-gray-400 border border-gray-500/30': user.status === 'pending'
-                      }"
+                      :class="getUserTypeClass(user)"
                     >
-                      {{ getStatusText(user.status) }}
+                      {{ getUserTypeText(user) }}
                     </span>
                     <span
-                      v-if="user.userType === 'vip'"
-                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 text-yellow-400 border border-yellow-500/30"
+                      v-if="user.status === 'banned'"
+                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30"
                     >
-                      <Icon icon="mdi:crown" class="w-3 h-3 mr-1" />
-                      VIP
-                    </span>
-                    <span
-                      v-if="user.userType === 'admin'"
-                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-400 border border-red-500/30"
-                    >
-                      <Icon icon="mdi:shield-account" class="w-3 h-3 mr-1" />
-                      管理员
+                      <Icon icon="mdi:cancel" class="w-3 h-3 mr-1" />
+                      已封禁
                     </span>
                   </div>
                 </td>
@@ -367,7 +355,7 @@
                 <td class="py-4 px-4">
                   <div class="text-center">
                     <div class="text-lg font-bold text-cyber-purple">{{ user.totalCredits.toLocaleString() }}</div>
-                    <div class="text-xs text-gray-400">积分</div>
+                    <div class="text-xs text-gray-400">音乐点数</div>
                   </div>
                 </td>
                 
@@ -556,28 +544,16 @@
               <div class="flex items-center space-x-2">
                 <span
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  :class="{
-                    'bg-green-500/20 text-green-400 border border-green-500/30': selectedUser.status === 'active',
-                    'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30': selectedUser.status === 'inactive',
-                    'bg-red-500/20 text-red-400 border border-red-500/30': selectedUser.status === 'banned',
-                    'bg-gray-500/20 text-gray-400 border border-gray-500/30': selectedUser.status === 'pending'
-                  }"
+                  :class="getUserTypeClass(selectedUser)"
                 >
-                  {{ getStatusText(selectedUser.status) }}
+                  {{ getUserTypeText(selectedUser) }}
                 </span>
                 <span
-                  v-if="selectedUser.userType === 'vip'"
-                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 text-yellow-400 border border-yellow-500/30"
+                  v-if="selectedUser.status === 'banned'"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30"
                 >
-                  <Icon icon="mdi:crown" class="w-3 h-3 mr-1" />
-                  VIP
-                </span>
-                <span
-                  v-if="selectedUser.userType === 'admin'"
-                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-400 border border-red-500/30"
-                >
-                  <Icon icon="mdi:shield-account" class="w-3 h-3 mr-1" />
-                  管理员
+                  <Icon icon="mdi:cancel" class="w-3 h-3 mr-1" />
+                  已封禁
                 </span>
               </div>
             </div>
@@ -590,7 +566,7 @@
               <div class="text-white font-medium">{{ selectedUser.id }}</div>
             </div>
             <div class="p-4 bg-glass-white/5 rounded-lg">
-              <div class="text-sm text-gray-400 mb-1">积分余额</div>
+              <div class="text-sm text-gray-400 mb-1">音乐点数余额</div>
               <div class="text-cyber-purple text-xl font-bold">{{ selectedUser.totalCredits.toLocaleString() }}</div>
             </div>
             <div class="p-4 bg-glass-white/5 rounded-lg">
@@ -700,11 +676,11 @@
 
           <!-- Credits -->
           <div>
-            <label class="block text-sm font-medium text-gray-400 mb-2">积分余额</label>
+            <label class="block text-sm font-medium text-gray-400 mb-2">音乐点数余额</label>
             <CyberInput
               v-model.number="editingUser.totalCredits"
               type="number"
-              placeholder="请输入积分"
+              placeholder="请输入音乐点数"
             />
           </div>
 
@@ -841,6 +817,40 @@ const getStatusText = (status: string): string => {
     'pending': '待激活'
   }
   return statusMap[status] || status
+}
+
+/**
+ * 获取用户类型文本
+ * 注册用户：完成微信授权注册
+ * 试用用户：未购买点数（积分<=100），且使用过免费点数创作
+ * 付费用户：积分>100或有VIP标识
+ */
+const getUserTypeText = (user: User): string => {
+  // 判断付费用户：积分超过100或为VIP
+  if (user.totalCredits > 100 || user.userType === 'vip') {
+    return '付费用户'
+  }
+  // 判断试用用户：积分<=100但>0（说明使用过）
+  if (user.totalCredits > 0 && user.totalCredits <= 100) {
+    return '试用用户'
+  }
+  // 注册用户：完成注册但未使用
+  return '注册用户'
+}
+
+/**
+ * 获取用户类型样式类
+ */
+const getUserTypeClass = (user: User): string => {
+  const userType = getUserTypeText(user)
+  
+  const classMap: Record<string, string> = {
+    '付费用户': 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
+    '试用用户': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+    '注册用户': 'bg-green-500/20 text-green-400 border border-green-500/30'
+  }
+  
+  return classMap[userType] || 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
 }
 
 const getSourceIcon = (source: string): string => {

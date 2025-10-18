@@ -229,8 +229,9 @@
 					this.isLoggedIn = true;
 					try {
 						const res = await this.$minApi.getUserPoints();
-						if (res.code === 200) {
-							this.userPoints = res.data.points || 0;
+						if (res.code === 200 && res.data) {
+							// 后端返回的是 credit 字段，不是 points
+							this.userPoints = res.data.credit || 0;
 						}
 					} catch (err) {
 						console.error('获取用户点数失败:', err);
