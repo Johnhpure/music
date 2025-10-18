@@ -140,8 +140,9 @@ export default {
 			})
 			
 			try {
-				// 获取热门推荐列表
-				const res = await api.getRecommendationsByCategory(this.currentCategory === 'all' ? '' : this.currentCategory)
+				// 获取热门推荐列表 - 使用公开的list接口
+				const params = this.currentCategory === 'all' ? {} : { category: this.currentCategory }
+				const res = await api.getHotRecommendations(params)
 				
 				if (res.code === 200 && res.data) {
 					const allData = Array.isArray(res.data) ? res.data : []
