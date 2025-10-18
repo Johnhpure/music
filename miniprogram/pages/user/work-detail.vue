@@ -138,6 +138,7 @@ export default {
 		this.$audioManager.on('pause', this.onAudioPause);
 		this.$audioManager.on('timeUpdate', this.onTimeUpdate);
 		this.$audioManager.on('ended', this.onAudioEnded);
+		this.$audioManager.on('error', this.onAudioError);
 		
 		// 检查当前是否有正在播放的音乐
 		const playState = this.$audioManager.getPlayState();
@@ -154,6 +155,7 @@ export default {
 		this.$audioManager.off('pause', this.onAudioPause);
 		this.$audioManager.off('timeUpdate', this.onTimeUpdate);
 		this.$audioManager.off('ended', this.onAudioEnded);
+		this.$audioManager.off('error', this.onAudioError);
 	},
 	methods: {
 		navigateBack() {
@@ -344,6 +346,15 @@ export default {
 			this.isPlaying = false;
 			this.progress = 0;
 			this.currentTime = 0;
+		},
+		onAudioError(err) {
+			console.error('[WorkDetail] 音频播放错误:', err);
+			this.isPlaying = false;
+			uni.showToast({
+				title: err.errMsg || '音频播放失败',
+				icon: 'none',
+				duration: 2000
+			});
 		}
 	}
 }

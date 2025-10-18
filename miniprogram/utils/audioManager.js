@@ -23,14 +23,38 @@ class AudioManager {
 	 * 初始化音频上下文
 	 */
 	_initAudioContext() {
-		if (this.initialized) return;
+		if (this.initialized && this.audioContext) {
+			return true;
+		}
 		
 		try {
+			// 销毁旧实例，避免-99错误
+			if (this.audioContext) {
+				try {
+					this.audioContext.pause();
+					this.audioContext.destroy();
+					this.audioContext = null;
+				} catch (e) {
+					console.warn('销毁旧音频实例失败:', e);
+				}
+			}
+			
 			this.audioContext = uni.createInnerAudioContext();
+			
+			// 只有成功创建后才标记为已初始化
+			if (!this.audioContext) {
+				console.error('音频上下文创建失败: createInnerAudioContext返回null');
+				this.initialized = false;
+				return false;
+			}
+			
 			this.initialized = true;
+			
 		} catch (err) {
 			console.error('音频上下文初始化失败:', err);
-			return;
+			this.initialized = false;
+			this.audioContext = null;
+			return false;
 		}
 		
 		// 监听播放进度更新
@@ -68,6 +92,8 @@ class AudioManager {
 			this.isPlaying = false;
 			this._emit('pause');
 		});
+		
+		return true;
 	}
 	
 	/**
@@ -76,17 +102,25 @@ class AudioManager {
 	 */
 	play(music) {
 		// 确保音频上下文已初始化
-		if (!this.initialized) {
-			this._initAudioContext();
-		}
-		
-		if (!this.audioContext) {
-			console.error('音频上下文初始化失败');
-			return;
+		if (!this.initialized || !this.audioContext) {
+			const initSuccess = this._initAudioContext();
+			if (!initSuccess || !this.audioContext) {
+				console.error('音频上下文初始化失败，无法播放');
+				// 通过emit通知外部初始化失败
+				this._emit('error', { 
+					errMsg: '音频管理器初始化失败',
+					errCode: -1
+				});
+				return;
+			}
 		}
 		
 		if (!music || !music.audioUrl) {
 			console.error('音乐信息或音频URL不存在');
+			this._emit('error', {
+				errMsg: '音乐信息或音频URL不存在',
+				errCode: -2
+			});
 			return;
 		}
 		

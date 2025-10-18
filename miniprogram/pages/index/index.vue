@@ -241,11 +241,25 @@
 			}
 		},
 		mounted() {
-			this.checkLoginAndLoadPoints();
-			this.loadBanners();
-			this.loadPromptTemplates();
-			this.loadHotRecommendations();
-		},
+		this.checkLoginAndLoadPoints();
+		this.loadBanners();
+		this.loadPromptTemplates();
+		this.loadHotRecommendations();
+		
+		// 监听音频播放错误
+		this.$audioManager.on('error', (err) => {
+			console.error('[Index] 音频播放错误:', err);
+			uni.showToast({
+				title: err.errMsg || '音频播放失败',
+				icon: 'none',
+				duration: 2000
+			});
+		});
+	},
+	onUnload() {
+		// 移除错误监听
+		this.$audioManager.off('error', this.handleAudioError);
+	},
 		methods: {
 			/**
 			 * 检查登录状态并加载点数
