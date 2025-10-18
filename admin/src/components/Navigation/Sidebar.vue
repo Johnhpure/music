@@ -327,6 +327,11 @@ const navigation: NavigationItem[] = [
         name: '积分配置',
         to: '/settings/credits',
         icon: 'mdi:coin'
+      },
+      {
+        name: 'SUNO配置',
+        to: '/settings/suno',
+        icon: 'mdi:api'
       }
     ]
   }
