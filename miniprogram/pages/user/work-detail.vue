@@ -156,7 +156,6 @@ export default {
 			// 没有eventChannel，使用API获取（降级方案）
 			this.getWorkDetail();
 		}
-	}
 		
 		// 监听全局音频管理器事件
 		this.$audioManager.on('play', this.onAudioPlay);
