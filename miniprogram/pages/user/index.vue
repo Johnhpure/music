@@ -499,9 +499,11 @@
 							const uploadResult = await this.$minApi.uploadAvatar(avatarPath)
 							
 							if (uploadResult && uploadResult.code === 200 && uploadResult.data) {
-								// 使用服务器返回的头像URL
-								updateData.avatar = uploadResult.data.url || uploadResult.data.avatarUrl || uploadResult.data
-								console.log('头像上传成功:', updateData.avatar)
+							// 后端返回被双重包装：{code, message, data: {code, message, data: {url, avatarUrl}}}
+							// 需要访问 uploadResult.data.data
+							const avatarData = uploadResult.data.data || uploadResult.data
+							updateData.avatar = avatarData.url || avatarData.avatarUrl || avatarData
+							console.log('头像上传成功，URL:', updateData.avatar)
 							} else {
 								throw new Error('头像上传失败')
 							}
