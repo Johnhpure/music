@@ -92,30 +92,24 @@
           
           <!-- Action Buttons -->
           <div class="flex items-center space-x-2 ml-4">
-            <!-- Status Toggle -->
+            <!-- Hide (设为不可见) -->
             <button
-              @click="$emit('toggleStatus', recommendation)"
-              class="p-2 rounded-lg transition-all duration-200"
-              :class="[
-                recommendation.isActive 
-                  ? 'text-green-400 hover:bg-green-500/20' 
-                  : 'text-gray-500 hover:bg-gray-500/20'
-              ]"
-              :title="recommendation.isActive ? '点击禁用' : '点击启用'"
+              v-if="recommendation.isActive"
+              @click="$emit('hide', recommendation)"
+              class="p-2 rounded-lg text-orange-400 hover:bg-orange-500/20 hover:text-orange-300 transition-all duration-200"
+              title="隐藏"
             >
-              <Icon 
-                :icon="recommendation.isActive ? 'mdi:eye' : 'mdi:eye-off'" 
-                class="w-5 h-5"
-              />
+              <Icon icon="mdi:eye-off" class="w-5 h-5" />
             </button>
             
-            <!-- Preview -->
+            <!-- Show (取消隐藏) -->
             <button
-              @click="$emit('preview', recommendation)"
-              class="p-2 rounded-lg text-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-300 transition-all duration-200"
-              title="预览"
+              v-if="!recommendation.isActive"
+              @click="$emit('show', recommendation)"
+              class="p-2 rounded-lg text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-all duration-200"
+              title="取消隐藏"
             >
-              <Icon icon="mdi:eye-outline" class="w-5 h-5" />
+              <Icon icon="mdi:eye" class="w-5 h-5" />
             </button>
             
             <!-- Edit -->
@@ -187,8 +181,8 @@ const emit = defineEmits<{
   select: [id: number, selected: boolean]
   edit: [recommendation: HotRecommendation]
   delete: [recommendation: HotRecommendation]
-  toggleStatus: [recommendation: HotRecommendation]
-  preview: [recommendation: HotRecommendation]
+  hide: [recommendation: HotRecommendation]
+  show: [recommendation: HotRecommendation]
   play: [recommendation: HotRecommendation]
 }>()
 

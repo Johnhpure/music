@@ -181,9 +181,8 @@
             @select="handleSelect"
             @edit="handleEdit"
             @delete="handleDelete"
-            @toggle-status="handleToggleStatus"
-            @toggle-hot="handleToggleHot"
-            @preview="handlePreview"
+            @hide="handleHide"
+            @show="handleShow"
             @play="handlePlay"
             :delay="600 + index * 50"
           />
@@ -276,12 +275,6 @@
       @cancel="handleModalCancel"
     />
     
-    <!-- Preview Modal -->
-    <RecommendationPreviewModal
-      v-model:visible="showPreviewModal"
-      :recommendation="previewRecommendation"
-    />
-    
     <!-- Delete Confirmation -->
     <ConfirmModal
       v-model:visible="showDeleteModal"
@@ -304,7 +297,6 @@ import CyberInput from '@/components/UI/CyberInput.vue'
 import StatsCard from '@/views/Dashboard/components/StatsCard.vue'
 import RecommendationItem from './components/RecommendationItem.vue'
 import RecommendationModal from './components/RecommendationModal.vue'
-import RecommendationPreviewModal from './components/RecommendationPreviewModal.vue'
 import ConfirmModal from '@/components/UI/ConfirmModal.vue'
 import { adminContentAPI } from '@/api'
 import { useNotification } from '@/composables/useNotification'
@@ -317,12 +309,10 @@ const { showSuccess, showError } = useNotification()
 const loading = ref(false)
 const modalLoading = ref(false)
 const showCreateModal = ref(false)
-const showPreviewModal = ref(false)
 const showDeleteModal = ref(false)
 
 const recommendations = ref<HotRecommendation[]>([])
 const editingRecommendation = ref<HotRecommendation | null>(null)
-const previewRecommendation = ref<HotRecommendation | null>(null)
 const deletingRecommendation = ref<HotRecommendation | null>(null)
 const selectedItems = ref<number[]>([])
 const selectAll = ref(false)
@@ -500,24 +490,36 @@ const handleDelete = (recommendation: HotRecommendation) => {
   showDeleteModal.value = true
 }
 
-const handleToggleStatus = async (recommendation: HotRecommendation) => {
+const handleHide = async (recommendation: HotRecommendation) => {
   try {
-    const response = await adminContentAPI.toggleRecommendationStatus(recommendation.id.toString())
+    const response = await adminContentAPI.updateRecommendation(
+      recommendation.id.toString(),
+      { isActive: false }
+    )
     if (response.code === 200) {
-      showSuccess('切换状态成功')
+      showSuccess('隐藏成功，小程序将不再显示此推荐')
       await loadRecommendations()
     }
   } catch (error: any) {
-    console.error('Failed to toggle recommendation status:', error)
-    showError(error.response?.data?.message || '切换状态失败')
+    console.error('Failed to hide recommendation:', error)
+    showError(error.response?.data?.message || '隐藏失败')
   }
 }
 
-
-
-const handlePreview = (recommendation: HotRecommendation) => {
-  previewRecommendation.value = recommendation
-  showPreviewModal.value = true
+const handleShow = async (recommendation: HotRecommendation) => {
+  try {
+    const response = await adminContentAPI.updateRecommendation(
+      recommendation.id.toString(),
+      { isActive: true }
+    )
+    if (response.code === 200) {
+      showSuccess('取消隐藏成功，小程序将显示此推荐')
+      await loadRecommendations()
+    }
+  } catch (error: any) {
+    console.error('Failed to show recommendation:', error)
+    showError(error.response?.data?.message || '取消隐藏失败')
+  }
 }
 
 const handlePlay = (recommendation: HotRecommendation) => {
