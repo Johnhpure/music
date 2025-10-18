@@ -283,7 +283,25 @@
                 <!-- User Info -->
                 <td class="py-4 px-4">
                   <div class="flex items-center space-x-3">
+                    <!-- 头像：优先显示真实头像，否则显示图标 -->
                     <div 
+                      v-if="user.avatar"
+                      class="w-10 h-10 rounded-full overflow-hidden border-2"
+                      :class="[
+                        user.userType === 'vip' ? 'border-yellow-500/50' :
+                        user.userType === 'admin' ? 'border-red-500/50' :
+                        'border-gray-500/50'
+                      ]"
+                    >
+                      <img 
+                        :src="user.avatar" 
+                        :alt="user.username"
+                        class="w-full h-full object-cover"
+                        @error="handleImageError"
+                      />
+                    </div>
+                    <div 
+                      v-else
                       class="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
                       :class="[
                         user.userType === 'vip' ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
@@ -486,9 +504,9 @@
       </div>
     </CyberCard>
 
-    <!-- User Detail Modal (placeholder) -->
-    <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div class="bg-glass-dark backdrop-blur-xl border border-gray-700/30 rounded-2xl p-6 w-full max-w-2xl m-4">
+    <!-- User Detail Modal -->
+    <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div class="bg-glass-dark backdrop-blur-xl border border-gray-700/30 rounded-2xl p-6 w-full max-w-3xl m-4 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-xl font-bold text-white">用户详情</h3>
           <button
@@ -498,10 +516,214 @@
             <Icon icon="mdi:close" class="w-6 h-6" />
           </button>
         </div>
-        <div class="text-center py-12">
-          <Icon icon="mdi:tools" class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <h3 class="text-lg font-medium text-gray-400 mb-2">详情页开发中</h3>
-          <p class="text-gray-500">用户详情页面正在开发中...</p>
+        
+        <div v-if="selectedUser" class="space-y-6">
+          <!-- User Header -->
+          <div class="flex items-center space-x-4 p-4 bg-glass-white/5 rounded-lg">
+            <div 
+              v-if="selectedUser.avatar"
+              class="w-20 h-20 rounded-full overflow-hidden border-4"
+              :class="[
+                selectedUser.userType === 'vip' ? 'border-yellow-500/50' :
+                selectedUser.userType === 'admin' ? 'border-red-500/50' :
+                'border-gray-500/50'
+              ]"
+            >
+              <img 
+                :src="selectedUser.avatar" 
+                :alt="selectedUser.username"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <div 
+              v-else
+              class="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-medium"
+              :class="[
+                selectedUser.userType === 'vip' ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
+                selectedUser.userType === 'admin' ? 'bg-gradient-to-br from-red-500 to-red-600' :
+                'bg-gradient-to-br from-gray-500 to-gray-600'
+              ]"
+            >
+              <Icon 
+                :icon="selectedUser.userType === 'vip' ? 'mdi:crown' : 
+                       selectedUser.userType === 'admin' ? 'mdi:shield-account' : 
+                       'mdi:account'"
+                class="w-10 h-10"
+              />
+            </div>
+            <div class="flex-1">
+              <h4 class="text-2xl font-bold text-white mb-1">{{ selectedUser.username }}</h4>
+              <div class="flex items-center space-x-2">
+                <span
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  :class="{
+                    'bg-green-500/20 text-green-400 border border-green-500/30': selectedUser.status === 'active',
+                    'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30': selectedUser.status === 'inactive',
+                    'bg-red-500/20 text-red-400 border border-red-500/30': selectedUser.status === 'banned',
+                    'bg-gray-500/20 text-gray-400 border border-gray-500/30': selectedUser.status === 'pending'
+                  }"
+                >
+                  {{ getStatusText(selectedUser.status) }}
+                </span>
+                <span
+                  v-if="selectedUser.userType === 'vip'"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 text-yellow-400 border border-yellow-500/30"
+                >
+                  <Icon icon="mdi:crown" class="w-3 h-3 mr-1" />
+                  VIP
+                </span>
+                <span
+                  v-if="selectedUser.userType === 'admin'"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-400 border border-red-500/30"
+                >
+                  <Icon icon="mdi:shield-account" class="w-3 h-3 mr-1" />
+                  管理员
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Info Grid -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 bg-glass-white/5 rounded-lg">
+              <div class="text-sm text-gray-400 mb-1">用户ID</div>
+              <div class="text-white font-medium">{{ selectedUser.id }}</div>
+            </div>
+            <div class="p-4 bg-glass-white/5 rounded-lg">
+              <div class="text-sm text-gray-400 mb-1">积分余额</div>
+              <div class="text-cyber-purple text-xl font-bold">{{ selectedUser.totalCredits.toLocaleString() }}</div>
+            </div>
+            <div class="p-4 bg-glass-white/5 rounded-lg">
+              <div class="text-sm text-gray-400 mb-1">邮箱</div>
+              <div class="text-white font-medium">{{ selectedUser.email || '未绑定' }}</div>
+            </div>
+            <div class="p-4 bg-glass-white/5 rounded-lg">
+              <div class="text-sm text-gray-400 mb-1">手机号</div>
+              <div class="text-white font-medium">{{ selectedUser.phone || '未绑定' }}</div>
+            </div>
+            <div class="p-4 bg-glass-white/5 rounded-lg">
+              <div class="text-sm text-gray-400 mb-1">注册来源</div>
+              <div class="text-white font-medium flex items-center">
+                <Icon :icon="getSourceIcon(selectedUser.registrationSource)" class="w-4 h-4 mr-1" />
+                {{ getSourceText(selectedUser.registrationSource) }}
+              </div>
+            </div>
+            <div class="p-4 bg-glass-white/5 rounded-lg">
+              <div class="text-sm text-gray-400 mb-1">注册时间</div>
+              <div class="text-white font-medium">{{ formatDate(selectedUser.createdAt) }}</div>
+            </div>
+            <div class="p-4 bg-glass-white/5 rounded-lg">
+              <div class="text-sm text-gray-400 mb-1">最后登录</div>
+              <div class="text-white font-medium">{{ selectedUser.lastLoginAt ? formatDate(selectedUser.lastLoginAt) : '从未登录' }}</div>
+            </div>
+            <div class="p-4 bg-glass-white/5 rounded-lg">
+              <div class="text-sm text-gray-400 mb-1">更新时间</div>
+              <div class="text-white font-medium">{{ formatDate(selectedUser.updatedAt) }}</div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-700/30">
+            <CyberButton
+              variant="outline"
+              left-icon="mdi:pencil"
+              @click="editUserFromDetail"
+            >
+              编辑用户
+            </CyberButton>
+            <CyberButton
+              variant="outline"
+              :left-icon="selectedUser.status === 'banned' ? 'mdi:account-check' : 'mdi:account-off'"
+              @click="handleToggleStatus(selectedUser)"
+            >
+              {{ selectedUser.status === 'banned' ? '解除封禁' : '封禁用户' }}
+            </CyberButton>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Edit Modal -->
+    <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div class="bg-glass-dark backdrop-blur-xl border border-gray-700/30 rounded-2xl p-6 w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-white">编辑用户</h3>
+          <button
+            @click="showEditModal = false"
+            class="text-gray-400 hover:text-white transition-colors"
+          >
+            <Icon icon="mdi:close" class="w-6 h-6" />
+          </button>
+        </div>
+        
+        <div v-if="editingUser" class="space-y-4">
+          <!-- Username -->
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">用户名</label>
+            <CyberInput
+              v-model="editingUser.username"
+              placeholder="请输入用户名"
+            />
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">邮箱</label>
+            <CyberInput
+              v-model="editingUser.email"
+              type="email"
+              placeholder="请输入邮箱"
+            />
+          </div>
+
+          <!-- Phone -->
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">手机号</label>
+            <CyberInput
+              v-model="editingUser.phone"
+              placeholder="请输入手机号"
+            />
+          </div>
+
+          <!-- User Type -->
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">用户类型</label>
+            <select 
+              v-model="editingUser.userType"
+              class="cyber-input w-full"
+            >
+              <option value="free">普通用户</option>
+              <option value="vip">VIP用户</option>
+              <option value="admin">管理员</option>
+            </select>
+          </div>
+
+          <!-- Credits -->
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">积分余额</label>
+            <CyberInput
+              v-model.number="editingUser.totalCredits"
+              type="number"
+              placeholder="请输入积分"
+            />
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-700/30">
+            <CyberButton
+              variant="outline"
+              @click="showEditModal = false"
+            >
+              取消
+            </CyberButton>
+            <CyberButton
+              left-icon="mdi:content-save"
+              @click="confirmEdit"
+              :loading="saving"
+            >
+              保存
+            </CyberButton>
+          </div>
         </div>
       </div>
     </div>
@@ -532,12 +754,16 @@ import type { User } from '@/types'
 
 // State
 const loading = shallowRef(false)
+const saving = shallowRef(false)
 const showCreateModal = shallowRef(false)
 const showDetailModal = shallowRef(false)
+const showEditModal = shallowRef(false)
 const showDeleteModal = shallowRef(false)
 
 // 使用 shallowRef 优化大数组，避免深度响应式
 const users = shallowRef<User[]>([])
+const selectedUser = shallowRef<User | null>(null)
+const editingUser = shallowRef<User | null>(null)
 const deletingUser = shallowRef<User | null>(null)
 const selectedItems = shallowRef<string[]>([])
 const selectAll = ref(false)
@@ -646,6 +872,11 @@ const formatDate = (dateString: string) => {
   })
 }
 
+const handleImageError = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  img.style.display = 'none'
+}
+
 // Methods
 const loadUsers = async () => {
   loading.value = true
@@ -668,6 +899,7 @@ const loadUsers = async () => {
         username: user.username || user.nickname,
         email: user.email,
         phone: user.phone,
+        avatar: user.avatar,
         role: user.role,
         status: user.status,
         userType: user.user_type,
@@ -739,14 +971,93 @@ const handleSelectAll = () => {
   }
 }
 
-const handleViewUser = (user: User) => {
-  console.log('View user:', user.username)
-  showDetailModal.value = true
+const handleViewUser = async (user: User) => {
+  try {
+    const response = await adminUserAPI.getUserById(user.id)
+    if (response.success && response.data) {
+      selectedUser.value = {
+        id: response.data.id,
+        username: response.data.username || response.data.nickname,
+        email: response.data.email,
+        phone: response.data.phone,
+        avatar: response.data.avatar,
+        role: response.data.role,
+        status: response.data.status,
+        userType: response.data.user_type,
+        registrationSource: response.data.registration_source,
+        totalCredits: response.data.credit,
+        createdAt: response.data.created_at,
+        updatedAt: response.data.updated_at,
+        lastLoginAt: response.data.last_login_at
+      }
+      showDetailModal.value = true
+    }
+  } catch (error: any) {
+    console.error('Failed to load user details:', error)
+    alert(error.message || '加载用户详情失败')
+  }
 }
 
-const handleEditUser = (user: User) => {
-  console.log('Edit user:', user.username)
-  // TODO: Implement edit functionality
+const handleEditUser = async (user: User) => {
+  try {
+    const response = await adminUserAPI.getUserById(user.id)
+    if (response.success && response.data) {
+      editingUser.value = {
+        id: response.data.id,
+        username: response.data.username || response.data.nickname,
+        email: response.data.email,
+        phone: response.data.phone,
+        avatar: response.data.avatar,
+        role: response.data.role,
+        status: response.data.status,
+        userType: response.data.user_type,
+        registrationSource: response.data.registration_source,
+        totalCredits: response.data.credit,
+        createdAt: response.data.created_at,
+        updatedAt: response.data.updated_at,
+        lastLoginAt: response.data.last_login_at
+      }
+      showEditModal.value = true
+    }
+  } catch (error: any) {
+    console.error('Failed to load user details:', error)
+    alert(error.message || '加载用户详情失败')
+  }
+}
+
+const editUserFromDetail = () => {
+  if (selectedUser.value) {
+    editingUser.value = { ...selectedUser.value }
+    showDetailModal.value = false
+    showEditModal.value = true
+  }
+}
+
+const confirmEdit = async () => {
+  if (!editingUser.value) return
+  
+  saving.value = true
+  try {
+    const response = await adminUserAPI.updateUser(editingUser.value.id, {
+      username: editingUser.value.username,
+      email: editingUser.value.email,
+      phone: editingUser.value.phone,
+      user_type: editingUser.value.userType,
+      credit: editingUser.value.totalCredits
+    })
+    
+    if (response.success) {
+      showEditModal.value = false
+      editingUser.value = null
+      await loadUsers()
+      alert('用户信息已更新')
+    }
+  } catch (error: any) {
+    console.error('Failed to update user:', error)
+    alert(error.message || '更新用户信息失败')
+  } finally {
+    saving.value = false
+  }
 }
 
 const handleToggleStatus = async (user: User) => {
