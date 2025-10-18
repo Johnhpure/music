@@ -39,8 +39,9 @@ export class StorageService {
     await fs.promises.writeFile(filePath, file.buffer);
 
     this.logger.log(`File uploaded: ${subPath}`);
-    // 返回相对路径，而不是完整的URL
-    return `/uploads/${subPath.replace(/\\/g, '/')}`;
+    // 返回完整URL，供小程序访问
+    const normalizedPath = subPath.replace(/\\/g, '/');
+    return `${this.baseUrl}/${normalizedPath}`;
   }
 
   async uploadFromUrl(url: string, subPath: string): Promise<string> {
@@ -60,8 +61,9 @@ export class StorageService {
       await fs.promises.writeFile(filePath, Buffer.from(response.data));
 
       this.logger.log(`File downloaded and saved: ${subPath}`);
-      // 返回相对路径，而不是完整的URL
-      return `/uploads/${subPath.replace(/\\/g, '/')}`;
+      // 返回完整URL，供小程序访问
+      const normalizedPath = subPath.replace(/\\/g, '/');
+      return `${this.baseUrl}/${normalizedPath}`;
     } catch (error) {
       this.logger.error(`Failed to download file from ${url}`, error);
       throw error;
