@@ -73,7 +73,7 @@
 					v-for="(theme, index) in hotThemes"
 					:key="index"
 					:class="{ 'active': index === activeCardIndex, 'prev': isPrevCard(index), 'next': isNextCard(index) }"
-					:style="getCardStyle(index)"
+					:style="{ background: cardColors[index % cardColors.length] }"
 					@click="selectTheme(theme)"
 				>
 					<view class="card-content-wrapper">
@@ -230,13 +230,7 @@ export default {
 			return index === next;
 		},
 		
-		// 获取卡片样式
-		getCardStyle(index) {
-			const bgColor = this.cardColors[index % this.cardColors.length];
-			return {
-				background: bgColor
-			};
-		},
+		
 		
 		// AI扩展灵感
 		async handleAIExpand() {
