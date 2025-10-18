@@ -261,6 +261,30 @@ const loadConfigs = async () => {
   loading.value = true
   errorMessage.value = ''
   try {
+    // === 调试信息：检查Token和用户权限 ===
+    console.log('='.repeat(60))
+    console.log('🔍 Token存在:', !!localStorage.getItem('token'))
+    
+    const userStr = localStorage.getItem('user')
+    if (userStr) {
+      const user = JSON.parse(userStr)
+      console.log('👤 当前用户:', user)
+    }
+    
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        console.log('🎫 JWT Payload:', payload)
+      } catch (e) {
+        console.error('❌ JWT解析失败:', e)
+      }
+    } else {
+      console.warn('⚠️ 未找到Token，请先登录')
+    }
+    console.log('='.repeat(60))
+    // === 调试信息结束 ===
+    
     console.log('🔄 开始加载SUNO配置...')
     const res = await sunoConfigAPI.getConfigs()
     console.log('✅ API响应:', res)
