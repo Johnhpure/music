@@ -37,6 +37,30 @@
 			}
 		},
 		{
+			"path": "pages/creation/wizard/simple",
+			"style": {
+				"navigationBarTitleText": "极简创作"
+			}
+		},
+		{
+			"path": "pages/creation/wizard/scene",
+			"style": {
+				"navigationBarTitleText": "情景创作"
+			}
+		},
+		{
+			"path": "pages/creation/wizard/master",
+			"style": {
+				"navigationBarTitleText": "大师创作"
+			}
+		},
+		{
+			"path": "pages/creation/wizard/result",
+			"style": {
+				"navigationBarTitleText": "生成结果"
+			}
+		},
+		{
 			"path": "pages/user/index",
 			"style": {
 				"navigationBarTitleText": "个人中心"

@@ -36,6 +36,22 @@
 					</view>
 				</view>
 			</view>
+
+			<!-- 创作向导卡片 -->
+			<view class="card green-card" @click="handleWizardCreation">
+				<view class="card-content">
+					<view class="card-title-box">
+						<view class="card-icon">🎯</view>
+						<view class="card-title">创作向导</view>
+					</view>
+					<view class="card-desc">
+						通过简单几步，快速创作出你想要的音乐
+					</view>
+					<view class="arrow-box">
+						<image class="arrow" src="/static/img/icon/right-arrow.svg"></image>
+					</view>
+				</view>
+			</view>
 			
 			<!-- 奖励提示 -->
 			<view class="reward-tip">
@@ -81,6 +97,14 @@ export default {
 		handleAICreation() {
 			console.log('点击了AI辅助创作按钮');
 			this.showCopyrightModal('ai');
+		},
+		
+		// 处理创作向导点击
+		handleWizardCreation() {
+			console.log('点击了创作向导按钮');
+			uni.navigateTo({
+				url: '/pages/creation/wizard/simple'
+			});
 		},
 		
 		// 显示版权弹窗
@@ -192,6 +216,11 @@ export default {
 /* 紫色卡片 */
 .purple-card {
 	background: linear-gradient(135deg, #7342CC 0%, #5F35A8 100%);
+}
+
+/* 绿色卡片 */
+.green-card {
+	background: linear-gradient(135deg, #10B981 0%, #059669 100%);
 }
 
 /* 卡片内容 */
