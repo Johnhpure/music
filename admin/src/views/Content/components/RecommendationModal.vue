@@ -88,8 +88,8 @@
                         required
                       >
                         <option value="">请选择分类</option>
-                        <option v-for="category in categories" :key="category" :value="category">
-                          {{ category }}
+                        <option v-for="category in categories" :key="category.code" :value="category.code">
+                          {{ category.name }}
                         </option>
                       </select>
                       <p v-if="errors.category" class="text-red-400 text-xs mt-1">{{ errors.category }}</p>
@@ -446,7 +446,7 @@ import type { HotRecommendation } from '@/types'
 interface Props {
   visible: boolean
   recommendation?: HotRecommendation | null
-  categories: string[]
+  categories: {code: string, name: string}[]
   loading?: boolean
 }
 

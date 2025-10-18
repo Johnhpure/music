@@ -86,8 +86,8 @@
             @change="handleFilter"
           >
             <option value="">全部分类</option>
-            <option v-for="category in categories" :key="category" :value="category">
-              {{ category }}
+            <option v-for="category in categories" :key="category.code" :value="category.code">
+              {{ category.name }}
             </option>
           </select>
           
@@ -317,7 +317,7 @@ const deletingRecommendation = ref<HotRecommendation | null>(null)
 const selectedItems = ref<number[]>([])
 const selectAll = ref(false)
 
-const categories = ref<string[]>([])
+const categories = ref<{code: string, name: string}[]>([])
 
 // Filters and pagination
 const filters = ref({
@@ -382,16 +382,23 @@ const loadCategories = async () => {
   try {
     const response = await adminContentAPI.getRecommendationCategories()
     if (response.code === 200 && response.data) {
-      // 将API返回的分类数据映射为名称数组（用于下拉框显示）
+      // 保存完整的分类数据（包含code和name）
       categories.value = response.data
         .filter((cat: any) => cat.code !== 'all') // 过滤掉"全部"分类
-        .map((cat: any) => cat.name)
+        .map((cat: any) => ({ code: cat.code, name: cat.name }))
       console.log('分类加载成功，共', categories.value.length, '个')
     }
   } catch (error: any) {
     console.error('Failed to load categories:', error)
     // 失败时使用默认分类
-    categories.value = ['流行', '电子', '摇滚', '民谣', '嘻哈', '古典']
+    categories.value = [
+      { code: 'pop', name: '流行音乐' },
+      { code: 'electronic', name: '电子音乐' },
+      { code: 'rock', name: '摇滚音乐' },
+      { code: 'folk', name: '民谣音乐' },
+      { code: 'hiphop', name: '说唱音乐' },
+      { code: 'classical', name: '古典音乐' }
+    ]
   }
 }
 
