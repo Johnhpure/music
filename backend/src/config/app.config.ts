@@ -46,6 +46,9 @@ export const configValidationSchema = Joi.object({
   // 前端URL
   FRONTEND_URL: Joi.string().default('http://localhost:8080'),
 
+  // 应用基础URL（用于回调等场景）
+  APP_BASE_URL: Joi.string().default('http://localhost:3000'),
+
   // 日志级别
   LOG_LEVEL: Joi.string()
     .valid('error', 'warn', 'info', 'debug')

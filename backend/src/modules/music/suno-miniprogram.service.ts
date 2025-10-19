@@ -206,6 +206,108 @@ export class SunoMiniprogramService {
   }
 
   /**
+   * 处理Suno回调
+   * 当Suno音乐生成完成后，会调用此方法更新任务状态
+   */
+  async handleCallback(callbackData: any): Promise<void> {
+    const { code, msg, data } = callbackData;
+    const { callbackType, task_id, data: resultData } = data;
+
+    this.logger.log(
+      `Processing Suno callback: taskId=${task_id}, type=${callbackType}, code=${code}`,
+    );
+
+    // 查找对应的music_task记录
+    const musicTask = await this.musicTaskRepository.findOne({
+      where: { suno_task_id: task_id },
+      relations: ['user'],
+    });
+
+    if (!musicTask) {
+      this.logger.warn(`Music task not found for Suno taskId: ${task_id}`);
+      return;
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 根据回调类型和状态码更新任务
+      if (
+        code === 200 &&
+        callbackType === 'complete' &&
+        resultData &&
+        resultData.length > 0
+      ) {
+        // 成功完成
+        const firstResult = resultData[0];
+
+        await queryRunner.manager.update(
+          MusicTask,
+          { id: musicTask.id },
+          {
+            status: TaskStatus.SUCCESS,
+            audio_url: firstResult.audio_url,
+            image_url: firstResult.image_url,
+            video_url: firstResult.video_url,
+            duration: firstResult.duration,
+            suno_response: resultData,
+            completed_at: new Date(),
+          },
+        );
+
+        this.logger.log(
+          `Music task ${musicTask.id} completed successfully, audio_url=${firstResult.audio_url}`,
+        );
+      } else if (code !== 200 || callbackType === 'error') {
+        // 失败 - 退还积分
+        await queryRunner.manager.update(
+          MusicTask,
+          { id: musicTask.id },
+          {
+            status: TaskStatus.FAILED,
+            error_message: msg || '音乐生成失败',
+          },
+        );
+
+        // 退还积分
+        await queryRunner.manager.update(
+          User,
+          { id: musicTask.user_id },
+          { credit: () => `credit + ${musicTask.credit_cost}` },
+        );
+
+        this.logger.log(
+          `Music task ${musicTask.id} failed, refunded ${musicTask.credit_cost} credits to user ${musicTask.user_id}`,
+        );
+      } else if (callbackType === 'first') {
+        // 第一首完成 - 更新为生成中状态
+        await queryRunner.manager.update(
+          MusicTask,
+          { id: musicTask.id },
+          {
+            status: TaskStatus.GENERATING,
+          },
+        );
+
+        this.logger.log(`Music task ${musicTask.id} - first track completed`);
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(
+        `Failed to process callback for task ${task_id}`,
+        error,
+      );
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
    * 扩展音乐（小程序专用接口）
    * 1. 查找原始音乐任务
    * 2. 检查用户积分

@@ -8,6 +8,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,6 +18,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { SunoMiniprogramService } from './suno-miniprogram.service';
 import { MiniGenerateMusicDto } from './dto/miniprogram/mini-generate-music.dto';
 import { MiniExtendMusicDto } from './dto/miniprogram/mini-extend-music.dto';
@@ -30,6 +32,8 @@ import { MiniGenerateLyricsDto } from './dto/miniprogram/mini-generate-lyrics.dt
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class SunoMiniprogramController {
+  private readonly logger = new Logger(SunoMiniprogramController.name);
+
   constructor(
     private readonly sunoMiniprogramService: SunoMiniprogramService,
   ) {}
@@ -122,6 +126,62 @@ export class SunoMiniprogramController {
       message: '查询成功',
       data: result,
     };
+  }
+
+  /**
+   * 接收Suno回调通知
+   * 重要：此接口必须公开访问（不需要JWT认证）
+   */
+  @Public()
+  @Post('callback')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Suno回调接收',
+    description: 'Suno音乐生成完成后的回调通知接收endpoint',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '回调接收成功',
+    schema: {
+      example: {
+        status: 'received',
+        timestamp: '2025-01-19T12:00:00.000Z',
+      },
+    },
+  })
+  async handleSunoCallback(@Body() callbackData: any) {
+    try {
+      // 记录回调接收
+      const { code, data } = callbackData;
+      const { task_id, callbackType } = data || {};
+
+      this.logger.log(
+        `Received Suno callback: taskId=${task_id}, type=${callbackType}, code=${code}`,
+      );
+
+      // 异步处理回调数据，立即返回200
+      setImmediate(() => {
+        this.sunoMiniprogramService
+          .handleCallback(callbackData)
+          .catch((error) => {
+            this.logger.error('Failed to process callback', error);
+          });
+      });
+
+      // 快速响应200（必须在15秒内）
+      return {
+        status: 'received',
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.error('Callback handling error', error);
+      // 即使出错也要返回200，避免Suno重试
+      return {
+        status: 'error',
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 
   @Post('extend')
