@@ -565,25 +565,33 @@ const loadAllData = async () => {
 const loadProviders = async () => {
   try {
     const response = await aiProviderAPI.getProviders()
+    console.log('🔍 Providers API Response:', response)
     if (response.code === 200) {
       providers.value = response.data
+      console.log('✅ Providers loaded:', providers.value.length, 'items')
+      console.log('📦 First provider configJson:', providers.value[0]?.configJson)
     }
   } catch (error) {
-    console.error('Failed to load providers:', error)
+    console.error('❌ Failed to load providers:', error)
     throw error
   }
 }
 
 const openProviderDetail = async (provider: any) => {
+  console.log('🎯 Opening provider detail:', provider)
   selectedProvider.value = provider
   showDetailDrawer.value = true
   models.value = []
   apiKeys.value = []
   
-  await Promise.all([
-    loadModels(provider.id),
-    loadApiKeys(provider.id)
-  ])
+  if (provider && provider.id) {
+    await Promise.all([
+      loadModels(provider.id),
+      loadApiKeys(provider.id)
+    ])
+  } else {
+    console.error('❌ Provider or provider.id is undefined:', provider)
+  }
 }
 
 const closeDetailDrawer = () => {
