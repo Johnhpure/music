@@ -1002,6 +1002,7 @@ const saveKey = async () => {
     } else {
       // 创建新密钥
       const response = await aiApiKeyAPI.createKey(selectedProvider.value.id, {
+        providerId: selectedProvider.value.id,
         keyName: keyForm.value.keyName,
         apiKey: keyForm.value.apiKey,
         priority: keyForm.value.priority,
