@@ -133,7 +133,7 @@
         @click.self="closeDetailDrawer"
       >
         <div 
-          class="w-full max-w-5xl max-h-[90vh] bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col"
+          class="w-full max-w-7xl max-h-[90vh] bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col"
           @click.stop
         >
           <!-- Detail Header -->
@@ -229,16 +229,28 @@
                             <p class="text-xs text-gray-400">添加并选择一个API密钥</p>
                           </div>
                         </div>
-                        <CyberButton
-                          left-icon="mdi:plus"
-                          @click="openAddKeyDialog"
-                          size="sm"
-                        >
-                          添加密钥
-                        </CyberButton>
+                        <div class="flex items-center space-x-2">
+                          <CyberButton
+                            v-if="selectedKeyId"
+                            variant="outline"
+                            left-icon="mdi:delete"
+                            @click.stop="deleteSelectedKey"
+                            size="sm"
+                            class="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                          >
+                            删除密钥
+                          </CyberButton>
+                          <CyberButton
+                            left-icon="mdi:plus"
+                            @click="openAddKeyDialog"
+                            size="sm"
+                          >
+                            添加密钥
+                          </CyberButton>
+                        </div>
                       </div>
                       
-                      <div v-if="apiKeys.length > 0" class="space-y-2 max-h-48 overflow-y-auto pr-2">
+                      <div v-if="apiKeys.length > 0" class="space-y-2 pr-2">
                         <div 
                           v-for="key in apiKeys" 
                           :key="key.id"
@@ -264,7 +276,7 @@
                                   {{ getKeyStatusText(key.status) }}
                                 </span>
                               </div>
-                              <p class="text-xs text-gray-400 font-mono mt-1 truncate">{{ key.apiKey }}</p>
+                              <p class="text-xs text-gray-400 font-mono mt-1 break-all">{{ key.apiKey }}</p>
                             </div>
                             <Icon 
                               v-if="selectedKeyId === key.id"
@@ -304,7 +316,7 @@
                         </CyberButton>
                       </div>
                       
-                      <div v-if="models.length > 0" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                      <div v-if="models.length > 0" class="space-y-2 pr-2">
                         <div 
                           v-for="model in models.filter(m => m.isActive)" 
                           :key="model.id"
@@ -928,10 +940,70 @@ const loadApiKeys = async (providerId: number) => {
       if (apiKeys.value.length > 0) {
         console.log('🔑 First key:', apiKeys.value[0])
       }
+      
+      // 自动验证所有密钥状态
+      await validateAllKeys()
     }
   } catch (error) {
     console.error('Failed to load API keys:', error)
     apiKeys.value = [] // 出错时确保是空数组
+  }
+}
+
+// 验证所有密钥状态
+const validateAllKeys = async () => {
+  if (apiKeys.value.length === 0) return
+  
+  console.log('🔄 开始验证所有密钥状态...')
+  
+  // 批量验证所有key，但避免同时发起过多请求
+  const validationPromises = apiKeys.value.map(async (key, index) => {
+    // 添加小延迟避免触发rate limit
+    await new Promise(resolve => setTimeout(resolve, index * 200))
+    
+    try {
+      const response = await aiApiKeyAPI.validateKey(key.id)
+      if (response.code === 200 && response.data) {
+        // 更新key的状态
+        const keyIndex = apiKeys.value.findIndex(k => k.id === key.id)
+        if (keyIndex !== -1) {
+          apiKeys.value[keyIndex].status = response.data.isValid ? 'normal' : 'error'
+        }
+      }
+    } catch (error) {
+      console.error(`验证密钥 ${key.keyName} 失败:`, error)
+      // 验证失败时标记为错误状态
+      const keyIndex = apiKeys.value.findIndex(k => k.id === key.id)
+      if (keyIndex !== -1) {
+        apiKeys.value[keyIndex].status = 'error'
+      }
+    }
+  })
+  
+  await Promise.all(validationPromises)
+  console.log('✅ 所有密钥状态验证完成')
+}
+
+// 删除选中的密钥
+const deleteSelectedKey = async () => {
+  if (!selectedKeyId.value) return
+  
+  const selectedKey = apiKeys.value.find(k => k.id === selectedKeyId.value)
+  if (!selectedKey) return
+  
+  if (!confirm(`确定要删除密钥 "${selectedKey.keyName}" 吗？`)) return
+  
+  try {
+    const response = await aiApiKeyAPI.deleteKey(selectedKeyId.value)
+    if (response.code === 200) {
+      alert('密钥删除成功')
+      selectedKeyId.value = null
+      await loadApiKeys(selectedProvider.value.id)
+      await loadProviders()
+    }
+  } catch (error: any) {
+    console.error('Failed to delete key:', error)
+    alert(`删除失败: ${error.message || '未知错误'}`)
   }
 }
 
