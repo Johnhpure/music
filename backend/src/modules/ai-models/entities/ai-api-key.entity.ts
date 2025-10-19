@@ -17,16 +17,17 @@ export class AIApiKey {
   @PrimaryGeneratedColumn({ comment: '密钥ID' })
   id: number;
 
-  @Column({ type: 'int', unsigned: true, comment: '供应商ID' })
+  @Column({ name: 'provider_id', type: 'int', unsigned: true, comment: '供应商ID' })
   providerId: number;
 
-  @Column({ length: 100, comment: '密钥名称' })
+  @Column({ name: 'key_name', length: 100, comment: '密钥名称' })
   keyName: string;
 
-  @Column({ length: 500, comment: 'API密钥(加密存储)' })
+  @Column({ name: 'api_key', length: 500, comment: 'API密钥(加密存储)' })
   apiKey: string;
 
   @Column({
+    name: 'base_url',
     length: 200,
     nullable: true,
     comment: 'API基础URL(可覆盖供应商默认值)',
@@ -36,7 +37,7 @@ export class AIApiKey {
   @Column({ type: 'int', default: 0, comment: '优先级(数字越大优先级越高)' })
   priority: number;
 
-  @Column({ type: 'tinyint', default: 1, comment: '是否启用' })
+  @Column({ name: 'is_active', type: 'tinyint', default: 1, comment: '是否启用' })
   isActive: boolean;
 
   @Column({
@@ -48,6 +49,7 @@ export class AIApiKey {
   status: string;
 
   @Column({
+    name: 'rate_limit_rpm',
     type: 'int',
     unsigned: true,
     default: 60,
@@ -56,6 +58,7 @@ export class AIApiKey {
   rateLimitRpm: number;
 
   @Column({
+    name: 'rate_limit_tpm',
     type: 'int',
     unsigned: true,
     default: 90000,
@@ -64,6 +67,7 @@ export class AIApiKey {
   rateLimitTpm: number;
 
   @Column({
+    name: 'rate_limit_rpd',
     type: 'int',
     unsigned: true,
     default: 10000,
@@ -71,10 +75,11 @@ export class AIApiKey {
   })
   rateLimitRpd: number;
 
-  @Column({ type: 'int', unsigned: true, default: 0, comment: '今日请求次数' })
+  @Column({ name: 'requests_count_today', type: 'int', unsigned: true, default: 0, comment: '今日请求次数' })
   requestsCountToday: number;
 
   @Column({
+    name: 'tokens_count_today',
     type: 'int',
     unsigned: true,
     default: 0,
@@ -82,13 +87,14 @@ export class AIApiKey {
   })
   tokensCountToday: number;
 
-  @Column({ type: 'int', unsigned: true, default: 0, comment: '今日错误次数' })
+  @Column({ name: 'errors_count_today', type: 'int', unsigned: true, default: 0, comment: '今日错误次数' })
   errorsCountToday: number;
 
-  @Column({ type: 'bigint', unsigned: true, default: 0, comment: '总请求次数' })
+  @Column({ name: 'requests_count_total', type: 'bigint', unsigned: true, default: 0, comment: '总请求次数' })
   requestsCountTotal: number;
 
   @Column({
+    name: 'tokens_count_total',
     type: 'bigint',
     unsigned: true,
     default: 0,
@@ -96,25 +102,25 @@ export class AIApiKey {
   })
   tokensCountTotal: number;
 
-  @Column({ type: 'timestamp', nullable: true, comment: '最后使用时间' })
+  @Column({ name: 'last_used_at', type: 'timestamp', nullable: true, comment: '最后使用时间' })
   lastUsedAt: Date;
 
-  @Column({ type: 'timestamp', nullable: true, comment: '最后错误时间' })
+  @Column({ name: 'last_error_at', type: 'timestamp', nullable: true, comment: '最后错误时间' })
   lastErrorAt: Date;
 
-  @Column({ type: 'text', nullable: true, comment: '最后错误信息' })
+  @Column({ name: 'last_error_msg', type: 'text', nullable: true, comment: '最后错误信息' })
   lastErrorMsg: string;
 
-  @Column({ type: 'date', nullable: true, comment: '统计重置日期' })
+  @Column({ name: 'stats_reset_at', type: 'date', nullable: true, comment: '统计重置日期' })
   statsResetAt: Date;
 
-  @Column({ type: 'json', nullable: true, comment: '额外配置(JSON格式)' })
+  @Column({ name: 'config_json', type: 'json', nullable: true, comment: '额外配置(JSON格式)' })
   configJson: any;
 
-  @CreateDateColumn({ comment: '创建时间' })
+  @CreateDateColumn({ name: 'created_at', comment: '创建时间' })
   createdAt: Date;
 
-  @UpdateDateColumn({ comment: '更新时间' })
+  @UpdateDateColumn({ name: 'updated_at', comment: '更新时间' })
   updatedAt: Date;
 
   // 关联关系

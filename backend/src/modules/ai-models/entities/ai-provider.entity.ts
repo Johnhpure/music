@@ -18,31 +18,31 @@ export class AIProvider {
   @PrimaryGeneratedColumn({ comment: '供应商ID' })
   id: number;
 
-  @Column({ length: 50, unique: true, comment: '供应商代码' })
+  @Column({ name: 'provider_code', length: 50, unique: true, comment: '供应商代码' })
   providerCode: string;
 
-  @Column({ length: 100, comment: '供应商名称' })
+  @Column({ name: 'provider_name', length: 100, comment: '供应商名称' })
   providerName: string;
 
-  @Column({ length: 200, comment: '默认API基础URL' })
+  @Column({ name: 'base_url', length: 200, comment: '默认API基础URL' })
   baseUrl: string;
 
-  @Column({ type: 'tinyint', default: 1, comment: '是否启用' })
+  @Column({ name: 'is_active', type: 'tinyint', default: 1, comment: '是否启用' })
   isActive: boolean;
 
-  @Column({ type: 'int', default: 0, comment: '排序权重' })
+  @Column({ name: 'sort_order', type: 'int', default: 0, comment: '排序权重' })
   sortOrder: number;
 
   @Column({ type: 'text', nullable: true, comment: '描述' })
   description: string;
 
-  @Column({ type: 'json', nullable: true, comment: '额外配置(JSON格式)' })
+  @Column({ name: 'config_json', type: 'json', nullable: true, comment: '额外配置(JSON格式)' })
   configJson: any;
 
-  @CreateDateColumn({ comment: '创建时间' })
+  @CreateDateColumn({ name: 'created_at', comment: '创建时间' })
   createdAt: Date;
 
-  @UpdateDateColumn({ comment: '更新时间' })
+  @UpdateDateColumn({ name: 'updated_at', comment: '更新时间' })
   updatedAt: Date;
 
   // 关联关系
