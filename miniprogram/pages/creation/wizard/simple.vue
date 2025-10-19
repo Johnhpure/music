@@ -200,6 +200,12 @@ export default {
 					mask: true
 				});
 				
+				// 调试日志
+				console.log('[handleAIExpand] 开始调用AI扩展灵感');
+				console.log('[handleAIExpand] inspiration值:', this.inspiration);
+				console.log('[handleAIExpand] inspiration长度:', this.inspiration.length);
+				console.log('[handleAIExpand] 发送参数:', { originalPrompt: this.inspiration });
+				
 				// 调用AI扩展灵感接口
 				const result = await api.apis.expandInspiration({
 					originalPrompt: this.inspiration
@@ -234,15 +240,22 @@ export default {
 					});
 				}
 			} catch (error) {
-				console.error('AI扩展灵感失败:', error);
+				console.error('[handleAIExpand] AI扩展灵感失败:', error);
+				console.log('[handleAIExpand] 错误详情:', JSON.stringify(error));
 				uni.hideLoading();
 				
 				// 根据错误类型显示不同提示
 				let errorMsg = '扩展失败，请重试';
-				if (error.msg) {
+				
+				// 处理401未登录错误
+				if (error.statusCode === 401 || (error.data && error.data.code === 401)) {
+					errorMsg = '请先登录后再使用AI扩展功能';
+				} else if (error.msg) {
 					errorMsg = error.msg;
 				} else if (error.data && error.data.message) {
 					errorMsg = error.data.message;
+				} else if (error.errMsg) {
+					errorMsg = error.errMsg;
 				}
 				
 				uni.showToast({
