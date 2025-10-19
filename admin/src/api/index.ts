@@ -458,6 +458,27 @@ export const adminContentAPI = {
     
   restorePrompt: (id: string): Promise<ApiResponse<any>> =>
     apiRequest.post(`/admin/prompt-template/${id}/restore`),
+
+  // Prompt category management
+  getPromptCategories: (activeOnly?: boolean): Promise<ApiResponse<any>> => {
+    const params = activeOnly ? { activeOnly: 'true' } : {}
+    return apiRequest.get('/admin/prompt-category', params)
+  },
+    
+  getPromptCategory: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.get(`/admin/prompt-category/${id}`),
+    
+  createPromptCategory: (data: any): Promise<ApiResponse<any>> =>
+    apiRequest.post('/admin/prompt-category', data),
+    
+  updatePromptCategory: (id: number, data: any): Promise<ApiResponse<any>> =>
+    apiRequest.patch(`/admin/prompt-category/${id}`, data),
+    
+  deletePromptCategory: (id: number): Promise<ApiResponse> =>
+    apiRequest.delete(`/admin/prompt-category/${id}`),
+    
+  togglePromptCategoryStatus: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.post(`/admin/prompt-category/${id}/toggle`),
     
   // Hot recommendation management  
   getRecommendations: (params?: any): Promise<PaginatedApiResponse<any>> =>

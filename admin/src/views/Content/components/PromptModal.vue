@@ -83,12 +83,12 @@
                     分类 <span class="text-red-400">*</span>
                   </label>
                   <select 
-                    v-model="form.category"
+                    v-model="form.categoryId"
                     class="cyber-input w-full"
                   >
                     <option value="">请选择分类</option>
-                    <option v-for="category in categories" :key="category" :value="category">
-                      {{ category }}
+                    <option v-for="category in categoryOptions" :key="category.id" :value="category.id">
+                      {{ category.name }}
                     </option>
                   </select>
                 </div>
@@ -159,11 +159,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import CyberInput from '@/components/UI/CyberInput.vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
 import { getCategoryIcon } from '@/utils/music-category-icons'
+import { adminContentAPI } from '@/api'
 import type { PromptTemplate } from '@/types'
 
 interface Props {
@@ -177,6 +178,19 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false
 })
 
+const categoryOptions = ref<any[]>([])
+
+const loadCategories = async () => {
+  try {
+    const response = await adminContentAPI.getPromptCategories(true)
+    if (response.code === 200) {
+      categoryOptions.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载分类失败:', error)
+  }
+}
+
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
   submit: [data: Partial<PromptTemplate>]
@@ -188,6 +202,7 @@ const form = ref({
   title: '',
   content: '',
   category: '',
+  categoryId: null as number | null,
   tags: [] as string[],
   icon: '🎵',
   sortOrder: 1,
@@ -237,12 +252,16 @@ watch(() => props.prompt, () => {
   if (props.visible) {
     nextTick(() => {
       if (props.prompt) {
-        form.value = { ...props.prompt }
+        form.value = {
+          ...props.prompt,
+          categoryId: props.prompt.categoryId || null
+        }
       } else {
         form.value = {
           title: '',
           content: '',
           category: '',
+          categoryId: null,
           tags: [],
           icon: '🎵',
           sortOrder: 1,
@@ -252,6 +271,10 @@ watch(() => props.prompt, () => {
     })
   }
 }, { immediate: true })
+
+onMounted(() => {
+  loadCategories()
+})
 
 // 监听分类变化，自动设置对应的icon
 watch(() => form.value.category, (newCategory) => {

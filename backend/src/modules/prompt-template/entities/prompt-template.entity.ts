@@ -5,12 +5,23 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   AfterLoad,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { PromptCategory } from './prompt-category.entity';
 
 @Entity('t_prompt_templates')
 export class PromptTemplate {
   @PrimaryGeneratedColumn({ comment: '模板ID' })
   id: number;
+
+  @Column({
+    type: 'int',
+    name: 'category_id',
+    nullable: true,
+    comment: '分类ID（外键）',
+  })
+  categoryId: number;
 
   @Column({ type: 'varchar', length: 50, comment: '分类(风格/情绪/主题)' })
   category: string;
@@ -36,6 +47,13 @@ export class PromptTemplate {
     comment: '图标',
   })
   icon: string;
+
+  @Column({
+    type: 'text',
+    nullable: true,
+    comment: '变量定义(JSON格式: {topic: string, style: string})',
+  })
+  variables: string;
 
   tagsArray?: string[];
 
@@ -70,6 +88,10 @@ export class PromptTemplate {
 
   @Column({ type: 'int', name: 'sort_order', default: 0, comment: '排序' })
   sortOrder: number;
+
+  @ManyToOne(() => PromptCategory, (category) => category.templates)
+  @JoinColumn({ name: 'category_id' })
+  promptCategory: PromptCategory;
 
   @CreateDateColumn({
     type: 'timestamp',

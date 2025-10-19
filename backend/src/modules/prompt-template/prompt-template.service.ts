@@ -239,6 +239,25 @@ export class PromptTemplateService {
     await this.usageRepository.save(usage);
   }
 
+  async renderTemplate(
+    templateId: number,
+    variables: Record<string, any>,
+  ): Promise<string> {
+    const template = await this.findOne(templateId);
+    const { replaceVariables, validateContext } = await import(
+      './utils/variable-replacer'
+    );
+
+    const validation = validateContext(template.content, variables);
+    if (!validation.valid) {
+      throw new NotFoundException(
+        `缺少必需的变量: ${validation.missingVariables.join(', ')}`,
+      );
+    }
+
+    return replaceVariables(template.content, variables);
+  }
+
   async getCategories(): Promise<string[]> {
     const result = await this.promptTemplateRepository
       .createQueryBuilder('template')

@@ -46,6 +46,16 @@ const routes: RouteRecordRaw[] = [
             }
           },
           {
+            path: '/content/categories',
+            name: 'CategoryManagement',
+            component: () => import('@/views/Content/CategoryManagement.vue'),
+            meta: {
+              title: '分类管理',
+              icon: 'mdi:folder-multiple',
+              requiresAuth: true
+            }
+          },
+          {
             path: '/content/prompts',
             name: 'PromptManagement',
             component: () => import('@/views/Content/PromptManagement.vue'),
