@@ -65,8 +65,11 @@ export class SunoMiniprogramService {
       this.logger.log(`User ${userId} deducted ${creditCost} credits`);
 
       // 创建music_tasks记录
+      const generatedTaskId = randomUUID();
+      this.logger.log(`Generated task_id: ${generatedTaskId}`);
+      
       const musicTask = await queryRunner.manager.save(MusicTask, {
-        task_id: randomUUID(),
+        task_id: generatedTaskId,
         user_id: userId,
         title: dto.title,
         lyrics: dto.lyrics,

@@ -15,6 +15,9 @@ export class MusicTask {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ unique: true })
+  task_id: string;
+
   @Column()
   user_id: number;
 
