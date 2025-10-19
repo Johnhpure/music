@@ -81,21 +81,30 @@ export class GeminiClient extends BaseAIClient {
 
   async listModels(): Promise<ModelInfo[]> {
     // Gemini没有提供列出模型的公开API
-    // 返回已知的Gemini模型列表
+    // 返回已知的Gemini 2025年最新模型列表
     return [
       {
-        id: 'gemini-pro',
-        name: 'Gemini Pro',
-        maxTokens: 32760,
+        id: 'gemini-2.0-flash-exp',
+        name: 'Gemini 2.0 Flash Experimental',
+        maxTokens: 1048576,
         supportsStreaming: true,
         supportsFunctionCall: true,
-        costPer1kPromptTokens: 0.0005,
-        costPer1kCompletionTokens: 0.0015,
+        costPer1kPromptTokens: 0, // 实验版免费
+        costPer1kCompletionTokens: 0,
+      },
+      {
+        id: 'gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
+        maxTokens: 1048576,
+        supportsStreaming: true,
+        supportsFunctionCall: true,
+        costPer1kPromptTokens: 0.0001,
+        costPer1kCompletionTokens: 0.0004,
       },
       {
         id: 'gemini-1.5-pro',
         name: 'Gemini 1.5 Pro',
-        maxTokens: 1048576, // 1M tokens
+        maxTokens: 2097152, // 2M tokens
         supportsStreaming: true,
         supportsFunctionCall: true,
         costPer1kPromptTokens: 0.00125,
@@ -111,13 +120,13 @@ export class GeminiClient extends BaseAIClient {
         costPer1kCompletionTokens: 0.0003,
       },
       {
-        id: 'gemini-2.0-flash',
-        name: 'Gemini 2.0 Flash',
+        id: 'gemini-1.5-flash-8b',
+        name: 'Gemini 1.5 Flash-8B',
         maxTokens: 1048576,
         supportsStreaming: true,
         supportsFunctionCall: true,
-        costPer1kPromptTokens: 0.0001,
-        costPer1kCompletionTokens: 0.0004,
+        costPer1kPromptTokens: 0.0000375,
+        costPer1kCompletionTokens: 0.00015,
       },
     ];
   }
@@ -142,18 +151,42 @@ export class GeminiClient extends BaseAIClient {
 
   async validateApiKey(): Promise<boolean> {
     try {
-      // 尝试发送一个最小的请求来验证key
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+      // 使用最新的gemini-2.0-flash模型来验证key
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
       await model.generateContent('test');
       return true;
     } catch (err: any) {
+      this.logger.warn(`Gemini API key validation error: ${err.message}`);
+      
+      // 检查是否是API key错误
       if (
         err.message?.includes('API_KEY_INVALID') ||
-        err.message?.includes('invalid API key')
+        err.message?.includes('invalid API key') ||
+        err.message?.includes('API key not valid')
       ) {
         return false;
       }
-      // 其他错误也认为验证失败（可能是网络问题等）
+      
+      // 如果是404模型不存在，尝试使用列表API验证
+      if (err.message?.includes('404') || err.message?.includes('not found')) {
+        try {
+          // 使用listModels作为备用验证方法
+          const model2 = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+          await model2.generateContent('test');
+          return true;
+        } catch (err2: any) {
+          if (
+            err2.message?.includes('API_KEY_INVALID') ||
+            err2.message?.includes('invalid API key')
+          ) {
+            return false;
+          }
+          // 其他错误抛出
+          throw err2;
+        }
+      }
+      
+      // 其他错误抛出
       throw err;
     }
   }
