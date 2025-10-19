@@ -342,6 +342,24 @@
 			async generateLyrics() {
 				if(!this.canGenerate) return;
 				
+				// 检查登录状态
+				const token = uni.getStorageSync('token');
+				if (!token) {
+					uni.showModal({
+						title: '提示',
+						content: '请先登录后再使用AI创作功能',
+						confirmText: '去登录',
+						success: (res) => {
+							if (res.confirm) {
+								uni.switchTab({
+									url: '/pages/user/index'
+								});
+							}
+						}
+					});
+					return;
+				}
+				
 				const prompt = this.customPrompt.trim();
 				
 				this.isGenerating = true;
