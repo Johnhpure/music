@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CommonModule } from '@common/common.module';
 
 // Entities
 import { AIProvider } from './entities/ai-provider.entity';
@@ -29,6 +30,7 @@ import { AIChatController } from './controllers/ai-chat.controller';
       AIApiLog,
       AIUsageStat,
     ]),
+    CommonModule,
   ],
   controllers: [
     AIProviderController,

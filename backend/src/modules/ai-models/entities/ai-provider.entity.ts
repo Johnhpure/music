@@ -18,7 +18,12 @@ export class AIProvider {
   @PrimaryGeneratedColumn({ comment: '供应商ID' })
   id: number;
 
-  @Column({ name: 'provider_code', length: 50, unique: true, comment: '供应商代码' })
+  @Column({
+    name: 'provider_code',
+    length: 50,
+    unique: true,
+    comment: '供应商代码',
+  })
   providerCode: string;
 
   @Column({ name: 'provider_name', length: 100, comment: '供应商名称' })
@@ -27,7 +32,12 @@ export class AIProvider {
   @Column({ name: 'base_url', length: 200, comment: '默认API基础URL' })
   baseUrl: string;
 
-  @Column({ name: 'is_active', type: 'tinyint', default: 1, comment: '是否启用' })
+  @Column({
+    name: 'is_active',
+    type: 'tinyint',
+    default: 1,
+    comment: '是否启用',
+  })
   isActive: boolean;
 
   @Column({ name: 'sort_order', type: 'int', default: 0, comment: '排序权重' })
@@ -36,7 +46,12 @@ export class AIProvider {
   @Column({ type: 'text', nullable: true, comment: '描述' })
   description: string;
 
-  @Column({ name: 'config_json', type: 'json', nullable: true, comment: '额外配置(JSON格式)' })
+  @Column({
+    name: 'config_json',
+    type: 'json',
+    nullable: true,
+    comment: '额外配置(JSON格式)',
+  })
   configJson: any;
 
   @CreateDateColumn({ name: 'created_at', comment: '创建时间' })

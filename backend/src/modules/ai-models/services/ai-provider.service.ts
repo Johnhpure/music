@@ -8,6 +8,7 @@ import { AIClient } from '../interfaces/ai-client.interface';
 import { OpenAIClient } from '../clients/openai-client';
 import { ClaudeClient } from '../clients/claude-client';
 import { DeepSeekClient } from '../clients/deepseek-client';
+import { GeminiClient } from '../clients/gemini-client';
 import { EncryptionService } from '@common/services/encryption.service';
 
 /**
@@ -290,6 +291,9 @@ export class AIProviderService {
         return new ClaudeClient(config);
       case 'deepseek':
         return new DeepSeekClient(config);
+      case 'gemini':
+      case 'google':
+        return new GeminiClient(config);
       default:
         throw new Error(`Unsupported provider: ${key.provider.providerCode}`);
     }

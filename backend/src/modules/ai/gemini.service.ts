@@ -1,44 +1,22 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { ConfigService } from '@nestjs/config';
 import {
   GenerateLyricsParams,
   LyricsResult,
   ExpandInspirationParams,
   ExpandInspirationResult,
 } from './ai.types';
-import { GeminiKeyManagerService } from './services/gemini-key-manager.service';
-import { GeminiApiLog } from './entities/gemini-api-log.entity';
-import { GeminiModel } from './entities/gemini-model.entity';
+import { AIClientManagerService } from '@modules/ai-models/services/ai-client-manager.service';
 
 @Injectable()
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
 
   constructor(
-    private readonly keyManager: GeminiKeyManagerService,
-    @InjectRepository(GeminiApiLog)
-    private readonly logRepository: Repository<GeminiApiLog>,
-    @InjectRepository(GeminiModel)
-    private readonly modelRepository: Repository<GeminiModel>,
+    private readonly aiClientManager: AIClientManagerService,
+    private readonly configService: ConfigService,
   ) {
-    this.logger.log('Gemini service initialized with key manager');
-  }
-
-  /**
-   * 创建Gemini客户端实例
-   */
-  private async createClient(modelName: string = 'gemini-pro'): Promise<{
-    model: GenerativeModel;
-    keyId: number;
-  }> {
-    const keyInfo = await this.keyManager.getNextAvailableKey();
-
-    const genAI = new GoogleGenerativeAI(keyInfo.apiKey);
-    const model = genAI.getGenerativeModel({ model: modelName });
-
-    return { model, keyId: keyInfo.keyId };
+    this.logger.log('Gemini service initialized with AI Client Manager');
   }
 
   /**
@@ -48,122 +26,38 @@ export class GeminiService {
     return Math.ceil(text.length / 4);
   }
 
-  /**
-   * 记录API调用日志
-   */
-  private async logApiCall(logData: {
-    keyId: number;
-    userId?: number;
-    modelName: string;
-    requestType: string;
-    promptTokens: number;
-    completionTokens: number;
-    status: 'success' | 'error' | 'rate_limited';
-    errorCode?: string;
-    errorMessage?: string;
-    latencyMs: number;
-    requestPayload?: any;
-    responseSummary?: string;
-  }): Promise<void> {
-    try {
-      const log = this.logRepository.create({
-        ...logData,
-        totalTokens: logData.promptTokens + logData.completionTokens,
-      });
-      await this.logRepository.save(log);
-    } catch (error) {
-      this.logger.error('Failed to save API log', error);
-    }
-  }
-
   async generateLyrics(
     params: GenerateLyricsParams,
     userId?: number,
   ): Promise<LyricsResult> {
-    const modelName = 'gemini-pro';
-    const startTime = Date.now();
-    let keyId: number;
-
     try {
-      const { model, keyId: selectedKeyId } =
-        await this.createClient(modelName);
-      keyId = selectedKeyId;
-
       const prompt = this.buildPrompt(params);
-      const promptTokens = this.estimateTokens(prompt);
 
       this.logger.log(
-        `Generating lyrics for theme: ${params.theme} (Key ID: ${keyId})`,
+        `Generating lyrics for theme: ${params.theme} using AI Client Manager`,
       );
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      const completionTokens = this.estimateTokens(text);
-      const latencyMs = Date.now() - startTime;
-
-      // 记录成功的API调用
-      await this.logApiCall({
-        keyId,
-        userId,
-        modelName,
-        requestType: 'generateLyrics',
-        promptTokens,
-        completionTokens,
-        status: 'success',
-        latencyMs,
-        requestPayload: {
-          theme: params.theme,
-          style: params.style,
-          mood: params.mood,
+      // 使用新的统一AI客户端管理服务
+      const response = await this.aiClientManager.createChatCompletion(
+        'gemini', // provider code
+        {
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          model: 'gemini-pro',
+          temperature: 0.8,
+          maxTokens: 2048,
         },
-        responseSummary: text.substring(0, 200),
-      });
-
-      // 更新key使用统计
-      await this.keyManager.recordKeyUsage(
-        keyId,
-        promptTokens + completionTokens,
-        true,
+        userId,
       );
 
+      const text = response.content;
       return this.parseLyricsResponse(text);
     } catch (error) {
-      const latencyMs = Date.now() - startTime;
       this.logger.error('Failed to generate lyrics', error);
-
-      // 记录失败的API调用
-      if (keyId) {
-        const errorMessage = error?.message || '未知错误';
-        const errorCode = error?.status?.toString() || 'UNKNOWN';
-
-        await this.logApiCall({
-          keyId,
-          userId,
-          modelName,
-          requestType: 'generateLyrics',
-          promptTokens: this.estimateTokens(this.buildPrompt(params)),
-          completionTokens: 0,
-          status: errorCode === '429' ? 'rate_limited' : 'error',
-          errorCode,
-          errorMessage,
-          latencyMs,
-        });
-
-        await this.keyManager.recordKeyUsage(keyId, 0, false);
-
-        if (errorCode === '429') {
-          await this.keyManager.recordKeyError(
-            keyId,
-            errorMessage,
-            'rate_limited',
-          );
-        } else {
-          await this.keyManager.recordKeyError(keyId, errorMessage, 'error');
-        }
-      }
-
       throw new BadRequestException('歌词生成失败，请稍后重试');
     }
   }
@@ -206,91 +100,38 @@ export class GeminiService {
     params: ExpandInspirationParams,
     userId?: number,
   ): Promise<ExpandInspirationResult> {
-    const modelName = 'gemini-pro';
-    const startTime = Date.now();
-    let keyId: number;
-
     try {
-      const { model, keyId: selectedKeyId } =
-        await this.createClient(modelName);
-      keyId = selectedKeyId;
-
       const prompt = this.buildInspirationPrompt(params.originalPrompt);
-      const promptTokens = this.estimateTokens(prompt);
 
       this.logger.log(
-        `Expanding inspiration for prompt: ${params.originalPrompt} (Key ID: ${keyId})`,
+        `Expanding inspiration for prompt: ${params.originalPrompt} using AI Client Manager`,
       );
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const expandedContent = response.text().trim();
-
-      const completionTokens = this.estimateTokens(expandedContent);
-      const latencyMs = Date.now() - startTime;
-
-      // 记录成功的API调用
-      await this.logApiCall({
-        keyId,
+      // 使用新的统一AI客户端管理服务
+      const response = await this.aiClientManager.createChatCompletion(
+        'gemini', // provider code
+        {
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          model: 'gemini-pro',
+          temperature: 0.7,
+          maxTokens: 1024,
+        },
         userId,
-        modelName,
-        requestType: 'expandInspiration',
-        promptTokens,
-        completionTokens,
-        status: 'success',
-        latencyMs,
-        requestPayload: { originalPrompt: params.originalPrompt },
-        responseSummary: expandedContent.substring(0, 200),
-      });
-
-      // 更新key使用统计
-      await this.keyManager.recordKeyUsage(
-        keyId,
-        promptTokens + completionTokens,
-        true,
       );
+
+      const expandedContent = response.content.trim();
 
       return {
         expandedContent,
         originalPrompt: params.originalPrompt,
       };
     } catch (error) {
-      const latencyMs = Date.now() - startTime;
       this.logger.error('Failed to expand inspiration', error);
-
-      // 记录失败的API调用
-      if (keyId) {
-        const errorMessage = error?.message || '未知错误';
-        const errorCode = error?.status?.toString() || 'UNKNOWN';
-
-        await this.logApiCall({
-          keyId,
-          userId,
-          modelName,
-          requestType: 'expandInspiration',
-          promptTokens: this.estimateTokens(
-            this.buildInspirationPrompt(params.originalPrompt),
-          ),
-          completionTokens: 0,
-          status: errorCode === '429' ? 'rate_limited' : 'error',
-          errorCode,
-          errorMessage,
-          latencyMs,
-        });
-
-        await this.keyManager.recordKeyUsage(keyId, 0, false);
-
-        if (errorCode === '429') {
-          await this.keyManager.recordKeyError(
-            keyId,
-            errorMessage,
-            'rate_limited',
-          );
-        } else {
-          await this.keyManager.recordKeyError(keyId, errorMessage, 'error');
-        }
-      }
-
       throw new BadRequestException('AI灵感扩展失败，请稍后重试');
     }
   }

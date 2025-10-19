@@ -17,7 +17,12 @@ export class AIModel {
   @PrimaryGeneratedColumn({ comment: '模型ID' })
   id: number;
 
-  @Column({ name: 'provider_id', type: 'int', unsigned: true, comment: '供应商ID' })
+  @Column({
+    name: 'provider_id',
+    type: 'int',
+    unsigned: true,
+    comment: '供应商ID',
+  })
   providerId: number;
 
   @Column({ name: 'model_code', length: 100, comment: '模型代码' })
@@ -53,13 +58,28 @@ export class AIModel {
   })
   maxOutputTokens: number;
 
-  @Column({ name: 'supports_streaming', type: 'tinyint', default: 1, comment: '是否支持流式输出' })
+  @Column({
+    name: 'supports_streaming',
+    type: 'tinyint',
+    default: 1,
+    comment: '是否支持流式输出',
+  })
   supportsStreaming: boolean;
 
-  @Column({ name: 'supports_function_call', type: 'tinyint', default: 0, comment: '是否支持函数调用' })
+  @Column({
+    name: 'supports_function_call',
+    type: 'tinyint',
+    default: 0,
+    comment: '是否支持函数调用',
+  })
   supportsFunctionCall: boolean;
 
-  @Column({ name: 'supports_vision', type: 'tinyint', default: 0, comment: '是否支持视觉' })
+  @Column({
+    name: 'supports_vision',
+    type: 'tinyint',
+    default: 0,
+    comment: '是否支持视觉',
+  })
   supportsVision: boolean;
 
   @Column({
@@ -82,10 +102,20 @@ export class AIModel {
   })
   costPer1kCompletionTokens: number;
 
-  @Column({ name: 'is_active', type: 'tinyint', default: 1, comment: '是否启用' })
+  @Column({
+    name: 'is_active',
+    type: 'tinyint',
+    default: 1,
+    comment: '是否启用',
+  })
   isActive: boolean;
 
-  @Column({ name: 'is_default', type: 'tinyint', default: 0, comment: '是否为默认模型' })
+  @Column({
+    name: 'is_default',
+    type: 'tinyint',
+    default: 0,
+    comment: '是否为默认模型',
+  })
   isDefault: boolean;
 
   @Column({ name: 'sort_order', type: 'int', default: 0, comment: '排序权重' })
@@ -94,7 +124,12 @@ export class AIModel {
   @Column({ type: 'text', nullable: true, comment: '描述' })
   description: string;
 
-  @Column({ name: 'config_json', type: 'json', nullable: true, comment: '额外配置(JSON格式)' })
+  @Column({
+    name: 'config_json',
+    type: 'json',
+    nullable: true,
+    comment: '额外配置(JSON格式)',
+  })
   configJson: any;
 
   @CreateDateColumn({ name: 'created_at', comment: '创建时间' })
