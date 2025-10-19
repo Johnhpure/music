@@ -691,16 +691,6 @@
               />
             </div>
             
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Base URL (可选)</label>
-              <input
-                v-model="keyForm.baseUrl"
-                type="text"
-                class="cyber-input"
-                placeholder="留空使用供应商默认URL"
-              />
-            </div>
-            
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-2">优先级 (0-100)</label>
@@ -788,7 +778,6 @@ const editingKey = ref<any>(null)
 const keyForm = ref({
   keyName: '',
   apiKey: '',
-  baseUrl: '',
   priority: 50,
   rateLimitRpd: 10000,
   isActive: true
@@ -955,7 +944,6 @@ const openAddKeyDialog = () => {
   keyForm.value = {
     keyName: '',
     apiKey: '',
-    baseUrl: '',
     priority: 50,
     rateLimitRpd: 10000,
     isActive: true
@@ -968,7 +956,6 @@ const openEditKeyDialog = (key: any) => {
   keyForm.value = {
     keyName: key.keyName,
     apiKey: '', // 不回显密钥
-    baseUrl: key.baseUrl || '',
     priority: key.priority,
     rateLimitRpd: key.rateLimitRpd,
     isActive: key.isActive
@@ -996,7 +983,6 @@ const saveKey = async () => {
       // 更新密钥
       const updateData: any = {
         keyName: keyForm.value.keyName,
-        baseUrl: keyForm.value.baseUrl || null,
         priority: keyForm.value.priority,
         rateLimitRpd: keyForm.value.rateLimitRpd,
         isActive: keyForm.value.isActive
@@ -1018,7 +1004,6 @@ const saveKey = async () => {
       const response = await aiApiKeyAPI.createKey(selectedProvider.value.id, {
         keyName: keyForm.value.keyName,
         apiKey: keyForm.value.apiKey,
-        baseUrl: keyForm.value.baseUrl || undefined,
         priority: keyForm.value.priority,
         rateLimitRpd: keyForm.value.rateLimitRpd,
         isActive: keyForm.value.isActive
