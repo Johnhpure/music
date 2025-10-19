@@ -54,6 +54,24 @@ export class AIProvider {
   })
   configJson: any;
 
+  @Column({
+    name: 'call_count',
+    type: 'bigint',
+    unsigned: true,
+    default: 0,
+    comment: '累计调用次数',
+  })
+  callCount: number;
+
+  @Column({
+    name: 'token_usage',
+    type: 'bigint',
+    unsigned: true,
+    default: 0,
+    comment: '累计Token消耗',
+  })
+  tokenUsage: number;
+
   @CreateDateColumn({ name: 'created_at', comment: '创建时间' })
   createdAt: Date;
 

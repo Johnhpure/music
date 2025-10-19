@@ -22,7 +22,7 @@ import {
 import { CreateApiKeyDto, UpdateApiKeyDto } from '../dto/create-api-key.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../../../common/guards/admin.guard';
-import { EncryptionService } from '@common/services/encryption.service';
+import { EncryptionService } from '../../../common/services/encryption.service';
 
 /**
  * AI Provider管理Controller
@@ -54,20 +54,11 @@ export class AIProviderController {
         ...p,
         modelsCount: p.models.filter((m) => m.isActive).length,
         activeKeysCount: p.apiKeys.filter((k) => k.isActive).length,
+        callCount: p.callCount || 0,
+        tokenUsage: p.tokenUsage || 0,
       })),
     };
   }
-
-  @Get(':id')
-  async getProvider(@Param('id') id: number) {
-    const provider = await this.providerRepo.findOne({
-      where: { id },
-      relations: ['models', 'apiKeys'],
-    });
-
-    if (!provider) {
-      return { code: 404, message: 'Provider not found' };
-    }
 
     return { code: 200, data: provider };
   }

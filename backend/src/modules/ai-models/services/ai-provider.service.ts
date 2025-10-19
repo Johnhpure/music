@@ -9,7 +9,7 @@ import { OpenAIClient } from '../clients/openai-client';
 import { ClaudeClient } from '../clients/claude-client';
 import { DeepSeekClient } from '../clients/deepseek-client';
 import { GeminiClient } from '../clients/gemini-client';
-import { EncryptionService } from '@common/services/encryption.service';
+import { EncryptionService } from '../../../common/services/encryption.service';
 
 /**
  * AI Provider管理服务
@@ -168,6 +168,24 @@ export class AIProviderService {
         : key.errorsCountToday,
       lastUsedAt: new Date(),
       lastErrorAt: isError ? new Date() : key.lastErrorAt,
+    });
+  }
+
+  /**
+   * 更新Provider统计数据
+   */
+  async updateProviderStats(
+    providerId: number,
+    tokens: number,
+  ): Promise<void> {
+    const provider = await this.providerRepo.findOne({
+      where: { id: providerId },
+    });
+    if (!provider) return;
+
+    await this.providerRepo.update(providerId, {
+      callCount: (provider.callCount || 0) + 1,
+      tokenUsage: (provider.tokenUsage || 0) + tokens,
     });
   }
 

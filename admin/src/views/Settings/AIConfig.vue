@@ -168,6 +168,22 @@
                 </div>
                 <p class="text-2xl font-bold text-white">{{ provider.activeKeysCount || 0 }}</p>
               </div>
+
+              <div class="bg-glass-white/5 rounded-lg p-3">
+                <div class="flex items-center space-x-2 mb-1">
+                  <Icon icon="mdi:chart-line" class="w-4 h-4 text-gray-400" />
+                  <span class="text-xs text-gray-400">调用次数</span>
+                </div>
+                <p class="text-2xl font-bold text-white">{{ formatNumber(provider.callCount || 0) }}</p>
+              </div>
+              
+              <div class="bg-glass-white/5 rounded-lg p-3">
+                <div class="flex items-center space-x-2 mb-1">
+                  <Icon icon="mdi:database" class="w-4 h-4 text-gray-400" />
+                  <span class="text-xs text-gray-400">Token消耗</span>
+                </div>
+                <p class="text-2xl font-bold text-white">{{ formatNumber(provider.tokenUsage || 0) }}</p>
+              </div>
             </div>
           </div>
 
@@ -838,7 +854,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
@@ -1460,9 +1476,45 @@ const saveCompleteConfig = async () => {
 }
 
 
+// 格式化数字显示
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M'
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K'
+  }
+  return num.toString()
+}
+
+// 定时刷新逻辑
+let refreshTimer: NodeJS.Timeout | null = null
+
+const startAutoRefresh = () => {
+  // 每10分钟刷新一次 (600000ms)
+  refreshTimer = setInterval(() => {
+    console.log('🔄 Auto-refreshing providers data...')
+    loadProviders()
+  }, 600000)
+}
+
+const stopAutoRefresh = () => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   loadAllData()
+  startAutoRefresh()
+})
+
+onUnmounted(() => {
+  stopAutoRefresh()
+  if (toastTimer) {
+    clearTimeout(toastTimer)
+  }
 })
 </script>
 

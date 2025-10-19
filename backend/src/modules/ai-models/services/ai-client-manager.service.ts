@@ -74,6 +74,12 @@ export class AIClientManagerService {
         false,
       );
 
+      // 6.1 更新Provider统计
+      await this.providerService.updateProviderStats(
+        providerId,
+        response.usage.totalTokens,
+      );
+
       // 7. 记录API调用日志
       await this.logService.logApiCall({
         providerId,
@@ -306,7 +312,7 @@ export class AIClientManagerService {
         GeminiKeyGroup,
       );
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const encryptionService = require('@common/services/encryption.service');
+    const encryptionService = require('../../../common/services/encryption.service');
     const keyGroupService = new GeminiKeyGroupService(
       keyGroupRepo,
       encryptionService,
