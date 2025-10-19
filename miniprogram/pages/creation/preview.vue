@@ -252,8 +252,8 @@
 					
 					console.log('完整响应:', JSON.stringify(response));
 					
-					if (response.code === 200 && response.data) {
-						const { taskId, creditCost, estimatedTime } = response.data;
+					if (response.code === 200 && response.data && response.data.data) {
+						const { taskId, creditCost, estimatedTime } = response.data.data;
 						this.currentTaskId = taskId;
 						
 						console.log('任务创建成功, taskId:', taskId, '类型:', typeof taskId);
