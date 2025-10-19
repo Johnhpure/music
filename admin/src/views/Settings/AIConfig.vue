@@ -1,18 +1,19 @@
 <template>
   <div class="space-y-6">
-    <!-- Toast Notification -->
-    <Transition
-      enter-active-class="transition ease-out duration-300"
-      enter-from-class="translate-y-2 opacity-0"
-      enter-to-class="translate-y-0 opacity-100"
-      leave-active-class="transition ease-in duration-200"
-      leave-from-class="translate-y-0 opacity-100"
-      leave-to-class="translate-y-2 opacity-0"
-    >
-      <div 
-        v-if="toast.show"
-        class="fixed top-20 right-6 z-50 max-w-md"
+    <!-- Toast Notification - 使用Teleport确保最高层级 -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition ease-out duration-300"
+        enter-from-class="translate-y-2 opacity-0"
+        enter-to-class="translate-y-0 opacity-100"
+        leave-active-class="transition ease-in duration-200"
+        leave-from-class="translate-y-0 opacity-100"
+        leave-to-class="translate-y-2 opacity-0"
       >
+        <div 
+          v-if="toast.show"
+          class="fixed top-20 right-6 z-[9999] max-w-md"
+        >
         <div 
           class="rounded-lg border-2 p-4 shadow-2xl backdrop-blur-sm flex items-start space-x-3"
           :class="{
@@ -52,8 +53,9 @@
             <Icon icon="mdi:close" class="w-4 h-4" />
           </button>
         </div>
-      </div>
-    </Transition>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- Page Header -->
     <div class="flex items-center justify-between">
@@ -853,6 +855,8 @@ const toast = ref({
 let toastTimer: NodeJS.Timeout | null = null
 
 const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', duration = 3000) => {
+  console.log('🔔 Toast called:', { message, type, duration })
+  
   // 清除之前的定时器
   if (toastTimer) {
     clearTimeout(toastTimer)
@@ -864,8 +868,11 @@ const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'inf
     type
   }
   
+  console.log('🔔 Toast state updated:', toast.value)
+  
   // 自动隐藏
   toastTimer = setTimeout(() => {
+    console.log('🔔 Toast auto-hide')
     toast.value.show = false
   }, duration)
 }
