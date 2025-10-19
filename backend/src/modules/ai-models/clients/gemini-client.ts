@@ -27,7 +27,7 @@ export class GeminiClient extends BaseAIClient {
   ): Promise<ChatCompletionResponse> {
     return this.executeWithRetry(async () => {
       try {
-        const modelName = request.model || 'gemini-pro';
+        const modelName = request.model || 'gemini-1.5-flash';
         const model = this.genAI.getGenerativeModel({ model: modelName });
 
         // 将messages转换为Gemini的prompt格式
@@ -206,7 +206,7 @@ export class GeminiClient extends BaseAIClient {
 
   async countTokens(
     text: string,
-    model: string = 'gemini-pro',
+    model: string = 'gemini-1.5-flash',
   ): Promise<number> {
     try {
       // 尝试使用Gemini的countTokens API

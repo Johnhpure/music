@@ -54,7 +54,7 @@ export class GeminiKeyGroupClient {
     await this.ensureKey();
 
     try {
-      const modelName = request.model || 'gemini-pro';
+      const modelName = request.model || 'gemini-1.5-flash';
       const model = this.genAI.getGenerativeModel({ model: modelName });
 
       // 将messages转换为Gemini的prompt格式
@@ -232,7 +232,7 @@ export class GeminiKeyGroupClient {
    */
   async countTokens(
     text: string,
-    model: string = 'gemini-pro',
+    model: string = 'gemini-1.5-flash',
   ): Promise<number> {
     await this.ensureKey();
 
