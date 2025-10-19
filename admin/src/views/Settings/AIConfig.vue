@@ -583,10 +583,6 @@ const loadProviders = async () => {
     console.error('❌ Failed to load providers:', error)
     throw error
   }
-} catch (error) {
-    console.error('❌ Failed to load providers:', error)
-    throw error
-  }
 }
 
 const openProviderDetail = async (provider: any) => {
