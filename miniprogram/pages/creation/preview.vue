@@ -118,6 +118,8 @@
 </template>
 
 <script>
+	import api from '@/api/api.js';
+	
 	export default {
 		data() {
 			return {
@@ -219,58 +221,181 @@
 		},
 		methods: {
 			// 开始生成音乐
-			startGenerating() {
+			async startGenerating() {
 				this.isConfirmGenerat = true;
-				if(this.musicPoints < 30) {
-					uni.showModal({
-						title: '点数不足',
-						content: '您的音乐点数不足，是否前往获取更多点数？',
-						confirmText: '获取点数',
-						cancelText: '取消',
-						success: (res) => {
-							if(res.confirm) {
-								this.navigateToPoints();
+				
+				// 调用API生成音乐
+				try {
+					uni.showLoading({
+						title: '正在创建任务...',
+						mask: true
+					});
+					
+					// 构造请求参数
+					const params = {
+						title: this.songTitle || '未命名音乐',
+						style: this.styleId,
+						vocalGender: this.vocalGender,
+						lyrics: this.lyrics || undefined
+					};
+					
+					console.log('生成音乐参数:', params);
+					
+					// 调用生成音乐接口
+					const response = await api.apis.generateMusic(params);
+					
+					uni.hideLoading();
+					
+					if (response.code === 200 && response.data) {
+						const { taskId, creditCost, estimatedTime } = response.data;
+						this.currentTaskId = taskId;
+						
+						console.log('任务创建成功:', taskId, '预计时间:', estimatedTime, '秒');
+						
+						// 设置为生成中状态
+						this.isGenerating = true;
+						this.generatingProgress = 0;
+						
+						// 开始轮询任务状态
+						this.pollTaskStatus();
+					} else {
+						throw new Error(response.message || '任务创建失败');
+					}
+				} catch (error) {
+					uni.hideLoading();
+					console.error('生成音乐失败:', error);
+					
+					this.isConfirmGenerat = false;
+					this.isGenerating = false;
+					
+					// 错误提示
+					let errorMsg = '音乐生成失败';
+					if (error.message) {
+						errorMsg = error.message;
+					} else if (error.msg) {
+						errorMsg = error.msg;
+					} else if (error.data && error.data.message) {
+						errorMsg = error.data.message;
+					}
+					
+					// 特殊处理积分不足错误
+					if (errorMsg.includes('积分') || errorMsg.includes('点数') || errorMsg.includes('credit')) {
+						uni.showModal({
+							title: '点数不足',
+							content: '您的音乐点数不足，是否前往获取更多点数？',
+							confirmText: '获取点数',
+							cancelText: '取消',
+							success: (res) => {
+								if (res.confirm) {
+									this.navigateToPoints();
+								}
 							}
+						});
+					} else {
+						uni.showToast({
+							title: errorMsg,
+							icon: 'none',
+							duration: 3000
+						});
+					}
+				}
+			},
+			
+			// 轮询任务状态
+			async pollTaskStatus() {
+				const maxRetries = 120; // 最多轮询120次（10分钟）
+				let retryCount = 0;
+				
+				const poll = async () => {
+					if (retryCount >= maxRetries) {
+						this.isGenerating = false;
+						uni.showToast({
+							title: '生成超时，请稍后查看',
+							icon: 'none'
+						});
+						return;
+					}
+					
+					try {
+						const response = await api.apis.getMusicTaskStatus(this.currentTaskId);
+						
+						if (response.code === 200 && response.data) {
+							const { status, progress, result, errorMessage, statusText } = response.data;
+							
+							console.log('任务状态:', status, '进度:', progress);
+							
+							// 更新进度
+							if (progress !== undefined) {
+								this.generatingProgress = Math.min(progress, 100);
+							}
+							
+							// 根据状态处理
+							if (status === 'SUCCESS' || status === 'COMPLETE') {
+								// 生成成功
+								this.isGenerating = false;
+								
+								if (result && result.length > 0) {
+									const audio = result[0];
+									this.audioUrl = audio.audio_url;
+									this.songCover = audio.image_url || this.songCover;
+									this.duration = audio.duration || 180;
+									
+									// 初始化音频播放
+									setTimeout(() => {
+										this.initAudio();
+									}, 500);
+									
+									uni.showToast({
+										title: '音乐生成成功',
+										icon: 'success'
+									});
+								} else {
+									throw new Error('未返回音频数据');
+								}
+							} else if (status === 'FAILED' || status === 'ERROR') {
+								// 生成失败
+								this.isGenerating = false;
+								throw new Error(errorMessage || '音乐生成失败');
+							} else if (status === 'PROCESSING' || status === 'PENDING' || status === 'QUEUED') {
+								// 继续轮询
+								retryCount++;
+								setTimeout(poll, 5000); // 每5秒查询一次
+							} else {
+								// 未知状态，继续轮询
+								retryCount++;
+								setTimeout(poll, 5000);
+							}
+						} else {
+							throw new Error(response.message || '查询状态失败');
 						}
+					} catch (error) {
+						console.error('查询任务状态失败:', error);
+						this.isGenerating = false;
+						
+						uni.showToast({
+							title: error.message || '查询失败',
+							icon: 'none',
+							duration: 3000
+						});
+					}
+				};
+				
+				// 开始首次轮询
+				setTimeout(poll, 2000); // 2秒后开始第一次查询
+			},
+			// 初始化音频
+			initAudio() {
+				// 使用Suno生成的音频URL
+				if (!this.audioUrl) {
+					console.error('音频URL为空');
+					uni.showToast({
+						title: '音频地址获取失败',
+						icon: 'none'
 					});
 					return;
 				}
 				
-				// 设置为生成中状态
-				this.isGenerating = true;
-				this.generatingProgress = 0;
-				
-				// 消耗点数
-				this.musicPoints -= 30;
-				
-				// 模拟生成过程
-				this.simulateGenerating();
-			},
-			// 模拟生成过程
-			simulateGenerating() {
-				let progress = 0;
-				
-				this.generatingTimer = setInterval(() => {
-					progress += Math.random() * 5;
-					if(progress >= 100) {
-						progress = 100;
-						clearInterval(this.generatingTimer);
-						this.generatingTimer = null;
-						
-						// 延迟500ms后显示结果
-						setTimeout(() => {
-							this.isGenerating = false;
-							this.initAudio();
-						}, 500);
-					}
-					this.generatingProgress = Math.floor(progress);
-				}, 1000); // 优化: 从800ms改为1000ms，降低刷新频率
-			},
-			// 初始化音频
-			initAudio() {
-				// 实际项目中应加载生成的音频文件
-				// 这里使用示例URL
-				const audioUrl = `/static/samples/${this.styleId}_${this.voiceId}.mp3`;
+				const audioUrl = this.audioUrl;
 				
 				this.audioContext.src = audioUrl;
 				this.audioContext.autoplay = false;
