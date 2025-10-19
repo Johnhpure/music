@@ -876,22 +876,43 @@ const toggleProviderActive = async (provider: any) => {
 const loadModels = async (providerId: number) => {
   try {
     const response = await aiModelAPI.getModels({ providerId, isActive: undefined })
+    console.log('🔍 Models Response:', response)
+    console.log('🔍 Response data type:', typeof response.data, Array.isArray(response.data))
+    
     if (response.code === 200) {
-      models.value = response.data
+      // 检查data是直接数组还是嵌套在data.data中
+      const modelsList = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.items || [])
+      models.value = modelsList
+      console.log('📦 Models loaded:', models.value.length, 'models')
+      if (models.value.length > 0) {
+        console.log('📦 First model:', models.value[0])
+      }
     }
   } catch (error) {
     console.error('Failed to load models:', error)
+    models.value = [] // 出错时确保是空数组
   }
 }
 
 const loadApiKeys = async (providerId: number) => {
   try {
     const response = await aiApiKeyAPI.getKeys(providerId)
+    console.log('🔍 API Keys Response:', response)
+    console.log('🔍 Response data type:', typeof response.data, Array.isArray(response.data))
+    console.log('🔍 Response data:', response.data)
+    
     if (response.code === 200) {
-      apiKeys.value = response.data
+      // 检查data是直接数组还是嵌套在data.data中
+      const keysList = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.items || [])
+      apiKeys.value = keysList
+      console.log('🔑 API Keys loaded:', apiKeys.value.length, 'keys')
+      if (apiKeys.value.length > 0) {
+        console.log('🔑 First key:', apiKeys.value[0])
+      }
     }
   } catch (error) {
     console.error('Failed to load API keys:', error)
+    apiKeys.value = [] // 出错时确保是空数组
   }
 }
 
@@ -977,6 +998,15 @@ const saveKey = async () => {
     return
   }
   
+  // 检查重复的key名称（仅在新增时）
+  if (!editingKey.value) {
+    const isDuplicate = apiKeys.value.some(key => key.keyName === keyForm.value.keyName)
+    if (isDuplicate) {
+      alert('密钥名称已存在，请使用不同的名称')
+      return
+    }
+  }
+  
   saving.value = true
   try {
     if (editingKey.value) {
@@ -998,6 +1028,8 @@ const saveKey = async () => {
         alert('密钥更新成功')
         closeKeyDialog()
         await loadApiKeys(selectedProvider.value.id)
+        // 刷新providers列表以更新卡片统计
+        await loadProviders()
       }
     } else {
       // 创建新密钥
@@ -1013,7 +1045,23 @@ const saveKey = async () => {
       if (response.code === 201 || response.code === 200) {
         alert('密钥添加成功')
         closeKeyDialog()
+        
+        // 先刷新keys列表
         await loadApiKeys(selectedProvider.value.id)
+        
+        // 刷新providers列表以更新卡片统计
+        await loadProviders()
+        
+        // 自动选中新添加的key（通过返回的id或查找最新的key）
+        if (response.data?.id) {
+          selectedKeyId.value = response.data.id
+          hasUnsavedChanges.value = true
+        } else if (apiKeys.value.length > 0) {
+          // 如果API没有返回id，选择列表中的最后一个（最新添加的）
+          const latestKey = apiKeys.value[apiKeys.value.length - 1]
+          selectedKeyId.value = latestKey.id
+          hasUnsavedChanges.value = true
+        }
       }
     }
   } catch (error: any) {
@@ -1031,7 +1079,15 @@ const deleteKey = async (keyId: number, keyName: string) => {
     const response = await aiApiKeyAPI.deleteKey(keyId)
     if (response.code === 200) {
       alert('密钥删除成功')
+      
+      // 如果删除的是当前选中的key，清除选择
+      if (selectedKeyId.value === keyId) {
+        selectedKeyId.value = null
+      }
+      
       await loadApiKeys(selectedProvider.value.id)
+      // 刷新providers列表以更新卡片统计
+      await loadProviders()
     }
   } catch (error: any) {
     console.error('Failed to delete key:', error)
