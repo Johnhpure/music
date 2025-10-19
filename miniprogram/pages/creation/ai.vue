@@ -388,7 +388,9 @@
 					console.log('AI接口响应 - content前100字符:', res.data?.content?.substring(0, 100) || '无内容');
 					
 					if (res.code === 200 && res.data) {
-						const lyricsContent = res.data.content || '';
+						// 处理可能的嵌套结构（后端返回被包装了两层）
+						const actualData = res.data.data || res.data;
+						const lyricsContent = actualData.content || '';
 						
 						if (!lyricsContent) {
 							throw new Error('生成的歌词内容为空，响应: ' + JSON.stringify(res.data));
@@ -404,7 +406,7 @@
 						this.isGenerated = true;
 						this.currentStep = 1;
 						
-						console.log('歌词生成成功，使用模型:', res.data.usedProvider?.name);
+						console.log('歌词生成成功，使用模型:', actualData.usedProvider?.name);
 					} else {
 						throw new Error(res.message || 'AI服务调用失败');
 					}
