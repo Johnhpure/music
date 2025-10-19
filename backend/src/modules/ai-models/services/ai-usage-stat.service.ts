@@ -45,13 +45,13 @@ export class AIUsageStatService {
         "SUM(CASE WHEN status = 'rate_limited' THEN 1 ELSE 0 END)",
         'rateLimitedCount',
       )
-      .addSelect('SUM(totalTokens)', 'totalTokens')
-      .addSelect('SUM(promptTokens)', 'promptTokens')
-      .addSelect('SUM(completionTokens)', 'completionTokens')
-      .addSelect('AVG(latencyMs)', 'avgLatencyMs')
-      .where('providerId = :providerId', { providerId })
-      .andWhere('keyId = :keyId', { keyId })
-      .andWhere('DATE(createdAt) = :statDate', {
+      .addSelect('SUM(log.totalTokens)', 'totalTokens')
+      .addSelect('SUM(log.promptTokens)', 'promptTokens')
+      .addSelect('SUM(log.completionTokens)', 'completionTokens')
+      .addSelect('AVG(log.latencyMs)', 'avgLatencyMs')
+      .where('log.providerId = :providerId', { providerId })
+      .andWhere('log.keyId = :keyId', { keyId })
+      .andWhere('DATE(log.createdAt) = :statDate', {
         statDate: statDate.toISOString().split('T')[0],
       })
       .getRawOne();
