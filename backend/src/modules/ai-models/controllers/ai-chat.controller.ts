@@ -42,12 +42,18 @@ export class AIChatController {
         where: { isActive: true },
       });
 
+      console.log('[prompt-completion] 查询到的活跃Provider:', activeProvider);
+
       if (!activeProvider) {
         return {
           code: 404,
           message: '未找到启用的AI模型，请在AI配置管理中启用一个模型',
         };
       }
+
+      console.log(
+        `[prompt-completion] 使用Provider: ${activeProvider.providerCode}`,
+      );
 
       // 调用AI服务
       const response = await this.clientManager.createChatCompletion(
@@ -64,6 +70,12 @@ export class AIChatController {
         userAgent,
       );
 
+      console.log('[prompt-completion] AI响应:', {
+        hasContent: !!response.content,
+        contentLength: response.content?.length || 0,
+        model: response.model,
+      });
+
       return {
         code: 200,
         data: {
@@ -75,6 +87,7 @@ export class AIChatController {
         },
       };
     } catch (error) {
+      console.error('[prompt-completion] 错误:', error);
       return {
         code: error.status || 500,
         message: error.message || 'AI服务调用失败',
