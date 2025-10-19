@@ -103,7 +103,14 @@ export class AIProviderService {
     const today = now.toISOString().split('T')[0];
 
     // 检查是否需要重置统计
-    if (key.statsResetAt?.toISOString().split('T')[0] !== today) {
+    // statsResetAt可能是字符串(YYYY-MM-DD)或Date对象,需要统一处理
+    const resetDate = key.statsResetAt 
+      ? (typeof key.statsResetAt === 'string' 
+          ? key.statsResetAt 
+          : key.statsResetAt.toISOString().split('T')[0])
+      : null;
+    
+    if (!resetDate || resetDate !== today) {
       await this.resetKeyStats(key.id);
       return true;
     }
