@@ -60,6 +60,17 @@ export class AIProviderController {
     };
   }
 
+  @Get(':id')
+  async getProvider(@Param('id') id: number) {
+    const provider = await this.providerRepo.findOne({
+      where: { id },
+      relations: ['models', 'apiKeys'],
+    });
+
+    if (!provider) {
+      return { code: 404, message: 'Provider not found' };
+    }
+
     return { code: 200, data: provider };
   }
 
