@@ -27,8 +27,6 @@ export class AIChatController {
    * 提示词完成接口（自动选择启用的模型）
    * 四个模型（Claude、OpenAI、Gemini、DeepSeek）中每次只有一个处于开启状态
    */
-  @Post('prompt-completion')
-
   async promptCompletion(
     @Body() dto: PromptCompletionDto,
     @Request() req,
@@ -44,8 +42,6 @@ export class AIChatController {
         relations: ['models'],
       });
 
-      console.log('[prompt-completion] 查询到的活跃Provider:', activeProvider);
-
       if (!activeProvider) {
         return {
           code: 404,
@@ -59,13 +55,8 @@ export class AIChatController {
         const defaultModel = activeProvider.models.find(m => m.isDefault && m.isActive);
         if (defaultModel) {
           modelToUse = defaultModel.modelCode;
-          console.log(`[prompt-completion] 使用默认模型: ${modelToUse}`);
         }
       }
-
-      console.log(
-        `[prompt-completion] 使用Provider: ${activeProvider.providerCode}, 模型: ${modelToUse || 'provider默认'}`,
-      );
 
       // 调用AI服务
       const response = await this.clientManager.createChatCompletion(
@@ -82,9 +73,7 @@ export class AIChatController {
         userAgent,
       );
 
-      console.log('[prompt-completion] AI响应 response对象:', JSON.stringify(response));
-
-      const result = {
+      return {
         code: 200,
         data: {
           ...response,
@@ -94,10 +83,6 @@ export class AIChatController {
           },
         },
       };
-
-      console.log('[prompt-completion] 最终返回 result:', JSON.stringify(result));
-
-      return result;
     } catch (error) {
       console.error('[prompt-completion] 错误:', error);
       return {
