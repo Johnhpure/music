@@ -1,5 +1,60 @@
 <template>
   <div class="space-y-6">
+    <!-- Toast Notification -->
+    <Transition
+      enter-active-class="transition ease-out duration-300"
+      enter-from-class="translate-y-2 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition ease-in duration-200"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-2 opacity-0"
+    >
+      <div 
+        v-if="toast.show"
+        class="fixed top-20 right-6 z-50 max-w-md"
+      >
+        <div 
+          class="rounded-lg border-2 p-4 shadow-2xl backdrop-blur-sm flex items-start space-x-3"
+          :class="{
+            'bg-green-500/10 border-green-500/50': toast.type === 'success',
+            'bg-red-500/10 border-red-500/50': toast.type === 'error',
+            'bg-yellow-500/10 border-yellow-500/50': toast.type === 'warning',
+            'bg-blue-500/10 border-blue-500/50': toast.type === 'info',
+          }"
+        >
+          <Icon 
+            :icon="toast.type === 'success' ? 'mdi:check-circle' : toast.type === 'error' ? 'mdi:alert-circle' : toast.type === 'warning' ? 'mdi:alert' : 'mdi:information'"
+            class="w-5 h-5 flex-shrink-0 mt-0.5"
+            :class="{
+              'text-green-400': toast.type === 'success',
+              'text-red-400': toast.type === 'error',
+              'text-yellow-400': toast.type === 'warning',
+              'text-blue-400': toast.type === 'info',
+            }"
+          />
+          <div class="flex-1">
+            <p 
+              class="text-sm font-medium"
+              :class="{
+                'text-green-300': toast.type === 'success',
+                'text-red-300': toast.type === 'error',
+                'text-yellow-300': toast.type === 'warning',
+                'text-blue-300': toast.type === 'info',
+              }"
+            >
+              {{ toast.message }}
+            </p>
+          </div>
+          <button 
+            @click="toast.show = false"
+            class="text-gray-400 hover:text-white transition-colors"
+          >
+            <Icon icon="mdi:close" class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Page Header -->
     <div class="flex items-center justify-between">
       <div>
@@ -788,6 +843,33 @@ const syncing = ref(false)
 const saving = ref(false)
 const testing = ref(false)
 
+// Toast通知系统
+const toast = ref({
+  show: false,
+  message: '',
+  type: 'info' as 'success' | 'error' | 'warning' | 'info'
+})
+
+let toastTimer: NodeJS.Timeout | null = null
+
+const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', duration = 3000) => {
+  // 清除之前的定时器
+  if (toastTimer) {
+    clearTimeout(toastTimer)
+  }
+  
+  toast.value = {
+    show: true,
+    message,
+    type
+  }
+  
+  // 自动隐藏
+  toastTimer = setTimeout(() => {
+    toast.value.show = false
+  }, duration)
+}
+
 // Data
 const providers = ref<any[]>([])
 const selectedProvider = ref<any>(null)
@@ -821,7 +903,7 @@ const loadAllData = async () => {
     await loadProviders()
   } catch (error) {
     console.error('Failed to load data:', error)
-    alert('加载数据失败，请重试')
+    showToast('加载数据失败，请重试', 'error')
   } finally {
     loading.value = false
   }
@@ -895,12 +977,12 @@ const toggleProviderActive = async (provider: any) => {
     })
     
     if (response.code === 200) {
-      alert(`${provider.providerName} 已${provider.isActive ? '停用' : '启用'}`)
+      showToast(`${provider.providerName} 已${provider.isActive ? '停用' : '启用'}`, 'success')
       await loadProviders()
     }
   } catch (error: any) {
     console.error('Failed to toggle provider:', error)
-    alert(`操作失败: ${error.message || '未知错误'}`)
+    showToast(`操作失败: ${error.message || '未知错误'}`, 'error')
   }
 }
 
@@ -998,14 +1080,14 @@ const deleteSelectedKey = async () => {
   try {
     const response = await aiApiKeyAPI.deleteKey(selectedKeyId.value)
     if (response.code === 200) {
-      alert('密钥删除成功')
+      showToast('密钥删除成功', 'success')
       selectedKeyId.value = null
       await loadApiKeys(selectedProvider.value.id)
       await loadProviders()
     }
   } catch (error: any) {
     console.error('Failed to delete key:', error)
-    alert(`删除失败: ${error.message || '未知错误'}`)
+    showToast(`删除失败: ${error.message || '未知错误'}`, 'error')
   }
 }
 
@@ -1027,12 +1109,12 @@ const syncModels = async () => {
     if (response.code === 200) {
       // 处理嵌套的data结构（TransformInterceptor包装）
       const count = response.data?.data?.count || response.data?.count || 0
-      alert(`成功同步 ${count} 个模型`)
+      showToast(`成功同步 ${count} 个模型`, 'success')
       await loadModels(selectedProvider.value.id)
     }
   } catch (error: any) {
     console.error('Failed to sync models:', error)
-    alert(`同步模型失败: ${error.message || '未知错误'}`)
+    showToast(`同步模型失败: ${error.message || '未知错误'}`, 'error')
   } finally {
     syncing.value = false
   }
@@ -1042,12 +1124,12 @@ const setDefaultModel = async (modelId: number) => {
   try {
     const response = await aiModelAPI.setDefault(modelId)
     if (response.code === 200) {
-      alert('默认模型设置成功')
+      showToast('默认模型设置成功', 'success')
       await loadModels(selectedProvider.value.id)
     }
   } catch (error: any) {
     console.error('Failed to set default model:', error)
-    alert(`设置失败: ${error.message || '未知错误'}`)
+    showToast(`设置失败: ${error.message || '未知错误'}`, 'error')
   }
 }
 
@@ -1055,12 +1137,12 @@ const toggleModelActive = async (modelId: number, currentState: boolean) => {
   try {
     const response = await aiModelAPI.toggleActive(modelId)
     if (response.code === 200) {
-      alert(`模型已${currentState ? '停用' : '启用'}`)
+      showToast(`模型已${currentState ? '停用' : '启用'}`, 'success')
       await loadModels(selectedProvider.value.id)
     }
   } catch (error: any) {
     console.error('Failed to toggle model:', error)
-    alert(`操作失败: ${error.message || '未知错误'}`)
+    showToast(`操作失败: ${error.message || '未知错误'}`, 'error')
   }
 }
 
@@ -1098,7 +1180,7 @@ const saveKey = async () => {
   
   // 验证必填字段
   if (!keyForm.value.keyName || (!editingKey.value && !keyForm.value.apiKey)) {
-    alert('请填写必填字段')
+    showToast('请填写必填字段', 'warning')
     return
   }
   
@@ -1106,7 +1188,7 @@ const saveKey = async () => {
   if (!editingKey.value) {
     const isDuplicate = apiKeys.value.some(key => key.keyName === keyForm.value.keyName)
     if (isDuplicate) {
-      alert('密钥名称已存在，请使用不同的名称')
+      showToast('密钥名称已存在，请使用不同的名称', 'warning')
       return
     }
   }
@@ -1129,7 +1211,7 @@ const saveKey = async () => {
       
       const response = await aiApiKeyAPI.updateKey(editingKey.value.id, updateData)
       if (response.code === 200) {
-        alert('密钥更新成功')
+        showToast('密钥更新成功', 'success')
         closeKeyDialog()
         await loadApiKeys(selectedProvider.value.id)
         // 刷新providers列表以更新卡片统计
@@ -1147,7 +1229,7 @@ const saveKey = async () => {
       })
       
       if (response.code === 201 || response.code === 200) {
-        alert('密钥添加成功')
+        showToast('密钥添加成功', 'success')
         closeKeyDialog()
         
         // 先刷新keys列表
@@ -1170,7 +1252,7 @@ const saveKey = async () => {
     }
   } catch (error: any) {
     console.error('Failed to save key:', error)
-    alert(`保存失败: ${error.message || '未知错误'}`)
+    showToast(`保存失败: ${error.message || '未知错误'}`, 'error')
   } finally {
     saving.value = false
   }
@@ -1182,7 +1264,7 @@ const deleteKey = async (keyId: number, keyName: string) => {
   try {
     const response = await aiApiKeyAPI.deleteKey(keyId)
     if (response.code === 200) {
-      alert('密钥删除成功')
+      showToast('密钥删除成功', 'success')
       
       // 如果删除的是当前选中的key，清除选择
       if (selectedKeyId.value === keyId) {
@@ -1195,7 +1277,7 @@ const deleteKey = async (keyId: number, keyName: string) => {
     }
   } catch (error: any) {
     console.error('Failed to delete key:', error)
-    alert(`删除失败: ${error.message || '未知错误'}`)
+    showToast(`删除失败: ${error.message || '未知错误'}`, 'error')
   }
 }
 
@@ -1205,11 +1287,11 @@ const validateKey = async (keyId: number) => {
     if (response.code === 200) {
       // 兼容嵌套的data结构：response.data.data.isValid 或 response.data.isValid
       const isValid = response.data?.data?.isValid ?? response.data?.isValid
-      alert(isValid ? '密钥验证通过' : '密钥无效')
+      showToast(isValid ? '密钥验证通过' : '密钥无效', isValid ? 'success' : 'error')
     }
   } catch (error: any) {
     console.error('Failed to validate key:', error)
-    alert(`验证失败: ${error.message || '未知错误'}`)
+    showToast(`验证失败: ${error.message || '未知错误'}`, 'error')
   }
 }
 
@@ -1280,7 +1362,7 @@ const selectModel = (modelId: number) => {
 // 测试连接
 const testConnection = async () => {
   if (!selectedKeyId.value) {
-    alert('请先选择API密钥')
+    showToast('请先选择API密钥', 'warning')
     return
   }
   
@@ -1317,17 +1399,17 @@ const testConnection = async () => {
 // 保存完整配置
 const saveCompleteConfig = async () => {
   if (!selectedProvider.value) {
-    alert('未选择Provider')
+    showToast('未选择Provider', 'warning')
     return
   }
   
   if (!selectedKeyId.value) {
-    alert('请先配置并选择API密钥')
+    showToast('请先配置并选择API密钥', 'warning')
     return
   }
   
   if (!selectedModelId.value) {
-    alert('请选择一个模型')
+    showToast('请选择一个模型', 'warning')
     return
   }
   
@@ -1350,7 +1432,7 @@ const saveCompleteConfig = async () => {
       isActive: true 
     })
     
-    alert('配置保存成功！')
+    showToast('配置保存成功！', 'success')
     hasUnsavedChanges.value = false
     
     // 刷新数据
@@ -1358,7 +1440,7 @@ const saveCompleteConfig = async () => {
     closeDetailDrawer()
   } catch (error: any) {
     console.error('保存配置失败:', error)
-    alert(`保存失败: ${error.message || '未知错误'}`)
+    showToast(`保存失败: ${error.message || '未知错误'}`, 'error')
   } finally {
     saving.value = false
   }
