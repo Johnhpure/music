@@ -3,599 +3,752 @@
     <!-- Page Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-white">AI配置</h1>
-        <p class="text-gray-400 mt-1">管理AI模型和音乐生成参数设置</p>
+        <h1 class="text-2xl font-bold text-white">AI配置管理</h1>
+        <p class="text-gray-400 mt-1">统一管理AI供应商、模型和API密钥配置</p>
       </div>
       
       <div class="flex items-center space-x-4">
         <CyberButton
           variant="outline"
           left-icon="mdi:refresh"
-          @click="loadConfig"
+          @click="loadAllData"
           :loading="loading"
         >
-          刷新配置
-        </CyberButton>
-        
-        <CyberButton
-          left-icon="mdi:content-save"
-          @click="saveConfig"
-          :loading="saving"
-        >
-          保存配置
+          刷新数据
         </CyberButton>
       </div>
     </div>
 
-    <!-- Status Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-      <StatsCard
-        title="AI模型状态"
-        :value="aiStatus.model"
-        :change="aiStatus.modelVersion"
-        trend="up"
-        icon="mdi:brain"
-        color="primary"
-        :delay="0"
-      />
-      
-      <StatsCard
-        title="今日生成"
-        :value="stats.todayGenerated.toLocaleString()"
-        change="+25"
-        trend="up"
-        icon="mdi:music-note"
-        color="success"
-        :delay="100"
-      />
-      
-      <StatsCard
-        title="队列长度"
-        :value="stats.queueLength"
-        change="-5"
-        trend="down"
-        icon="mdi:format-list-numbered"
-        color="info"
-        :delay="200"
-      />
-      
-      <StatsCard
-        title="系统负载"
-        :value="`${stats.systemLoad}%`"
-        change="+3%"
-        trend="up"
-        icon="mdi:speedometer"
-        color="warning"
-        :delay="300"
-      />
-    </div>
-
-    <!-- AI Model Configuration -->
-    <CyberCard title="AI模型配置" :delay="400">
-      <div class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              主模型选择
-            </label>
-            <select 
-              v-model="config.primaryModel"
-              class="cyber-input"
-              @change="onConfigChange"
-            >
-              <option value="">选择AI模型...</option>
-              <option v-for="model in availableModels" :key="model.id" :value="model.id">
-                {{ model.name }} ({{ model.version }})
-              </option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">选择用于音乐生成的主要AI模型</p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              备用模型
-            </label>
-            <select 
-              v-model="config.backupModel"
-              class="cyber-input"
-              @change="onConfigChange"
-            >
-              <option value="">选择备用模型...</option>
-              <option v-for="model in availableModels" :key="model.id" :value="model.id">
-                {{ model.name }} ({{ model.version }})
-              </option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">主模型不可用时的备用模型</p>
+    <!-- Provider Selection -->
+    <CyberCard title="AI供应商选择" :delay="0">
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div 
+            v-for="provider in providers" 
+            :key="provider.id"
+            @click="selectProvider(provider)"
+            class="relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-300"
+            :class="{
+              'border-cyber-purple bg-cyber-purple/10': selectedProvider?.id === provider.id,
+              'border-gray-700 bg-glass-white/5 hover:border-gray-600': selectedProvider?.id !== provider.id,
+              'opacity-50': !provider.isActive
+            }"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-semibold text-white">{{ provider.providerName }}</h3>
+              <div 
+                class="w-2 h-2 rounded-full"
+                :class="provider.isActive ? 'bg-green-400' : 'bg-gray-500'"
+              ></div>
+            </div>
+            <p class="text-sm text-gray-400 mb-2">{{ provider.providerCode }}</p>
+            <div class="flex items-center justify-between text-xs text-gray-500">
+              <span>{{ provider.modelsCount || 0 }} 个模型</span>
+              <span>{{ provider.activeKeysCount || 0 }} 个密钥</span>
+            </div>
           </div>
         </div>
-        
-        <div class="border-t border-gray-700/30 pt-6">
-          <h4 class="text-lg font-semibold text-white mb-4">模型参数设置</h4>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <div v-if="selectedProvider" class="pt-4 border-t border-gray-700/30">
+          <div class="flex items-center justify-between">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                创意度 (Temperature): {{ config.temperature }}
-              </label>
-              <input
-                v-model.number="config.temperature"
-                type="range"
-                min="0.1"
-                max="2.0"
-                step="0.1"
-                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                @input="onConfigChange"
-              />
-              <div class="flex justify-between text-xs text-gray-500 mt-1">
-                <span>保守(0.1)</span>
-                <span>创新(2.0)</span>
-              </div>
+              <h4 class="text-white font-semibold">{{ selectedProvider.providerName }}</h4>
+              <p class="text-sm text-gray-400 mt-1">{{ selectedProvider.description || '暂无描述' }}</p>
+              <p class="text-xs text-gray-500 mt-1">Base URL: {{ selectedProvider.baseUrl }}</p>
             </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                采样多样性 (Top-p): {{ config.topP }}
-              </label>
-              <input
-                v-model.number="config.topP"
-                type="range"
-                min="0.1"
-                max="1.0"
-                step="0.05"
-                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                @input="onConfigChange"
-              />
-              <div class="flex justify-between text-xs text-gray-500 mt-1">
-                <span>集中(0.1)</span>
-                <span>多样(1.0)</span>
-              </div>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                最大长度 (秒): {{ config.maxLength }}
-              </label>
-              <input
-                v-model.number="config.maxLength"
-                type="range"
-                min="30"
-                max="300"
-                step="30"
-                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                @input="onConfigChange"
-              />
-              <div class="flex justify-between text-xs text-gray-500 mt-1">
-                <span>30秒</span>
-                <span>300秒</span>
-              </div>
-            </div>
+            <CyberButton
+              variant="outline"
+              left-icon="mdi:sync"
+              @click="syncModels"
+              :loading="syncing"
+              size="sm"
+            >
+              同步模型
+            </CyberButton>
           </div>
         </div>
       </div>
     </CyberCard>
 
-    <!-- Generation Settings -->
-    <CyberCard title="生成设置" :delay="500">
-      <div class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              并发生成数量
-            </label>
-            <CyberInput
-              v-model.number="config.concurrentGenerations"
-              type="number"
-              min="1"
-              max="10"
-              placeholder="输入并发数量..."
-              @input="onConfigChange"
-            />
-            <p class="text-xs text-gray-500 mt-1">同时处理的音乐生成任务数量</p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              队列超时时间 (分钟)
-            </label>
-            <CyberInput
-              v-model.number="config.queueTimeout"
-              type="number"
-              min="5"
-              max="60"
-              placeholder="输入超时时间..."
-              @input="onConfigChange"
-            />
-            <p class="text-xs text-gray-500 mt-1">任务在队列中的最大等待时间</p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              重试次数
-            </label>
-            <CyberInput
-              v-model.number="config.maxRetries"
-              type="number"
-              min="0"
-              max="5"
-              placeholder="输入重试次数..."
-              @input="onConfigChange"
-            />
-            <p class="text-xs text-gray-500 mt-1">生成失败时的最大重试次数</p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              音质设置
-            </label>
-            <select 
-              v-model="config.audioQuality"
-              class="cyber-input"
-              @change="onConfigChange"
-            >
-              <option value="standard">标准质量 (128kbps)</option>
-              <option value="high">高质量 (256kbps)</option>
-              <option value="lossless">无损质量 (FLAC)</option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">生成音乐的音频质量</p>
-          </div>
-        </div>
-        
-        <div class="space-y-4">
-          <h4 class="text-lg font-semibold text-white">高级选项</h4>
-          
-          <div class="flex items-center space-x-3">
-            <input
-              v-model="config.enableCache"
-              type="checkbox"
-              id="enableCache"
-              class="rounded border-gray-600 bg-gray-700 text-cyber-purple focus:ring-cyber-purple"
-              @change="onConfigChange"
-            />
-            <label for="enableCache" class="text-sm text-gray-300">启用结果缓存</label>
-            <p class="text-xs text-gray-500">缓存相似的生成请求以提高效率</p>
-          </div>
-          
-          <div class="flex items-center space-x-3">
-            <input
-              v-model="config.enableGPUAcceleration"
-              type="checkbox"
-              id="enableGPU"
-              class="rounded border-gray-600 bg-gray-700 text-cyber-purple focus:ring-cyber-purple"
-              @change="onConfigChange"
-            />
-            <label for="enableGPU" class="text-sm text-gray-300">启用GPU加速</label>
-            <p class="text-xs text-gray-500">使用GPU加速音乐生成过程</p>
-          </div>
-          
-          <div class="flex items-center space-x-3">
-            <input
-              v-model="config.enableAutoScaling"
-              type="checkbox"
-              id="enableAutoScaling"
-              class="rounded border-gray-600 bg-gray-700 text-cyber-purple focus:ring-cyber-purple"
-              @change="onConfigChange"
-            />
-            <label for="enableAutoScaling" class="text-sm text-gray-300">启用自动扩容</label>
-            <p class="text-xs text-gray-500">根据负载自动调整计算资源</p>
-          </div>
-        </div>
-      </div>
-    </CyberCard>
-
-    <!-- API Keys and Endpoints -->
-    <CyberCard title="API配置" :delay="600">
-      <div class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              API端点
-            </label>
-            <CyberInput
-              v-model="config.apiEndpoint"
-              placeholder="输入API端点URL..."
-              @input="onConfigChange"
-            />
-            <p class="text-xs text-gray-500 mt-1">AI服务的API端点地址</p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              API密钥
-            </label>
-            <CyberInput
-              v-model="config.apiKey"
-              type="password"
-              placeholder="输入API密钥..."
-              @input="onConfigChange"
-            />
-            <p class="text-xs text-gray-500 mt-1">访问AI服务的认证密钥</p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              请求超时 (秒)
-            </label>
-            <CyberInput
-              v-model.number="config.requestTimeout"
-              type="number"
-              min="30"
-              max="300"
-              placeholder="输入超时时间..."
-              @input="onConfigChange"
-            />
-            <p class="text-xs text-gray-500 mt-1">API请求的最大等待时间</p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              速率限制 (请求/分钟)
-            </label>
-            <CyberInput
-              v-model.number="config.rateLimit"
-              type="number"
-              min="10"
-              max="1000"
-              placeholder="输入速率限制..."
-              @input="onConfigChange"
-            />
-            <p class="text-xs text-gray-500 mt-1">每分钟最大API请求数</p>
-          </div>
-        </div>
-      </div>
-    </CyberCard>
-
-    <!-- System Monitoring -->
-    <CyberCard title="系统监控" :delay="700">
-      <div class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="bg-glass-white/5 rounded-lg p-4">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-sm text-gray-400">CPU使用率</span>
-              <span class="text-lg font-bold text-cyber-blue">{{ monitoring.cpuUsage }}%</span>
-            </div>
-            <div class="w-full bg-gray-700 rounded-full h-2">
-              <div 
-                class="bg-cyber-blue h-2 rounded-full transition-all duration-500"
-                :style="{ width: `${monitoring.cpuUsage}%` }"
-              ></div>
-            </div>
-          </div>
-          
-          <div class="bg-glass-white/5 rounded-lg p-4">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-sm text-gray-400">内存使用率</span>
-              <span class="text-lg font-bold text-cyber-purple">{{ monitoring.memoryUsage }}%</span>
-            </div>
-            <div class="w-full bg-gray-700 rounded-full h-2">
-              <div 
-                class="bg-cyber-purple h-2 rounded-full transition-all duration-500"
-                :style="{ width: `${monitoring.memoryUsage}%` }"
-              ></div>
-            </div>
-          </div>
-          
-          <div class="bg-glass-white/5 rounded-lg p-4">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-sm text-gray-400">GPU使用率</span>
-              <span class="text-lg font-bold text-green-400">{{ monitoring.gpuUsage }}%</span>
-            </div>
-            <div class="w-full bg-gray-700 rounded-full h-2">
-              <div 
-                class="bg-green-400 h-2 rounded-full transition-all duration-500"
-                :style="{ width: `${monitoring.gpuUsage}%` }"
-              ></div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h5 class="font-semibold text-white mb-3">最近生成记录</h5>
-            <div class="space-y-2 max-h-48 overflow-y-auto">
-              <div 
-                v-for="log in recentLogs" 
-                :key="log.id"
-                class="flex items-center justify-between p-2 bg-glass-white/5 rounded text-sm"
-              >
-                <div class="flex items-center space-x-2">
-                  <Icon 
-                    :icon="log.status === 'success' ? 'mdi:check-circle' : log.status === 'error' ? 'mdi:alert-circle' : 'mdi:clock'"
-                    :class="{
-                      'text-green-400': log.status === 'success',
-                      'text-red-400': log.status === 'error',
-                      'text-yellow-400': log.status === 'pending'
-                    }"
-                    class="w-4 h-4"
-                  />
-                  <span class="text-gray-300">{{ log.prompt.substring(0, 30) }}...</span>
+    <!-- Models Management -->
+    <CyberCard v-if="selectedProvider" title="AI模型管理" :delay="100">
+      <div class="space-y-4">
+        <!-- Models List -->
+        <div v-if="models.length > 0" class="space-y-3">
+          <div 
+            v-for="model in models" 
+            :key="model.id"
+            class="p-4 rounded-lg border border-gray-700/30 bg-glass-white/5"
+            :class="{ 'border-cyber-purple': model.isDefault }"
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3">
+                  <h4 class="text-white font-semibold">{{ model.modelName }}</h4>
+                  <span 
+                    v-if="model.isDefault"
+                    class="px-2 py-0.5 text-xs bg-cyber-purple/20 text-cyber-purple rounded"
+                  >
+                    默认
+                  </span>
+                  <span 
+                    class="px-2 py-0.5 text-xs rounded"
+                    :class="model.isActive ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'"
+                  >
+                    {{ model.isActive ? '已启用' : '已停用' }}
+                  </span>
                 </div>
-                <span class="text-gray-500 text-xs">{{ formatTime(log.timestamp) }}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h5 class="font-semibold text-white mb-3">系统健康状态</h5>
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-gray-300">AI模型状态</span>
-                <span class="flex items-center space-x-2">
-                  <div class="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span class="text-green-400 text-sm">正常</span>
-                </span>
+                <p class="text-sm text-gray-400 mt-1">{{ model.modelCode }}</p>
+                <div class="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                  <span v-if="model.maxInputTokens">输入: {{ model.maxInputTokens }} tokens</span>
+                  <span v-if="model.maxOutputTokens">输出: {{ model.maxOutputTokens }} tokens</span>
+                  <span v-if="model.supportsStreaming">流式输出</span>
+                  <span v-if="model.supportsFunctionCall">函数调用</span>
+                </div>
               </div>
               
-              <div class="flex items-center justify-between">
-                <span class="text-gray-300">数据库连接</span>
-                <span class="flex items-center space-x-2">
-                  <div class="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span class="text-green-400 text-sm">正常</span>
-                </span>
-              </div>
-              
-              <div class="flex items-center justify-between">
-                <span class="text-gray-300">存储空间</span>
-                <span class="flex items-center space-x-2">
-                  <div class="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                  <span class="text-yellow-400 text-sm">75% 已使用</span>
-                </span>
-              </div>
-              
-              <div class="flex items-center justify-between">
-                <span class="text-gray-300">API响应时间</span>
-                <span class="text-gray-300 text-sm">{{ monitoring.apiResponseTime }}ms</span>
+              <div class="flex items-center space-x-2">
+                <button
+                  v-if="!model.isDefault"
+                  @click="setDefaultModel(model.id)"
+                  class="px-3 py-1 text-xs bg-cyber-purple/20 hover:bg-cyber-purple/30 text-cyber-purple rounded transition-colors"
+                >
+                  设为默认
+                </button>
+                <button
+                  @click="toggleModelActive(model.id, model.isActive)"
+                  class="px-3 py-1 text-xs rounded transition-colors"
+                  :class="model.isActive ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400' : 'bg-green-500/20 hover:bg-green-500/30 text-green-400'"
+                >
+                  {{ model.isActive ? '停用' : '启用' }}
+                </button>
+                <button
+                  @click="openModelConfig(model)"
+                  class="px-3 py-1 text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded transition-colors"
+                >
+                  配置参数
+                </button>
               </div>
             </div>
           </div>
         </div>
+        
+        <div v-else class="text-center py-8 text-gray-500">
+          <Icon icon="mdi:package-variant" class="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <p>暂无模型，请点击"同步模型"按钮从供应商获取</p>
+        </div>
       </div>
     </CyberCard>
+
+    <!-- API Keys Management -->
+    <CyberCard v-if="selectedProvider" title="API密钥管理" :delay="200">
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <p class="text-sm text-gray-400">管理当前供应商的API密钥和配额</p>
+          <CyberButton
+            left-icon="mdi:plus"
+            @click="openAddKeyDialog"
+            size="sm"
+          >
+            添加密钥
+          </CyberButton>
+        </div>
+
+        <!-- API Keys List -->
+        <div v-if="apiKeys.length > 0" class="space-y-3">
+          <div 
+            v-for="key in apiKeys" 
+            :key="key.id"
+            class="p-4 rounded-lg border border-gray-700/30 bg-glass-white/5"
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3">
+                  <h4 class="text-white font-semibold">{{ key.keyName }}</h4>
+                  <span 
+                    class="px-2 py-0.5 text-xs rounded"
+                    :class="{
+                      'bg-green-500/20 text-green-400': key.status === 'normal',
+                      'bg-yellow-500/20 text-yellow-400': key.status === 'rate_limited',
+                      'bg-red-500/20 text-red-400': key.status === 'error',
+                      'bg-gray-500/20 text-gray-400': key.status === 'exhausted'
+                    }"
+                  >
+                    {{ getKeyStatusText(key.status) }}
+                  </span>
+                  <span 
+                    v-if="!key.isActive"
+                    class="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded"
+                  >
+                    已停用
+                  </span>
+                </div>
+                <p class="text-sm text-gray-400 mt-1 font-mono">{{ key.apiKey }}</p>
+                <div class="grid grid-cols-3 gap-4 mt-3">
+                  <div>
+                    <p class="text-xs text-gray-500">今日请求</p>
+                    <p class="text-sm text-white mt-1">{{ key.requestsCountToday }} / {{ key.rateLimitRpd }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">今日Token</p>
+                    <p class="text-sm text-white mt-1">{{ key.tokensCountToday }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500">优先级</p>
+                    <p class="text-sm text-white mt-1">{{ key.priority }}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="flex items-center space-x-2 ml-4">
+                <button
+                  @click="validateKey(key.id)"
+                  class="px-3 py-1 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"
+                  title="验证密钥"
+                >
+                  验证
+                </button>
+                <button
+                  @click="openEditKeyDialog(key)"
+                  class="px-3 py-1 text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded transition-colors"
+                >
+                  编辑
+                </button>
+                <button
+                  @click="deleteKey(key.id, key.keyName)"
+                  class="px-3 py-1 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div v-else class="text-center py-8 text-gray-500">
+          <Icon icon="mdi:key-variant" class="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <p>暂无API密钥，请点击"添加密钥"按钮</p>
+        </div>
+      </div>
+    </CyberCard>
+
+    <!-- Add/Edit API Key Dialog -->
+    <Teleport to="body">
+      <div 
+        v-if="showKeyDialog" 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+        @click.self="closeKeyDialog"
+      >
+        <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-2xl mx-4 shadow-xl">
+          <h3 class="text-xl font-bold text-white mb-4">
+            {{ editingKey ? '编辑API密钥' : '添加API密钥' }}
+          </h3>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">密钥名称</label>
+              <input
+                v-model="keyForm.keyName"
+                type="text"
+                class="cyber-input"
+                placeholder="例如: 主密钥、备用密钥"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">API密钥</label>
+              <input
+                v-model="keyForm.apiKey"
+                type="password"
+                class="cyber-input"
+                placeholder="输入API密钥"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Base URL (可选)</label>
+              <input
+                v-model="keyForm.baseUrl"
+                type="text"
+                class="cyber-input"
+                placeholder="留空使用供应商默认URL"
+              />
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">优先级 (0-100)</label>
+                <input
+                  v-model.number="keyForm.priority"
+                  type="number"
+                  min="0"
+                  max="100"
+                  class="cyber-input"
+                />
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">每日请求限制</label>
+                <input
+                  v-model.number="keyForm.rateLimitRpd"
+                  type="number"
+                  min="1"
+                  class="cyber-input"
+                />
+              </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+              <input
+                v-model="keyForm.isActive"
+                type="checkbox"
+                id="keyActive"
+                class="rounded border-gray-600 bg-gray-700 text-cyber-purple focus:ring-cyber-purple"
+              />
+              <label for="keyActive" class="text-sm text-gray-300">启用此密钥</label>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-end space-x-3 mt-6">
+            <button
+              @click="closeKeyDialog"
+              class="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+            >
+              取消
+            </button>
+            <CyberButton
+              @click="saveKey"
+              :loading="saving"
+            >
+              {{ editingKey ? '保存' : '添加' }}
+            </CyberButton>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Model Config Dialog -->
+    <Teleport to="body">
+      <div 
+        v-if="showModelConfigDialog" 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+        @click.self="closeModelConfigDialog"
+      >
+        <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-2xl mx-4 shadow-xl">
+          <h3 class="text-xl font-bold text-white mb-4">
+            配置模型参数 - {{ editingModel?.modelName }}
+          </h3>
+          
+          <div class="space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Temperature (创意度): {{ modelConfigForm.temperature }}
+              </label>
+              <input
+                v-model.number="modelConfigForm.temperature"
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              />
+              <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>保守(0)</span>
+                <span>创新(2)</span>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Top P (采样多样性): {{ modelConfigForm.topP }}
+              </label>
+              <input
+                v-model.number="modelConfigForm.topP"
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              />
+              <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>集中(0)</span>
+                <span>多样(1)</span>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Max Tokens (最大输出长度)
+              </label>
+              <input
+                v-model.number="modelConfigForm.maxTokens"
+                type="number"
+                min="1"
+                max="32000"
+                class="cyber-input"
+              />
+            </div>
+            
+            <div class="flex items-center space-x-2">
+              <input
+                v-model="modelConfigForm.stream"
+                type="checkbox"
+                id="streamEnabled"
+                class="rounded border-gray-600 bg-gray-700 text-cyber-purple focus:ring-cyber-purple"
+              />
+              <label for="streamEnabled" class="text-sm text-gray-300">启用流式输出</label>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-end space-x-3 mt-6">
+            <button
+              @click="closeModelConfigDialog"
+              class="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+            >
+              取消
+            </button>
+            <CyberButton
+              @click="saveModelConfig"
+              :loading="saving"
+            >
+              保存配置
+            </CyberButton>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import CyberCard from '@/components/UI/CyberCard.vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
-import CyberInput from '@/components/UI/CyberInput.vue'
-import StatsCard from '@/views/Dashboard/components/StatsCard.vue'
+import { aiProviderAPI, aiModelAPI, aiApiKeyAPI } from '@/api'
 
 // State
 const loading = ref(false)
+const syncing = ref(false)
 const saving = ref(false)
-const hasChanges = ref(false)
 
-// Configuration
-const config = ref({
-  primaryModel: 'musicgen-v2',
-  backupModel: 'musicgen-v1',
-  temperature: 0.8,
+// Data
+const providers = ref<any[]>([])
+const selectedProvider = ref<any>(null)
+const models = ref<any[]>([])
+const apiKeys = ref<any[]>([])
+
+// Dialogs
+const showKeyDialog = ref(false)
+const editingKey = ref<any>(null)
+const keyForm = ref({
+  keyName: '',
+  apiKey: '',
+  baseUrl: '',
+  priority: 50,
+  rateLimitRpd: 10000,
+  isActive: true
+})
+
+const showModelConfigDialog = ref(false)
+const editingModel = ref<any>(null)
+const modelConfigForm = ref({
+  temperature: 0.7,
   topP: 0.9,
-  maxLength: 180,
-  concurrentGenerations: 3,
-  queueTimeout: 30,
-  maxRetries: 2,
-  audioQuality: 'high',
-  enableCache: true,
-  enableGPUAcceleration: true,
-  enableAutoScaling: false,
-  apiEndpoint: 'https://api.musicgen.ai/v1',
-  apiKey: '••••••••••••••••',
-  requestTimeout: 120,
-  rateLimit: 100
+  maxTokens: 2000,
+  stream: true
 })
-
-// Available models
-const availableModels = ref([
-  { id: 'musicgen-v2', name: 'MusicGen V2', version: '2.3.0' },
-  { id: 'musicgen-v1', name: 'MusicGen V1', version: '1.5.2' },
-  { id: 'jukebox-pro', name: 'Jukebox Pro', version: '3.1.0' },
-  { id: 'wavenet-music', name: 'WaveNet Music', version: '2.0.1' }
-])
-
-// Status and statistics
-const aiStatus = ref({
-  model: 'MusicGen V2',
-  modelVersion: 'v2.3.0'
-})
-
-const stats = ref({
-  todayGenerated: 1247,
-  queueLength: '23',
-  systemLoad: 72
-})
-
-const monitoring = ref({
-  cpuUsage: 68,
-  memoryUsage: 82,
-  gpuUsage: 45,
-  apiResponseTime: 850
-})
-
-const recentLogs = ref([
-  { id: 1, prompt: '生成一首充满活力的电子音乐', status: 'success', timestamp: Date.now() - 120000 },
-  { id: 2, prompt: '创作一段舒缓的钢琴旋律', status: 'success', timestamp: Date.now() - 340000 },
-  { id: 3, prompt: '制作一首摇滚风格的背景音乐', status: 'error', timestamp: Date.now() - 520000 },
-  { id: 4, prompt: '生成一段中国风古典音乐', status: 'success', timestamp: Date.now() - 680000 },
-  { id: 5, prompt: '创作一首适合冥想的环境音乐', status: 'pending', timestamp: Date.now() - 780000 }
-])
 
 // Methods
-const loadConfig = async () => {
+const loadAllData = async () => {
   loading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log('Config loaded')
+    await loadProviders()
+    if (selectedProvider.value) {
+      await Promise.all([
+        loadModels(selectedProvider.value.id),
+        loadApiKeys(selectedProvider.value.id)
+      ])
+    }
   } catch (error) {
-    console.error('Failed to load config:', error)
+    console.error('Failed to load data:', error)
+    alert('加载数据失败，请重试')
   } finally {
     loading.value = false
   }
 }
 
-const saveConfig = async () => {
+const loadProviders = async () => {
+  try {
+    const response = await aiProviderAPI.getProviders()
+    if (response.code === 200) {
+      providers.value = response.data
+      // 自动选择第一个启用的Provider
+      if (!selectedProvider.value && providers.value.length > 0) {
+        const firstActive = providers.value.find(p => p.isActive) || providers.value[0]
+        await selectProvider(firstActive)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load providers:', error)
+    throw error
+  }
+}
+
+const selectProvider = async (provider: any) => {
+  selectedProvider.value = provider
+  models.value = []
+  apiKeys.value = []
+  
+  if (provider) {
+    await Promise.all([
+      loadModels(provider.id),
+      loadApiKeys(provider.id)
+    ])
+  }
+}
+
+const loadModels = async (providerId: number) => {
+  try {
+    const response = await aiModelAPI.getModels({ providerId, isActive: undefined })
+    if (response.code === 200) {
+      models.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to load models:', error)
+  }
+}
+
+const loadApiKeys = async (providerId: number) => {
+  try {
+    const response = await aiApiKeyAPI.getKeys(providerId)
+    if (response.code === 200) {
+      apiKeys.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to load API keys:', error)
+  }
+}
+
+const syncModels = async () => {
+  if (!selectedProvider.value) return
+  
+  syncing.value = true
+  try {
+    const response = await aiProviderAPI.syncModels(selectedProvider.value.id)
+    if (response.code === 200) {
+      alert(`成功同步 ${response.data.count} 个模型`)
+      await loadModels(selectedProvider.value.id)
+    }
+  } catch (error: any) {
+    console.error('Failed to sync models:', error)
+    alert(`同步模型失败: ${error.message || '未知错误'}`)
+  } finally {
+    syncing.value = false
+  }
+}
+
+const setDefaultModel = async (modelId: number) => {
+  try {
+    const response = await aiModelAPI.setDefault(modelId)
+    if (response.code === 200) {
+      alert('默认模型设置成功')
+      await loadModels(selectedProvider.value.id)
+    }
+  } catch (error: any) {
+    console.error('Failed to set default model:', error)
+    alert(`设置失败: ${error.message || '未知错误'}`)
+  }
+}
+
+const toggleModelActive = async (modelId: number, currentState: boolean) => {
+  try {
+    const response = await aiModelAPI.toggleActive(modelId)
+    if (response.code === 200) {
+      alert(`模型已${currentState ? '停用' : '启用'}`)
+      await loadModels(selectedProvider.value.id)
+    }
+  } catch (error: any) {
+    console.error('Failed to toggle model:', error)
+    alert(`操作失败: ${error.message || '未知错误'}`)
+  }
+}
+
+const openModelConfig = (model: any) => {
+  editingModel.value = model
+  
+  // 从model的configJson加载配置
+  const config = model.configJson || {}
+  modelConfigForm.value = {
+    temperature: config.temperature || 0.7,
+    topP: config.topP || 0.9,
+    maxTokens: config.maxTokens || 2000,
+    stream: config.stream !== false
+  }
+  
+  showModelConfigDialog.value = true
+}
+
+const closeModelConfigDialog = () => {
+  showModelConfigDialog.value = false
+  editingModel.value = null
+}
+
+const saveModelConfig = async () => {
+  if (!editingModel.value) return
+  
   saving.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    hasChanges.value = false
-    console.log('Config saved:', config.value)
-    // TODO: Show success notification
-  } catch (error) {
-    console.error('Failed to save config:', error)
-    // TODO: Show error notification
+    const response = await aiModelAPI.updateModel(editingModel.value.id, {
+      configJson: modelConfigForm.value
+    })
+    
+    if (response.code === 200) {
+      alert('模型配置保存成功')
+      closeModelConfigDialog()
+      await loadModels(selectedProvider.value.id)
+    }
+  } catch (error: any) {
+    console.error('Failed to save model config:', error)
+    alert(`保存失败: ${error.message || '未知错误'}`)
   } finally {
     saving.value = false
   }
 }
 
-const onConfigChange = () => {
-  hasChanges.value = true
+const openAddKeyDialog = () => {
+  editingKey.value = null
+  keyForm.value = {
+    keyName: '',
+    apiKey: '',
+    baseUrl: '',
+    priority: 50,
+    rateLimitRpd: 10000,
+    isActive: true
+  }
+  showKeyDialog.value = true
 }
 
-const formatTime = (timestamp: number) => {
-  const now = Date.now()
-  const diff = now - timestamp
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(minutes / 60)
+const openEditKeyDialog = (key: any) => {
+  editingKey.value = key
+  keyForm.value = {
+    keyName: key.keyName,
+    apiKey: '', // 不回显密钥
+    baseUrl: key.baseUrl || '',
+    priority: key.priority,
+    rateLimitRpd: key.rateLimitRpd,
+    isActive: key.isActive
+  }
+  showKeyDialog.value = true
+}
+
+const closeKeyDialog = () => {
+  showKeyDialog.value = false
+  editingKey.value = null
+}
+
+const saveKey = async () => {
+  if (!selectedProvider.value) return
   
-  if (hours > 0) return `${hours}小时前`
-  if (minutes > 0) return `${minutes}分钟前`
-  return '刚才'
+  // 验证必填字段
+  if (!keyForm.value.keyName || (!editingKey.value && !keyForm.value.apiKey)) {
+    alert('请填写必填字段')
+    return
+  }
+  
+  saving.value = true
+  try {
+    if (editingKey.value) {
+      // 更新密钥
+      const updateData: any = {
+        keyName: keyForm.value.keyName,
+        baseUrl: keyForm.value.baseUrl || null,
+        priority: keyForm.value.priority,
+        rateLimitRpd: keyForm.value.rateLimitRpd,
+        isActive: keyForm.value.isActive
+      }
+      
+      // 只在有新密钥时才更新
+      if (keyForm.value.apiKey) {
+        updateData.apiKey = keyForm.value.apiKey
+      }
+      
+      const response = await aiApiKeyAPI.updateKey(editingKey.value.id, updateData)
+      if (response.code === 200) {
+        alert('密钥更新成功')
+        closeKeyDialog()
+        await loadApiKeys(selectedProvider.value.id)
+      }
+    } else {
+      // 创建新密钥
+      const response = await aiApiKeyAPI.createKey(selectedProvider.value.id, {
+        keyName: keyForm.value.keyName,
+        apiKey: keyForm.value.apiKey,
+        baseUrl: keyForm.value.baseUrl || undefined,
+        priority: keyForm.value.priority,
+        rateLimitRpd: keyForm.value.rateLimitRpd,
+        isActive: keyForm.value.isActive
+      })
+      
+      if (response.code === 201 || response.code === 200) {
+        alert('密钥添加成功')
+        closeKeyDialog()
+        await loadApiKeys(selectedProvider.value.id)
+      }
+    }
+  } catch (error: any) {
+    console.error('Failed to save key:', error)
+    alert(`保存失败: ${error.message || '未知错误'}`)
+  } finally {
+    saving.value = false
+  }
+}
+
+const deleteKey = async (keyId: number, keyName: string) => {
+  if (!confirm(`确定要删除密钥 "${keyName}" 吗？`)) return
+  
+  try {
+    const response = await aiApiKeyAPI.deleteKey(keyId)
+    if (response.code === 200) {
+      alert('密钥删除成功')
+      await loadApiKeys(selectedProvider.value.id)
+    }
+  } catch (error: any) {
+    console.error('Failed to delete key:', error)
+    alert(`删除失败: ${error.message || '未知错误'}`)
+  }
+}
+
+const validateKey = async (keyId: number) => {
+  try {
+    const response = await aiApiKeyAPI.validateKey(keyId)
+    if (response.code === 200) {
+      alert(response.data.isValid ? '密钥验证通过' : '密钥无效')
+    }
+  } catch (error: any) {
+    console.error('Failed to validate key:', error)
+    alert(`验证失败: ${error.message || '未知错误'}`)
+  }
+}
+
+const getKeyStatusText = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'normal': '正常',
+    'rate_limited': '限流中',
+    'error': '错误',
+    'exhausted': '已耗尽'
+  }
+  return statusMap[status] || status
 }
 
 // Lifecycle
 onMounted(() => {
-  loadConfig()
+  loadAllData()
 })
 </script>
 
 <style scoped>
 .cyber-input {
   @apply w-full px-4 py-2 bg-glass-white/10 backdrop-blur-xl border border-gray-700/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyber-purple focus:ring-1 focus:ring-cyber-purple transition-all duration-300;
-}
-
-.slider {
-  background: linear-gradient(to right, #8b5cf6 0%, #8b5cf6 var(--value, 50%), #374151 var(--value, 50%), #374151 100%);
-}
-
-.slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #8b5cf6;
-  cursor: pointer;
-  border: 2px solid #1f2937;
-  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
-}
-
-.slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #8b5cf6;
-  cursor: pointer;
-  border: 2px solid #1f2937;
-  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
 }
 </style>

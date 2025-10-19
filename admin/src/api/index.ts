@@ -556,6 +556,153 @@ class RequestQueue {
   }
 }
 
+// ========== AI Provider & Model Management API ==========
+
+/**
+ * AI Provider API - AI供应商管理
+ */
+export const aiProviderAPI = {
+  // 获取所有Provider列表
+  getProviders: (): Promise<ApiResponse<any[]>> =>
+    apiRequest.get('/admin/ai-providers'),
+    
+  // 获取单个Provider详情
+  getProvider: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.get(`/admin/ai-providers/${id}`),
+    
+  // 创建Provider
+  createProvider: (data: {
+    providerCode: string
+    providerName: string
+    baseUrl: string
+    isActive?: boolean
+    sortOrder?: number
+    description?: string
+    configJson?: any
+  }): Promise<ApiResponse<any>> =>
+    apiRequest.post('/admin/ai-providers', data),
+    
+  // 更新Provider
+  updateProvider: (id: number, data: {
+    providerName?: string
+    baseUrl?: string
+    isActive?: boolean
+    sortOrder?: number
+    description?: string
+    configJson?: any
+  }): Promise<ApiResponse<any>> =>
+    apiRequest.put(`/admin/ai-providers/${id}`, data),
+    
+  // 删除Provider
+  deleteProvider: (id: number): Promise<ApiResponse> =>
+    apiRequest.delete(`/admin/ai-providers/${id}`),
+    
+  // 同步Provider的模型列表
+  syncModels: (id: number): Promise<ApiResponse<{ count: number }>> =>
+    apiRequest.post(`/admin/ai-providers/${id}/sync-models`, {})
+}
+
+/**
+ * AI Model API - AI模型管理
+ */
+export const aiModelAPI = {
+  // 获取模型列表（可按Provider/类型/状态筛选）
+  getModels: (params?: {
+    providerId?: number
+    modelType?: 'chat' | 'completion' | 'embedding' | 'image'
+    isActive?: boolean
+  }): Promise<ApiResponse<any[]>> =>
+    apiRequest.get('/admin/ai-models', params),
+    
+  // 获取单个模型详情
+  getModel: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.get(`/admin/ai-models/${id}`),
+    
+  // 更新模型
+  updateModel: (id: number, data: {
+    modelName?: string
+    maxInputTokens?: number
+    maxOutputTokens?: number
+    supportsStreaming?: boolean
+    supportsFunctionCall?: boolean
+    supportsVision?: boolean
+    costPer1kPromptTokens?: number
+    costPer1kCompletionTokens?: number
+    isActive?: boolean
+    isDefault?: boolean
+    sortOrder?: number
+    description?: string
+    configJson?: any
+  }): Promise<ApiResponse<any>> =>
+    apiRequest.put(`/admin/ai-models/${id}`, data),
+    
+  // 删除模型
+  deleteModel: (id: number): Promise<ApiResponse> =>
+    apiRequest.delete(`/admin/ai-models/${id}`),
+    
+  // 切换模型激活状态
+  toggleActive: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.put(`/admin/ai-models/${id}/toggle-active`, {}),
+    
+  // 设置为默认模型
+  setDefault: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.put(`/admin/ai-models/${id}/set-default`, {})
+}
+
+/**
+ * AI API Key API - API密钥管理
+ */
+export const aiApiKeyAPI = {
+  // 获取指定Provider的所有密钥
+  getKeys: (providerId: number): Promise<ApiResponse<any[]>> =>
+    apiRequest.get(`/admin/ai-providers/${providerId}/keys`),
+    
+  // 获取单个密钥详情
+  getKey: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.get(`/admin/ai-providers/keys/${id}`),
+    
+  // 创建新密钥
+  createKey: (providerId: number, data: {
+    keyName: string
+    apiKey: string
+    baseUrl?: string
+    priority?: number
+    isActive?: boolean
+    rateLimitRpm?: number
+    rateLimitTpm?: number
+    rateLimitRpd?: number
+    configJson?: any
+  }): Promise<ApiResponse<any>> =>
+    apiRequest.post(`/admin/ai-providers/${providerId}/keys`, data),
+    
+  // 更新密钥
+  updateKey: (id: number, data: {
+    keyName?: string
+    apiKey?: string
+    baseUrl?: string
+    priority?: number
+    isActive?: boolean
+    status?: 'normal' | 'rate_limited' | 'error' | 'exhausted'
+    rateLimitRpm?: number
+    rateLimitTpm?: number
+    rateLimitRpd?: number
+    configJson?: any
+  }): Promise<ApiResponse<any>> =>
+    apiRequest.put(`/admin/ai-providers/keys/${id}`, data),
+    
+  // 删除密钥
+  deleteKey: (id: number): Promise<ApiResponse> =>
+    apiRequest.delete(`/admin/ai-providers/keys/${id}`),
+    
+  // 验证密钥有效性
+  validateKey: (id: number): Promise<ApiResponse<{ isValid: boolean }>> =>
+    apiRequest.post(`/admin/ai-providers/keys/${id}/validate`, {}),
+    
+  // 重置密钥统计数据
+  resetKeyStats: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.post(`/admin/ai-providers/keys/${id}/reset-stats`, {})
+}
+
 export const requestQueue = new RequestQueue()
 
 // Export utility functions

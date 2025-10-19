@@ -25,6 +25,7 @@ import { PromptTemplateModule } from '@modules/prompt-template/prompt-template.m
 import { HotRecommendationModule } from '@modules/hot-recommendation/hot-recommendation.module';
 import { PaymentModule } from '@modules/payment/payment.module';
 import { SunoConfigModule } from '@modules/suno-config/suno-config.module';
+import { AIModelsModule } from '@modules/ai-models/ai-models.module';
 import { BullModule } from '@nestjs/bull';
 import { CommonModule } from '@common/common.module';
 
@@ -83,6 +84,7 @@ import { CommonModule } from '@common/common.module';
     HotRecommendationModule,
     PaymentModule,
     SunoConfigModule,
+    AIModelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
