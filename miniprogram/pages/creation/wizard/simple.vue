@@ -75,7 +75,7 @@
 						v-for="(theme, index) in doubledThemes"
 						:key="'theme-' + index"
 						:style="{ background: cardColors[index % cardColors.length] }"
-						@click="selectTheme(theme)"
+						@click="selectTheme(index)"
 					>
 						<view class="card-glow"></view>
 						<view class="card-content">
@@ -182,7 +182,9 @@ export default {
 		},
 		
 		// 选择主题
-		selectTheme(theme) {
+		selectTheme(index) {
+			// 因为是 doubledThemes（主题列表的双倍），需要取模获取原始主题
+			const theme = this.hotThemes[index % this.hotThemes.length];
 			this.inspiration = theme.prompt;
 		},
 		
