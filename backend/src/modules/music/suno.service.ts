@@ -279,7 +279,8 @@ export class SunoService implements OnModuleInit {
         request.weirdnessConstraint = params.weirdnessConstraint;
       if (params.audioWeight !== undefined)
         request.audioWeight = params.audioWeight;
-      if (params.callBackUrl) request.callBackUrl = params.callBackUrl;
+      // callBackUrl is required by Suno API
+      request.callBackUrl = params.callBackUrl || 'https://api.sunoapi.org/callback';
 
       this.logger.log(
         `Generating music with Suno API: ${JSON.stringify(request)}`,

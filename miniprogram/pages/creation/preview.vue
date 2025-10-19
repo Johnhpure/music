@@ -250,11 +250,14 @@
 					
 					uni.hideLoading();
 					
+					console.log('完整响应:', JSON.stringify(response));
+					
 					if (response.code === 200 && response.data) {
 						const { taskId, creditCost, estimatedTime } = response.data;
 						this.currentTaskId = taskId;
 						
-						console.log('任务创建成功:', taskId, '预计时间:', estimatedTime, '秒');
+						console.log('任务创建成功, taskId:', taskId, '类型:', typeof taskId);
+						console.log('currentTaskId已设置为:', this.currentTaskId);
 						
 						// 设置为生成中状态
 						this.isGenerating = true;

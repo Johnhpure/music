@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { randomUUID } from 'crypto';
 import { SunoService } from './suno.service';
 import { User } from '../user/entities/user.entity';
 import { MusicTask } from './entities/music-task.entity';
@@ -65,6 +66,7 @@ export class SunoMiniprogramService {
 
       // 创建music_tasks记录
       const musicTask = await queryRunner.manager.save(MusicTask, {
+        task_id: randomUUID(),
         user_id: userId,
         title: dto.title,
         lyrics: dto.lyrics,
@@ -89,7 +91,7 @@ export class SunoMiniprogramService {
         prompt: dto.prompt,
         instrumental: dto.instrumental,
         vocalGender: dto.vocalGender,
-        model: dto.model,
+        model: dto.model || MusicModel.V3_5,
       });
 
       // 更新music_tasks的suno_task_id
