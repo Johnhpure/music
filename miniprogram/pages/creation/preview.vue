@@ -232,20 +232,14 @@
 					});
 					
 					// 构造请求参数
-					// AI创作模式：歌词作为prompt传递
-					// 自定义模式：歌词作为lyrics传递
 					const params = {
 						title: this.songTitle || '未命名音乐',
 						style: this.styleId,
 						vocalGender: this.vocalGender
 					};
 					
-					// 根据创作类型决定参数
-					if (this.creationType === 'ai' && this.lyrics) {
-						// AI辅助创作：歌词内容作为prompt
-						params.prompt = this.lyrics;
-					} else if (this.creationType === 'manual' && this.lyrics) {
-						// 自主创作：歌词内容作为lyrics
+					// AI生成的歌词作为lyrics传递（自定义歌词模式）
+					if (this.lyrics) {
 						params.lyrics = this.lyrics;
 					}
 					
