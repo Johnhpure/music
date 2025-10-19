@@ -200,21 +200,30 @@ export default {
 					mask: true
 				});
 				
-				// 调用歌词生成接口扩展灵感
-				const result = await api.apis.generateLyrics({
-					prompt: this.inspiration
+				// 调用AI扩展灵感接口
+				const result = await api.apis.expandInspiration({
+					originalPrompt: this.inspiration
 				});
 				
 				uni.hideLoading();
 				
 				if (result && result.code === 200) {
 					// 将AI扩展的内容填充到输入框
-					if (result.data && result.data.text) {
-						this.inspiration = result.data.text;
+					if (result.data && result.data.expandedContent) {
+						this.inspiration = result.data.expandedContent;
+						
+						// 显示成功提示，包含积分信息
+						let toastTitle = 'AI已为您扩展灵感';
+						if (result.data.costCredits > 0) {
+							toastTitle += `（消耗${result.data.costCredits}积分）`;
+						} else if (result.data.remainingFreeCount !== undefined) {
+							toastTitle += `（剩余${result.data.remainingFreeCount}次免费）`;
+						}
+						
 						uni.showToast({
-							title: 'AI已为您扩展灵感',
+							title: toastTitle,
 							icon: 'success',
-							duration: 1500
+							duration: 2000
 						});
 					}
 				} else {
@@ -227,8 +236,17 @@ export default {
 			} catch (error) {
 				console.error('AI扩展灵感失败:', error);
 				uni.hideLoading();
+				
+				// 根据错误类型显示不同提示
+				let errorMsg = '扩展失败，请重试';
+				if (error.msg) {
+					errorMsg = error.msg;
+				} else if (error.data && error.data.message) {
+					errorMsg = error.data.message;
+				}
+				
 				uni.showToast({
-					title: '扩展失败，请重试',
+					title: errorMsg,
 					icon: 'none',
 					duration: 2000
 				});

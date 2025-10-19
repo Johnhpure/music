@@ -363,6 +363,16 @@ export default {
 		 */
 		getLyricsTaskStatus(taskId) {
 			return minRequest.get(`/suno/miniprogram/lyrics/${taskId}`)
+		},
+		
+		/**
+		 * AI扩展创作灵感
+		 * @param {Object} params - 扩展参数
+		 * @param {String} params.originalPrompt - 原始创作灵感
+		 * @returns {Promise}
+		 */
+		expandInspiration(params) {
+			return minRequest.post('/user/ai/expand-inspiration', params)
 		}
 	}
 }
