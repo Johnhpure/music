@@ -27,6 +27,8 @@ export class AIChatController {
    * 提示词完成接口（自动选择启用的模型）
    * 四个模型（Claude、OpenAI、Gemini、DeepSeek）中每次只有一个处于开启状态
    */
+  @Post('prompt-completion')
+
   async promptCompletion(
     @Body() dto: PromptCompletionDto,
     @Request() req,
