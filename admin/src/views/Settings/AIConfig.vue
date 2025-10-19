@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-white">AI配置管理</h1>
-        <p class="text-gray-400 mt-1">统一管理AI供应商、模型和API密钥配置</p>
+        <p class="text-gray-400 mt-1">统一管理AI大模型配置和API密钥</p>
       </div>
       
       <div class="flex items-center space-x-4">
@@ -19,218 +19,309 @@
       </div>
     </div>
 
-    <!-- Provider Selection -->
-    <CyberCard title="AI供应商选择" :delay="0">
-      <div class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div 
-            v-for="provider in providers" 
-            :key="provider.id"
-            @click="selectProvider(provider)"
-            class="relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-300"
-            :class="{
-              'border-cyber-purple bg-cyber-purple/10': selectedProvider?.id === provider.id,
-              'border-gray-700 bg-glass-white/5 hover:border-gray-600': selectedProvider?.id !== provider.id,
-              'opacity-50': !provider.isActive
-            }"
-          >
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-lg font-semibold text-white">{{ provider.providerName }}</h3>
+    <!-- AI Providers Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div 
+        v-for="provider in providers" 
+        :key="provider.id"
+        class="relative group cursor-pointer"
+        @click="openProviderDetail(provider)"
+      >
+        <!-- Provider Card -->
+        <div 
+          class="relative p-8 rounded-2xl border-2 transition-all duration-300 h-full"
+          :class="{
+            'border-cyber-purple bg-cyber-purple/10': provider.isActive,
+            'border-gray-700 bg-glass-white/5 hover:border-gray-600': !provider.isActive,
+          }"
+        >
+          <!-- Card Header -->
+          <div class="flex items-start justify-between mb-6">
+            <div class="flex items-center space-x-4">
               <div 
-                class="w-2 h-2 rounded-full"
-                :class="provider.isActive ? 'bg-green-400' : 'bg-gray-500'"
-              ></div>
+                class="w-16 h-16 rounded-xl flex items-center justify-center"
+                :class="provider.isActive ? 'bg-cyber-purple/20' : 'bg-gray-700/50'"
+              >
+                <Icon 
+                  :icon="getProviderIcon(provider.providerCode)" 
+                  class="w-10 h-10"
+                  :class="provider.isActive ? 'text-cyber-purple' : 'text-gray-400'"
+                />
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-white">{{ provider.providerName }}</h3>
+                <p class="text-sm text-gray-400 mt-1">{{ provider.providerCode }}</p>
+              </div>
             </div>
-            <p class="text-sm text-gray-400 mb-2">{{ provider.providerCode }}</p>
-            <div class="flex items-center justify-between text-xs text-gray-500">
-              <span>{{ provider.modelsCount || 0 }} 个模型</span>
-              <span>{{ provider.activeKeysCount || 0 }} 个密钥</span>
+            
+            <!-- Enable Toggle Button -->
+            <div @click.stop>
+              <button
+                @click="toggleProviderActive(provider)"
+                class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
+                :class="provider.isActive ? 'bg-cyber-purple' : 'bg-gray-600'"
+              >
+                <span
+                  class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
+                  :class="provider.isActive ? 'translate-x-7' : 'translate-x-1'"
+                ></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card Content -->
+          <div class="space-y-4">
+            <p class="text-gray-300 text-sm line-clamp-2 min-h-[2.5rem]">
+              {{ provider.description || '暂无描述' }}
+            </p>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-glass-white/5 rounded-lg p-3">
+                <div class="flex items-center space-x-2 mb-1">
+                  <Icon icon="mdi:cube-outline" class="w-4 h-4 text-gray-400" />
+                  <span class="text-xs text-gray-400">模型数量</span>
+                </div>
+                <p class="text-2xl font-bold text-white">{{ provider.modelsCount || 0 }}</p>
+              </div>
+              
+              <div class="bg-glass-white/5 rounded-lg p-3">
+                <div class="flex items-center space-x-2 mb-1">
+                  <Icon icon="mdi:key-variant" class="w-4 h-4 text-gray-400" />
+                  <span class="text-xs text-gray-400">API密钥</span>
+                </div>
+                <p class="text-2xl font-bold text-white">{{ provider.activeKeysCount || 0 }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Click hint -->
+          <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="flex items-center space-x-1 text-cyber-purple text-sm">
+              <span>点击配置</span>
+              <Icon icon="mdi:chevron-right" class="w-5 h-5" />
             </div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div v-if="selectedProvider" class="pt-4 border-t border-gray-700/30">
-          <div class="flex items-center justify-between">
+    <!-- Provider Detail Drawer -->
+    <Teleport to="body">
+      <div 
+        v-if="showDetailDrawer" 
+        class="fixed inset-0 z-50 flex items-center justify-end bg-black/80 backdrop-blur-sm"
+        @click.self="closeDetailDrawer"
+      >
+        <div 
+          class="w-full max-w-4xl h-full bg-gray-900 border-l border-gray-700 overflow-y-auto"
+          @click.stop
+        >
+          <!-- Detail Header -->
+          <div class="sticky top-0 z-10 bg-gray-900 border-b border-gray-700 px-6 py-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <div 
+                  class="w-12 h-12 rounded-lg flex items-center justify-center"
+                  :class="selectedProvider?.isActive ? 'bg-cyber-purple/20' : 'bg-gray-700/50'"
+                >
+                  <Icon 
+                    :icon="getProviderIcon(selectedProvider?.providerCode)" 
+                    class="w-8 h-8"
+                    :class="selectedProvider?.isActive ? 'text-cyber-purple' : 'text-gray-400'"
+                  />
+                </div>
+                <div>
+                  <h2 class="text-2xl font-bold text-white">{{ selectedProvider?.providerName }}</h2>
+                  <p class="text-sm text-gray-400 mt-1">{{ selectedProvider?.description }}</p>
+                </div>
+              </div>
+              
+              <button
+                @click="closeDetailDrawer"
+                class="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <Icon icon="mdi:close" class="w-6 h-6 text-gray-400" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Detail Content -->
+          <div class="p-6 space-y-6">
+            <!-- Base URL -->
+            <div class="bg-glass-white/5 rounded-lg p-4">
+              <div class="flex items-center space-x-2 mb-2">
+                <Icon icon="mdi:web" class="w-5 h-5 text-gray-400" />
+                <span class="text-sm text-gray-400">API地址</span>
+              </div>
+              <p class="text-white font-mono text-sm">{{ selectedProvider?.baseUrl }}</p>
+            </div>
+
+            <!-- Models Section -->
             <div>
-              <h4 class="text-white font-semibold">{{ selectedProvider.providerName }}</h4>
-              <p class="text-sm text-gray-400 mt-1">{{ selectedProvider.description || '暂无描述' }}</p>
-              <p class="text-xs text-gray-500 mt-1">Base URL: {{ selectedProvider.baseUrl }}</p>
-            </div>
-            <CyberButton
-              variant="outline"
-              left-icon="mdi:sync"
-              @click="syncModels"
-              :loading="syncing"
-              size="sm"
-            >
-              同步模型
-            </CyberButton>
-          </div>
-        </div>
-      </div>
-    </CyberCard>
-
-    <!-- Models Management -->
-    <CyberCard v-if="selectedProvider" title="AI模型管理" :delay="100">
-      <div class="space-y-4">
-        <!-- Models List -->
-        <div v-if="models.length > 0" class="space-y-3">
-          <div 
-            v-for="model in models" 
-            :key="model.id"
-            class="p-4 rounded-lg border border-gray-700/30 bg-glass-white/5"
-            :class="{ 'border-cyber-purple': model.isDefault }"
-          >
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center space-x-3">
-                  <h4 class="text-white font-semibold">{{ model.modelName }}</h4>
-                  <span 
-                    v-if="model.isDefault"
-                    class="px-2 py-0.5 text-xs bg-cyber-purple/20 text-cyber-purple rounded"
-                  >
-                    默认
-                  </span>
-                  <span 
-                    class="px-2 py-0.5 text-xs rounded"
-                    :class="model.isActive ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'"
-                  >
-                    {{ model.isActive ? '已启用' : '已停用' }}
-                  </span>
-                </div>
-                <p class="text-sm text-gray-400 mt-1">{{ model.modelCode }}</p>
-                <div class="flex items-center space-x-4 text-xs text-gray-500 mt-2">
-                  <span v-if="model.maxInputTokens">输入: {{ model.maxInputTokens }} tokens</span>
-                  <span v-if="model.maxOutputTokens">输出: {{ model.maxOutputTokens }} tokens</span>
-                  <span v-if="model.supportsStreaming">流式输出</span>
-                  <span v-if="model.supportsFunctionCall">函数调用</span>
-                </div>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-white">AI模型</h3>
+                <CyberButton
+                  variant="outline"
+                  left-icon="mdi:sync"
+                  @click="syncModels"
+                  :loading="syncing"
+                  size="sm"
+                >
+                  同步模型
+                </CyberButton>
               </div>
-              
-              <div class="flex items-center space-x-2">
-                <button
-                  v-if="!model.isDefault"
-                  @click="setDefaultModel(model.id)"
-                  class="px-3 py-1 text-xs bg-cyber-purple/20 hover:bg-cyber-purple/30 text-cyber-purple rounded transition-colors"
-                >
-                  设为默认
-                </button>
-                <button
-                  @click="toggleModelActive(model.id, model.isActive)"
-                  class="px-3 py-1 text-xs rounded transition-colors"
-                  :class="model.isActive ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400' : 'bg-green-500/20 hover:bg-green-500/30 text-green-400'"
-                >
-                  {{ model.isActive ? '停用' : '启用' }}
-                </button>
-                <button
-                  @click="openModelConfig(model)"
-                  class="px-3 py-1 text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded transition-colors"
-                >
-                  配置参数
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div v-else class="text-center py-8 text-gray-500">
-          <Icon icon="mdi:package-variant" class="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>暂无模型，请点击"同步模型"按钮从供应商获取</p>
-        </div>
-      </div>
-    </CyberCard>
 
-    <!-- API Keys Management -->
-    <CyberCard v-if="selectedProvider" title="API密钥管理" :delay="200">
-      <div class="space-y-4">
-        <div class="flex justify-between items-center">
-          <p class="text-sm text-gray-400">管理当前供应商的API密钥和配额</p>
-          <CyberButton
-            left-icon="mdi:plus"
-            @click="openAddKeyDialog"
-            size="sm"
-          >
-            添加密钥
-          </CyberButton>
-        </div>
-
-        <!-- API Keys List -->
-        <div v-if="apiKeys.length > 0" class="space-y-3">
-          <div 
-            v-for="key in apiKeys" 
-            :key="key.id"
-            class="p-4 rounded-lg border border-gray-700/30 bg-glass-white/5"
-          >
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center space-x-3">
-                  <h4 class="text-white font-semibold">{{ key.keyName }}</h4>
-                  <span 
-                    class="px-2 py-0.5 text-xs rounded"
-                    :class="{
-                      'bg-green-500/20 text-green-400': key.status === 'normal',
-                      'bg-yellow-500/20 text-yellow-400': key.status === 'rate_limited',
-                      'bg-red-500/20 text-red-400': key.status === 'error',
-                      'bg-gray-500/20 text-gray-400': key.status === 'exhausted'
-                    }"
-                  >
-                    {{ getKeyStatusText(key.status) }}
-                  </span>
-                  <span 
-                    v-if="!key.isActive"
-                    class="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded"
-                  >
-                    已停用
-                  </span>
-                </div>
-                <p class="text-sm text-gray-400 mt-1 font-mono">{{ key.apiKey }}</p>
-                <div class="grid grid-cols-3 gap-4 mt-3">
-                  <div>
-                    <p class="text-xs text-gray-500">今日请求</p>
-                    <p class="text-sm text-white mt-1">{{ key.requestsCountToday }} / {{ key.rateLimitRpd }}</p>
-                  </div>
-                  <div>
-                    <p class="text-xs text-gray-500">今日Token</p>
-                    <p class="text-sm text-white mt-1">{{ key.tokensCountToday }}</p>
-                  </div>
-                  <div>
-                    <p class="text-xs text-gray-500">优先级</p>
-                    <p class="text-sm text-white mt-1">{{ key.priority }}</p>
+              <div v-if="models.length > 0" class="space-y-3">
+                <div 
+                  v-for="model in models" 
+                  :key="model.id"
+                  class="p-4 rounded-lg border border-gray-700/30 bg-glass-white/5"
+                  :class="{ 'border-cyber-purple': model.isDefault }"
+                >
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <div class="flex items-center space-x-3 mb-2">
+                        <h4 class="text-white font-semibold">{{ model.modelName }}</h4>
+                        <span 
+                          v-if="model.isDefault"
+                          class="px-2 py-0.5 text-xs bg-cyber-purple/20 text-cyber-purple rounded"
+                        >
+                          默认
+                        </span>
+                        <span 
+                          class="px-2 py-0.5 text-xs rounded"
+                          :class="model.isActive ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'"
+                        >
+                          {{ model.isActive ? '已启用' : '已停用' }}
+                        </span>
+                      </div>
+                      <p class="text-sm text-gray-400 mb-2">{{ model.modelCode }}</p>
+                      <div class="flex items-center space-x-4 text-xs text-gray-500">
+                        <span v-if="model.maxInputTokens">输入: {{ model.maxInputTokens }} tokens</span>
+                        <span v-if="model.maxOutputTokens">输出: {{ model.maxOutputTokens }} tokens</span>
+                        <span v-if="model.supportsStreaming">流式输出</span>
+                        <span v-if="model.supportsFunctionCall">函数调用</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2 ml-4">
+                      <button
+                        v-if="!model.isDefault"
+                        @click="setDefaultModel(model.id)"
+                        class="px-3 py-1 text-xs bg-cyber-purple/20 hover:bg-cyber-purple/30 text-cyber-purple rounded transition-colors"
+                      >
+                        设为默认
+                      </button>
+                      <button
+                        @click="toggleModelActive(model.id, model.isActive)"
+                        class="px-3 py-1 text-xs rounded transition-colors"
+                        :class="model.isActive ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400' : 'bg-green-500/20 hover:bg-green-500/30 text-green-400'"
+                      >
+                        {{ model.isActive ? '停用' : '启用' }}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div class="flex items-center space-x-2 ml-4">
-                <button
-                  @click="validateKey(key.id)"
-                  class="px-3 py-1 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"
-                  title="验证密钥"
+              <div v-else class="text-center py-8 text-gray-500">
+                <Icon icon="mdi:package-variant" class="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>暂无模型，请点击"同步模型"按钮</p>
+              </div>
+            </div>
+
+            <!-- API Keys Section -->
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-white">API密钥</h3>
+                <CyberButton
+                  left-icon="mdi:plus"
+                  @click="openAddKeyDialog"
+                  size="sm"
                 >
-                  验证
-                </button>
-                <button
-                  @click="openEditKeyDialog(key)"
-                  class="px-3 py-1 text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded transition-colors"
+                  添加密钥
+                </CyberButton>
+              </div>
+
+              <div v-if="apiKeys.length > 0" class="space-y-3">
+                <div 
+                  v-for="key in apiKeys" 
+                  :key="key.id"
+                  class="p-4 rounded-lg border border-gray-700/30 bg-glass-white/5"
                 >
-                  编辑
-                </button>
-                <button
-                  @click="deleteKey(key.id, key.keyName)"
-                  class="px-3 py-1 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors"
-                >
-                  删除
-                </button>
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <div class="flex items-center space-x-3 mb-2">
+                        <h4 class="text-white font-semibold">{{ key.keyName }}</h4>
+                        <span 
+                          class="px-2 py-0.5 text-xs rounded"
+                          :class="{
+                            'bg-green-500/20 text-green-400': key.status === 'normal',
+                            'bg-yellow-500/20 text-yellow-400': key.status === 'rate_limited',
+                            'bg-red-500/20 text-red-400': key.status === 'error',
+                            'bg-gray-500/20 text-gray-400': key.status === 'exhausted'
+                          }"
+                        >
+                          {{ getKeyStatusText(key.status) }}
+                        </span>
+                        <span 
+                          v-if="!key.isActive"
+                          class="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded"
+                        >
+                          已停用
+                        </span>
+                      </div>
+                      <p class="text-sm text-gray-400 font-mono mb-3">{{ key.apiKey }}</p>
+                      <div class="grid grid-cols-3 gap-4">
+                        <div>
+                          <p class="text-xs text-gray-500">今日请求</p>
+                          <p class="text-sm text-white mt-1">{{ key.requestsCountToday }} / {{ key.rateLimitRpd }}</p>
+                        </div>
+                        <div>
+                          <p class="text-xs text-gray-500">今日Token</p>
+                          <p class="text-sm text-white mt-1">{{ key.tokensCountToday }}</p>
+                        </div>
+                        <div>
+                          <p class="text-xs text-gray-500">优先级</p>
+                          <p class="text-sm text-white mt-1">{{ key.priority }}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2 ml-4">
+                      <button
+                        @click="validateKey(key.id)"
+                        class="px-3 py-1 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"
+                        title="验证密钥"
+                      >
+                        验证
+                      </button>
+                      <button
+                        @click="openEditKeyDialog(key)"
+                        class="px-3 py-1 text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded transition-colors"
+                      >
+                        编辑
+                      </button>
+                      <button
+                        @click="deleteKey(key.id, key.keyName)"
+                        class="px-3 py-1 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-else class="text-center py-8 text-gray-500">
+                <Icon icon="mdi:key-variant" class="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>暂无API密钥，请点击"添加密钥"按钮</p>
               </div>
             </div>
           </div>
         </div>
-        
-        <div v-else class="text-center py-8 text-gray-500">
-          <Icon icon="mdi:key-variant" class="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>暂无API密钥，请点击"添加密钥"按钮</p>
-        </div>
       </div>
-    </CyberCard>
+    </Teleport>
 
     <!-- Add/Edit API Key Dialog -->
     <Teleport to="body">
@@ -326,104 +417,12 @@
         </div>
       </div>
     </Teleport>
-
-    <!-- Model Config Dialog -->
-    <Teleport to="body">
-      <div 
-        v-if="showModelConfigDialog" 
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-        @click.self="closeModelConfigDialog"
-      >
-        <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-2xl mx-4 shadow-xl">
-          <h3 class="text-xl font-bold text-white mb-4">
-            配置模型参数 - {{ editingModel?.modelName }}
-          </h3>
-          
-          <div class="space-y-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                Temperature (创意度): {{ modelConfigForm.temperature }}
-              </label>
-              <input
-                v-model.number="modelConfigForm.temperature"
-                type="range"
-                min="0"
-                max="2"
-                step="0.1"
-                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-              />
-              <div class="flex justify-between text-xs text-gray-500 mt-1">
-                <span>保守(0)</span>
-                <span>创新(2)</span>
-              </div>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                Top P (采样多样性): {{ modelConfigForm.topP }}
-              </label>
-              <input
-                v-model.number="modelConfigForm.topP"
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-              />
-              <div class="flex justify-between text-xs text-gray-500 mt-1">
-                <span>集中(0)</span>
-                <span>多样(1)</span>
-              </div>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                Max Tokens (最大输出长度)
-              </label>
-              <input
-                v-model.number="modelConfigForm.maxTokens"
-                type="number"
-                min="1"
-                max="32000"
-                class="cyber-input"
-              />
-            </div>
-            
-            <div class="flex items-center space-x-2">
-              <input
-                v-model="modelConfigForm.stream"
-                type="checkbox"
-                id="streamEnabled"
-                class="rounded border-gray-600 bg-gray-700 text-cyber-purple focus:ring-cyber-purple"
-              />
-              <label for="streamEnabled" class="text-sm text-gray-300">启用流式输出</label>
-            </div>
-          </div>
-          
-          <div class="flex items-center justify-end space-x-3 mt-6">
-            <button
-              @click="closeModelConfigDialog"
-              class="px-4 py-2 text-gray-300 hover:text-white transition-colors"
-            >
-              取消
-            </button>
-            <CyberButton
-              @click="saveModelConfig"
-              :loading="saving"
-            >
-              保存配置
-            </CyberButton>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
-import CyberCard from '@/components/UI/CyberCard.vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
 import { aiProviderAPI, aiModelAPI, aiApiKeyAPI } from '@/api'
 
@@ -438,7 +437,8 @@ const selectedProvider = ref<any>(null)
 const models = ref<any[]>([])
 const apiKeys = ref<any[]>([])
 
-// Dialogs
+// Drawer & Dialogs
+const showDetailDrawer = ref(false)
 const showKeyDialog = ref(false)
 const editingKey = ref<any>(null)
 const keyForm = ref({
@@ -450,26 +450,11 @@ const keyForm = ref({
   isActive: true
 })
 
-const showModelConfigDialog = ref(false)
-const editingModel = ref<any>(null)
-const modelConfigForm = ref({
-  temperature: 0.7,
-  topP: 0.9,
-  maxTokens: 2000,
-  stream: true
-})
-
 // Methods
 const loadAllData = async () => {
   loading.value = true
   try {
     await loadProviders()
-    if (selectedProvider.value) {
-      await Promise.all([
-        loadModels(selectedProvider.value.id),
-        loadApiKeys(selectedProvider.value.id)
-      ])
-    }
   } catch (error) {
     console.error('Failed to load data:', error)
     alert('加载数据失败，请重试')
@@ -483,11 +468,6 @@ const loadProviders = async () => {
     const response = await aiProviderAPI.getProviders()
     if (response.code === 200) {
       providers.value = response.data
-      // 自动选择第一个启用的Provider
-      if (!selectedProvider.value && providers.value.length > 0) {
-        const firstActive = providers.value.find(p => p.isActive) || providers.value[0]
-        await selectProvider(firstActive)
-      }
     }
   } catch (error) {
     console.error('Failed to load providers:', error)
@@ -495,16 +475,48 @@ const loadProviders = async () => {
   }
 }
 
-const selectProvider = async (provider: any) => {
+const openProviderDetail = async (provider: any) => {
   selectedProvider.value = provider
+  showDetailDrawer.value = true
   models.value = []
   apiKeys.value = []
   
-  if (provider) {
-    await Promise.all([
-      loadModels(provider.id),
-      loadApiKeys(provider.id)
-    ])
+  await Promise.all([
+    loadModels(provider.id),
+    loadApiKeys(provider.id)
+  ])
+}
+
+const closeDetailDrawer = () => {
+  showDetailDrawer.value = false
+  selectedProvider.value = null
+  models.value = []
+  apiKeys.value = []
+}
+
+const toggleProviderActive = async (provider: any) => {
+  try {
+    // 如果要启用，先禁用其他所有provider
+    if (!provider.isActive) {
+      for (const p of providers.value) {
+        if (p.id !== provider.id && p.isActive) {
+          await aiProviderAPI.updateProvider(p.id, { isActive: false })
+        }
+      }
+    }
+    
+    // 切换当前provider状态
+    const response = await aiProviderAPI.updateProvider(provider.id, { 
+      isActive: !provider.isActive 
+    })
+    
+    if (response.code === 200) {
+      alert(`${provider.providerName} 已${provider.isActive ? '停用' : '启用'}`)
+      await loadProviders()
+    }
+  } catch (error: any) {
+    console.error('Failed to toggle provider:', error)
+    alert(`操作失败: ${error.message || '未知错误'}`)
   }
 }
 
@@ -571,48 +583,6 @@ const toggleModelActive = async (modelId: number, currentState: boolean) => {
   } catch (error: any) {
     console.error('Failed to toggle model:', error)
     alert(`操作失败: ${error.message || '未知错误'}`)
-  }
-}
-
-const openModelConfig = (model: any) => {
-  editingModel.value = model
-  
-  // 从model的configJson加载配置
-  const config = model.configJson || {}
-  modelConfigForm.value = {
-    temperature: config.temperature || 0.7,
-    topP: config.topP || 0.9,
-    maxTokens: config.maxTokens || 2000,
-    stream: config.stream !== false
-  }
-  
-  showModelConfigDialog.value = true
-}
-
-const closeModelConfigDialog = () => {
-  showModelConfigDialog.value = false
-  editingModel.value = null
-}
-
-const saveModelConfig = async () => {
-  if (!editingModel.value) return
-  
-  saving.value = true
-  try {
-    const response = await aiModelAPI.updateModel(editingModel.value.id, {
-      configJson: modelConfigForm.value
-    })
-    
-    if (response.code === 200) {
-      alert('模型配置保存成功')
-      closeModelConfigDialog()
-      await loadModels(selectedProvider.value.id)
-    }
-  } catch (error: any) {
-    console.error('Failed to save model config:', error)
-    alert(`保存失败: ${error.message || '未知错误'}`)
-  } finally {
-    saving.value = false
   }
 }
 
@@ -739,6 +709,17 @@ const getKeyStatusText = (status: string): string => {
     'exhausted': '已耗尽'
   }
   return statusMap[status] || status
+}
+
+const getProviderIcon = (providerCode: string): string => {
+  const iconMap: Record<string, string> = {
+    'openai': 'simple-icons:openai',
+    'anthropic': 'simple-icons:anthropic',
+    'claude': 'simple-icons:anthropic',
+    'deepseek': 'mdi:brain',
+    'gemini': 'simple-icons:google'
+  }
+  return iconMap[providerCode] || 'mdi:robot'
 }
 
 // Lifecycle

@@ -10,7 +10,8 @@
 INSERT INTO `t_ai_providers` (`provider_code`, `provider_name`, `base_url`, `is_active`, `sort_order`, `description`) VALUES
 ('openai', 'OpenAI', 'https://api.openai.com/v1', 1, 100, 'OpenAI GPT系列模型，包括GPT-4o、GPT-4 Turbo等'),
 ('anthropic', 'Anthropic Claude', 'https://api.anthropic.com', 1, 90, 'Anthropic Claude系列模型，包括Claude 3.5 Sonnet等'),
-('deepseek', 'DeepSeek', 'https://api.deepseek.com', 1, 80, 'DeepSeek系列模型，高性价比的中文大模型');
+('deepseek', 'DeepSeek', 'https://api.deepseek.com', 1, 80, 'DeepSeek系列模型，高性价比的中文大模型'),
+('gemini', 'Google Gemini', 'https://generativelanguage.googleapis.com', 1, 70, 'Google Gemini系列模型，强大的多模态AI');
 
 -- 2. 插入OpenAI模型
 INSERT INTO `t_ai_models` (`provider_id`, `model_code`, `model_name`, `model_type`, `max_input_tokens`, `max_output_tokens`, `supports_streaming`, `supports_function_call`, `supports_vision`, `cost_per_1k_prompt_tokens`, `cost_per_1k_completion_tokens`, `is_active`, `is_default`, `sort_order`, `description`) 
@@ -204,6 +205,64 @@ SELECT
   80,
   'DeepSeek代码模型，专注于代码生成和理解'
 FROM `t_ai_providers` p WHERE p.provider_code = 'deepseek';
+
+-- 5. 插入Gemini模型
+INSERT INTO `t_ai_models` (`provider_id`, `model_code`, `model_name`, `model_type`, `max_input_tokens`, `max_output_tokens`, `supports_streaming`, `supports_function_call`, `supports_vision`, `cost_per_1k_prompt_tokens`, `cost_per_1k_completion_tokens`, `is_active`, `is_default`, `sort_order`, `description`) 
+SELECT 
+  p.id,
+  'gemini-2.0-flash-exp',
+  'Gemini 2.0 Flash',
+  'chat',
+  1000000,
+  8192,
+  1,
+  1,
+  1,
+  0.000000,
+  0.000000,
+  1,
+  1,
+  100,
+  'Gemini 2.0 Flash实验版，多模态AI模型'
+FROM `t_ai_providers` p WHERE p.provider_code = 'gemini';
+
+INSERT INTO `t_ai_models` (`provider_id`, `model_code`, `model_name`, `model_type`, `max_input_tokens`, `max_output_tokens`, `supports_streaming`, `supports_function_call`, `supports_vision`, `cost_per_1k_prompt_tokens`, `cost_per_1k_completion_tokens`, `is_active`, `is_default`, `sort_order`, `description`) 
+SELECT 
+  p.id,
+  'gemini-1.5-pro',
+  'Gemini 1.5 Pro',
+  'chat',
+  2000000,
+  8192,
+  1,
+  1,
+  1,
+  0.001250,
+  0.005000,
+  1,
+  0,
+  90,
+  'Gemini 1.5 Pro，超长上下文窗口'
+FROM `t_ai_providers` p WHERE p.provider_code = 'gemini';
+
+INSERT INTO `t_ai_models` (`provider_id`, `model_code`, `model_name`, `model_type`, `max_input_tokens`, `max_output_tokens`, `supports_streaming`, `supports_function_call`, `supports_vision`, `cost_per_1k_prompt_tokens`, `cost_per_1k_completion_tokens`, `is_active`, `is_default`, `sort_order`, `description`) 
+SELECT 
+  p.id,
+  'gemini-1.5-flash',
+  'Gemini 1.5 Flash',
+  'chat',
+  1000000,
+  8192,
+  1,
+  1,
+  1,
+  0.000075,
+  0.000300,
+  1,
+  0,
+  80,
+  'Gemini 1.5 Flash，快速且经济'
+FROM `t_ai_providers` p WHERE p.provider_code = 'gemini';
 
 -- 注意: API Keys需要管理员手动添加，不在seed数据中包含
 -- 管理员应该通过管理后台或API添加真实的API密钥
