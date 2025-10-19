@@ -40,6 +40,7 @@ export class AIChatController {
         'providerService'
       ].providerRepo.findOne({
         where: { isActive: true },
+        relations: ['models'],
       });
 
       console.log('[prompt-completion] 查询到的活跃Provider:', activeProvider);
@@ -51,8 +52,18 @@ export class AIChatController {
         };
       }
 
+      // 如果请求没有指定model，则使用该Provider的默认模型
+      let modelToUse = dto.model;
+      if (!modelToUse && activeProvider.models && activeProvider.models.length > 0) {
+        const defaultModel = activeProvider.models.find(m => m.isDefault && m.isActive);
+        if (defaultModel) {
+          modelToUse = defaultModel.modelCode;
+          console.log(`[prompt-completion] 使用默认模型: ${modelToUse}`);
+        }
+      }
+
       console.log(
-        `[prompt-completion] 使用Provider: ${activeProvider.providerCode}`,
+        `[prompt-completion] 使用Provider: ${activeProvider.providerCode}, 模型: ${modelToUse || 'provider默认'}`,
       );
 
       // 调用AI服务
@@ -60,7 +71,7 @@ export class AIChatController {
         activeProvider.providerCode,
         {
           messages: dto.messages,
-          model: dto.model,
+          model: modelToUse,
           maxTokens: dto.maxTokens,
           temperature: dto.temperature,
           topP: dto.topP,

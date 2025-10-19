@@ -27,6 +27,8 @@ export class GeminiClient extends BaseAIClient {
   ): Promise<ChatCompletionResponse> {
     return this.executeWithRetry(async () => {
       try {
+        // 如果没有指定model，使用gemini-1.5-flash作为fallback
+        // 正常情况下应该由调用方指定model（从数据库配置中读取）
         const modelName = request.model || 'gemini-1.5-flash';
         const model = this.genAI.getGenerativeModel({ model: modelName });
 
