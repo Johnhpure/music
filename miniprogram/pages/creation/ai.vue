@@ -339,34 +339,60 @@
 				}
 			},
 			// 生成歌词
-			generateLyrics() {
+			async generateLyrics() {
 				if(!this.canGenerate) return;
 				
-				// 设置生成状态
-				this.isGenerating = true;
-				
-				// 获取提示词
 				const prompt = this.customPrompt.trim();
 				
-				// 模拟生成过程（实际项目中应调用AI服务）
-				setTimeout(() => {
-					// 生成两个版本的歌词
-					this.generatedVersions = [
-						{
-							title: '心动瞬间',
-							content: `[Verse 1]\n初见你的那个瞬间\n时光仿佛凝固了画面\n你的微笑如此美丽\n让我心跳加速难以平静\n\n[Chorus]\n心动的感觉\n像春风吹过心田\n忍不住想靠近你身边\n无论风雨走多远\n始终有你陪在身边\n\n[Verse 2]\n回忆中的每一天\n都因为有你而温暖\n牵着你的手一起走\n看遍这世界的美丽风景线\n\n[Chorus]\n心动的感觉\n像春风吹过心田\n忍不住想靠近你身边\n无论风雨走多远\n始终有你陪在身边`
-						},
-						{
-							title: '第一眼的心动',
-							content: `[Verse 1]\n人海中看到你的第一眼\n像是命中注定的相见\n你的笑容如此灿烂\n照亮了我所有的世界\n\n[Pre-Chorus]\n靠近你的每一步\n心跳都不受控制\n想要认识你却不知如何开口\n只能默默记住这感觉\n\n[Chorus]\n第一眼的心动 无法形容\n像是流星划过天空\n点燃了我内心的火焰\n只想和你一起 走过四季变换\n\n[Verse 2]\n回忆那天的每个画面\n你的声音仿佛就在耳边\n偶然的相识\n却让我念念不忘到永远`
-						}
-					];
+				this.isGenerating = true;
+				
+				try {
+					const res = await this.$minApi.promptCompletion({
+						messages: [
+							{
+								role: 'system',
+								content: '你是一位专业的歌词创作者，擅长创作富有情感和诗意的中文歌词。请根据用户的提示词创作一首完整的歌词，包含verse和chorus部分。'
+							},
+							{
+								role: 'user',
+								content: prompt
+							}
+						],
+						maxTokens: 1000,
+						temperature: 0.8
+					});
 					
-					// 更新状态
+					if (res.code === 200 && res.data) {
+						const lyricsContent = res.data.content || '';
+						
+						if (!lyricsContent) {
+							throw new Error('生成的歌词内容为空');
+						}
+						
+						this.generatedVersions = [
+							{
+								title: '生成的歌词',
+								content: lyricsContent
+							}
+						];
+						
+						this.isGenerated = true;
+						this.currentStep = 1;
+						
+						console.log('歌词生成成功，使用模型:', res.data.usedProvider?.name);
+					} else {
+						throw new Error(res.message || 'AI服务调用失败');
+					}
+				} catch (error) {
+					console.error('生成歌词失败:', error);
+					uni.showToast({
+						title: error.message || '生成失败，请重试',
+						icon: 'none',
+						duration: 2000
+					});
+				} finally {
 					this.isGenerating = false;
-					this.isGenerated = true;
-					this.currentStep = 1; // 确保当前步骤为1
-				}, 3000);
+				}
 			},
 			// 选择版本
 			selectVersion(index) {

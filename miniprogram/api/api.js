@@ -373,6 +373,20 @@ export default {
 		 */
 		expandInspiration(params) {
 			return minRequest.post('/user/ai/expand-inspiration', params)
+		},
+		
+		/**
+		 * AI提示词完成接口（自动选择启用的模型）
+		 * @param {Object} params - 完成参数
+		 * @param {Array} params.messages - 消息数组，每个消息包含role和content
+		 * @param {String} [params.model] - AI模型（可选）
+		 * @param {Number} [params.maxTokens] - 最大token数（可选）
+		 * @param {Number} [params.temperature] - 温度参数0-2（可选）
+		 * @param {Number} [params.topP] - topP参数0-1（可选）
+		 * @returns {Promise}
+		 */
+		promptCompletion(params) {
+			return minRequest.post('/user/ai/chat/prompt-completion', params)
 		}
 	}
 }
