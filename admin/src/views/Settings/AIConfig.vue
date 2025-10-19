@@ -125,15 +125,15 @@
       </div>
     </div>
 
-    <!-- Provider Detail Drawer -->
+    <!-- Provider Detail Modal (Centered) -->
     <Teleport to="body">
       <div 
         v-if="showDetailDrawer" 
-        class="fixed inset-0 z-50 flex items-center justify-end bg-black/80 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
         @click.self="closeDetailDrawer"
       >
         <div 
-          class="w-full max-w-4xl h-full bg-gray-900 border-l border-gray-700 overflow-y-auto"
+          class="w-full max-w-3xl max-h-[90vh] bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col"
           @click.stop
         >
           <!-- Detail Header -->
@@ -173,243 +173,257 @@
           </div>
 
 
-          <!-- 配置向导区域 -->
-          <div class="bg-glass-white/5 border-b border-gray-700 px-6 py-4">
-            <!-- 步骤指示器 -->
-            <div class="flex items-center justify-center mb-4">
-              <div class="flex items-center space-x-4">
-                <div 
-                  v-for="step in 3" 
-                  :key="step"
-                  class="flex items-center"
-                >
-                  <div 
-                    class="flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all"
-                    :class="{
-                      'border-cyber-purple bg-cyber-purple text-white': configStep >= step,
-                      'border-gray-600 bg-gray-800 text-gray-400': configStep < step
-                    }"
+          <!-- 配置内容区域 - 使用Tab布局 -->
+          <div class="flex-1 overflow-y-auto">
+            <TabGroup>
+              <TabList class="flex border-b border-gray-700/50 px-6 bg-gray-800/30 sticky top-0 z-10">
+                <Tab v-slot="{ selected }" class="outline-none">
+                  <button
+                    class="px-6 py-4 text-sm font-medium transition-all relative"
+                    :class="selected 
+                      ? 'text-cyber-purple' 
+                      : 'text-gray-400 hover:text-gray-300'"
                   >
-                    <Icon 
-                      v-if="configStep > step"
-                      icon="mdi:check" 
-                      class="w-5 h-5" 
-                    />
-                    <span v-else class="text-sm font-bold">{{ step }}</span>
-                  </div>
-                  <div 
-                    v-if="step < 3"
-                    class="w-16 h-0.5 mx-2"
-                    :class="configStep > step ? 'bg-cyber-purple' : 'bg-gray-600'"
-                  ></div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 步骤标题 -->
-            <div class="text-center mb-4">
-              <h3 class="text-lg font-semibold text-white">
-                <span v-if="configStep === 1">步骤 1: 配置API密钥</span>
-                <span v-else-if="configStep === 2">步骤 2: 选择模型</span>
-                <span v-else>步骤 3: 测试连接</span>
-              </h3>
-              <p class="text-sm text-gray-400 mt-1">
-                <span v-if="configStep === 1">添加并选择一个API密钥</span>
-                <span v-else-if="configStep === 2">同步并选择要使用的模型</span>
-                <span v-else>测试API连接是否正常</span>
-              </p>
-            </div>
+                    <span class="flex items-center space-x-2">
+                      <Icon icon="mdi:lightning-bolt" class="w-4 h-4" />
+                      <span>快速配置</span>
+                    </span>
+                    <div 
+                      v-if="selected" 
+                      class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyber-purple to-pink-500"
+                    ></div>
+                  </button>
+                </Tab>
+                <Tab v-slot="{ selected }" class="outline-none">
+                  <button
+                    class="px-6 py-4 text-sm font-medium transition-all relative"
+                    :class="selected 
+                      ? 'text-cyber-purple' 
+                      : 'text-gray-400 hover:text-gray-300'"
+                  >
+                    <span class="flex items-center space-x-2">
+                      <Icon icon="mdi:cog" class="w-4 h-4" />
+                      <span>详细配置</span>
+                    </span>
+                    <div 
+                      v-if="selected" 
+                      class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyber-purple to-pink-500"
+                    ></div>
+                  </button>
+                </Tab>
+              </TabList>
 
-            <!-- 步骤内容 -->
-            <div class="space-y-4">
-              <!-- 步骤1: 配置KEY -->
-              <div v-if="configStep === 1" class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="text-sm text-gray-300">选择或添加API密钥</span>
-                  <CyberButton
-                    left-icon="mdi:plus"
-                    @click="openAddKeyDialog"
-                    size="sm"
-                  >
-                    添加密钥
-                  </CyberButton>
-                </div>
-                
-                <div v-if="apiKeys.length > 0" class="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
-                  <div 
-                    v-for="key in apiKeys" 
-                    :key="key.id"
-                    @click="selectApiKey(key.id)"
-                    class="p-3 rounded-lg border-2 cursor-pointer transition-all"
-                    :class="{
-                      'border-cyber-purple bg-cyber-purple/10': selectedKeyId === key.id,
-                      'border-gray-700 bg-gray-800/50 hover:border-gray-600': selectedKeyId !== key.id
-                    }"
-                  >
-                    <div class="flex items-center justify-between">
-                      <div class="flex-1">
-                        <h4 class="text-white font-medium text-sm">{{ key.keyName }}</h4>
-                        <p class="text-xs text-gray-400 font-mono mt-1">{{ key.apiKey }}</p>
-                      </div>
-                      <Icon 
-                        v-if="selectedKeyId === key.id"
-                        icon="mdi:check-circle" 
-                        class="w-5 h-5 text-cyber-purple" 
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div v-else class="text-center py-6 text-gray-500">
-                  <Icon icon="mdi:key-variant" class="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p class="text-sm">暂无API密钥，请点击"添加密钥"按钮</p>
-                </div>
-                
-                <div class="flex justify-end space-x-2 pt-2">
-                  <CyberButton
-                    variant="outline"
-                    @click="closeDetailDrawer"
-                  >
-                    取消
-                  </CyberButton>
-                  <CyberButton
-                    @click="nextStep"
-                    :disabled="!selectedKeyId"
-                  >
-                    下一步
-                  </CyberButton>
-                </div>
-              </div>
-
-              <!-- 步骤2: 选择模型 -->
-              <div v-if="configStep === 2" class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="text-sm text-gray-300">选择一个模型</span>
-                  <CyberButton
-                    variant="outline"
-                    left-icon="mdi:sync"
-                    @click="syncModels"
-                    :loading="syncing"
-                    size="sm"
-                  >
-                    同步模型
-                  </CyberButton>
-                </div>
-                
-                <div v-if="models.length > 0" class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-                  <div 
-                    v-for="model in models.filter(m => m.isActive)" 
-                    :key="model.id"
-                    @click="selectModel(model.id)"
-                    class="p-3 rounded-lg border-2 cursor-pointer transition-all"
-                    :class="{
-                      'border-cyber-purple bg-cyber-purple/10': selectedModelId === model.id,
-                      'border-gray-700 bg-gray-800/50 hover:border-gray-600': selectedModelId !== model.id
-                    }"
-                  >
-                    <div class="flex items-center justify-between">
-                      <div class="flex-1">
-                        <div class="flex items-center space-x-2">
-                          <h4 class="text-white font-medium text-sm">{{ model.modelName }}</h4>
-                          <span 
-                            v-if="model.isDefault"
-                            class="px-2 py-0.5 text-xs bg-cyber-purple/20 text-cyber-purple rounded"
-                          >
-                            默认
-                          </span>
+              <TabPanels class="p-6">
+                <!-- 快速配置面板 -->
+                <TabPanel>
+                  <div class="space-y-6">
+                    <!-- 步骤1: API密钥 -->
+                    <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                      <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                          <div class="w-10 h-10 rounded-lg bg-cyber-purple/20 flex items-center justify-center">
+                            <Icon icon="mdi:key-variant" class="w-5 h-5 text-cyber-purple" />
+                          </div>
+                          <div>
+                            <h3 class="text-lg font-semibold text-white">API密钥</h3>
+                            <p class="text-xs text-gray-400">添加并选择一个API密钥</p>
+                          </div>
                         </div>
-                        <p class="text-xs text-gray-400 mt-1">{{ model.modelCode }}</p>
+                        <CyberButton
+                          left-icon="mdi:plus"
+                          @click="openAddKeyDialog"
+                          size="sm"
+                        >
+                          添加密钥
+                        </CyberButton>
                       </div>
-                      <Icon 
-                        v-if="selectedModelId === model.id"
-                        icon="mdi:check-circle" 
-                        class="w-5 h-5 text-cyber-purple" 
-                      />
+                      
+                      <div v-if="apiKeys.length > 0" class="space-y-2 max-h-48 overflow-y-auto pr-2">
+                        <div 
+                          v-for="key in apiKeys" 
+                          :key="key.id"
+                          @click="selectApiKey(key.id)"
+                          class="p-4 rounded-lg border-2 cursor-pointer transition-all hover:scale-[1.02]"
+                          :class="{
+                            'border-cyber-purple bg-cyber-purple/10 shadow-lg shadow-cyber-purple/20': selectedKeyId === key.id,
+                            'border-gray-700/50 bg-gray-800/30 hover:border-gray-600': selectedKeyId !== key.id
+                          }"
+                        >
+                          <div class="flex items-center justify-between">
+                            <div class="flex-1 min-w-0">
+                              <div class="flex items-center space-x-2">
+                                <h4 class="text-white font-medium text-sm">{{ key.keyName }}</h4>
+                                <span 
+                                  class="px-2 py-0.5 text-xs rounded-full"
+                                  :class="{
+                                    'bg-green-500/20 text-green-400': key.status === 'normal',
+                                    'bg-yellow-500/20 text-yellow-400': key.status === 'rate_limited',
+                                    'bg-red-500/20 text-red-400': key.status === 'error'
+                                  }"
+                                >
+                                  {{ getKeyStatusText(key.status) }}
+                                </span>
+                              </div>
+                              <p class="text-xs text-gray-400 font-mono mt-1 truncate">{{ key.apiKey }}</p>
+                            </div>
+                            <Icon 
+                              v-if="selectedKeyId === key.id"
+                              icon="mdi:check-circle" 
+                              class="w-6 h-6 text-cyber-purple ml-3 flex-shrink-0 animate-pulse" 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div v-else class="text-center py-8 text-gray-500">
+                        <Icon icon="mdi:key-variant" class="w-12 h-12 mx-auto mb-3 opacity-30" />
+                        <p class="text-sm">暂无API密钥，请点击"添加密钥"按钮</p>
+                      </div>
+                    </div>
+
+                    <!-- 步骤2: 选择模型 -->
+                    <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                      <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                          <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                            <Icon icon="mdi:cube-outline" class="w-5 h-5 text-blue-400" />
+                          </div>
+                          <div>
+                            <h3 class="text-lg font-semibold text-white">AI模型</h3>
+                            <p class="text-xs text-gray-400">同步并选择要使用的模型</p>
+                          </div>
+                        </div>
+                        <CyberButton
+                          variant="outline"
+                          left-icon="mdi:sync"
+                          @click="syncModels"
+                          :loading="syncing"
+                          size="sm"
+                        >
+                          同步模型
+                        </CyberButton>
+                      </div>
+                      
+                      <div v-if="models.length > 0" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                        <div 
+                          v-for="model in models.filter(m => m.isActive)" 
+                          :key="model.id"
+                          @click="selectModel(model.id)"
+                          class="p-4 rounded-lg border-2 cursor-pointer transition-all hover:scale-[1.02]"
+                          :class="{
+                            'border-cyber-purple bg-cyber-purple/10 shadow-lg shadow-cyber-purple/20': selectedModelId === model.id,
+                            'border-gray-700/50 bg-gray-800/30 hover:border-gray-600': selectedModelId !== model.id
+                          }"
+                        >
+                          <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                              <div class="flex items-center space-x-2 mb-1">
+                                <h4 class="text-white font-medium text-sm">{{ model.modelName }}</h4>
+                                <span 
+                                  v-if="model.isDefault"
+                                  class="px-2 py-0.5 text-xs bg-gradient-to-r from-cyber-purple to-pink-500 text-white rounded-full"
+                                >
+                                  默认
+                                </span>
+                              </div>
+                              <p class="text-xs text-gray-400 font-mono">{{ model.modelCode }}</p>
+                              <div class="flex items-center space-x-3 mt-2 text-xs text-gray-500">
+                                <span v-if="model.maxInputTokens">📥 {{ model.maxInputTokens }}</span>
+                                <span v-if="model.maxOutputTokens">📤 {{ model.maxOutputTokens }}</span>
+                                <span v-if="model.supportsStreaming" class="text-green-400">⚡ 流式</span>
+                              </div>
+                            </div>
+                            <Icon 
+                              v-if="selectedModelId === model.id"
+                              icon="mdi:check-circle" 
+                              class="w-6 h-6 text-cyber-purple ml-3 animate-pulse" 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div v-else class="text-center py-8 text-gray-500">
+                        <Icon icon="mdi:package-variant" class="w-12 h-12 mx-auto mb-3 opacity-30" />
+                        <p class="text-sm">暂无模型，请点击"同步模型"按钮</p>
+                      </div>
+                    </div>
+
+                    <!-- 步骤3: 测试与保存 -->
+                    <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                      <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                          <Icon icon="mdi:connection" class="w-5 h-5 text-green-400" />
+                        </div>
+                        <div>
+                          <h3 class="text-lg font-semibold text-white">测试连接</h3>
+                          <p class="text-xs text-gray-400">验证配置是否正确</p>
+                        </div>
+                      </div>
+                      
+                      <div class="space-y-4">
+                        <div class="flex justify-center">
+                          <CyberButton
+                            left-icon="mdi:connection"
+                            @click="testConnection"
+                            :loading="testing"
+                            :disabled="!selectedKeyId"
+                            size="lg"
+                            class="w-full md:w-auto"
+                          >
+                            {{ testing ? '测试中...' : '开始测试连接' }}
+                          </CyberButton>
+                        </div>
+                        
+                        <div 
+                          v-if="testResult" 
+                          class="p-4 rounded-lg border-2 animate-fade-in"
+                          :class="{
+                            'border-green-500/50 bg-green-500/10': testResult.success,
+                            'border-red-500/50 bg-red-500/10': !testResult.success
+                          }"
+                        >
+                          <div class="flex items-start space-x-3">
+                            <Icon 
+                              :icon="testResult.success ? 'mdi:check-circle' : 'mdi:alert-circle'" 
+                              class="w-7 h-7 flex-shrink-0"
+                              :class="testResult.success ? 'text-green-400' : 'text-red-400'"
+                            />
+                            <div class="flex-1">
+                              <h4 
+                                class="font-semibold mb-1 text-base"
+                                :class="testResult.success ? 'text-green-400' : 'text-red-400'"
+                              >
+                                {{ testResult.success ? '✓ 测试成功' : '✗ 测试失败' }}
+                              </h4>
+                              <p class="text-sm text-gray-300">{{ testResult.message }}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 pt-2">
+                          <CyberButton
+                            variant="outline"
+                            @click="closeDetailDrawer"
+                          >
+                            取消
+                          </CyberButton>
+                          <CyberButton
+                            @click="saveCompleteConfig"
+                            :loading="saving"
+                            :disabled="!selectedKeyId || !selectedModelId"
+                            left-icon="mdi:content-save"
+                          >
+                            保存配置
+                          </CyberButton>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                <div v-else class="text-center py-6 text-gray-500">
-                  <Icon icon="mdi:package-variant" class="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p class="text-sm">暂无模型，请点击"同步模型"按钮</p>
-                </div>
-                
-                <div class="flex justify-end space-x-2 pt-2">
-                  <CyberButton
-                    variant="outline"
-                    @click="prevStep"
-                  >
-                    上一步
-                  </CyberButton>
-                  <CyberButton
-                    @click="nextStep"
-                    :disabled="!selectedModelId"
-                  >
-                    下一步
-                  </CyberButton>
-                </div>
-              </div>
+                </TabPanel>
 
-              <!-- 步骤3: 测试连接 -->
-              <div v-if="configStep === 3" class="space-y-4">
-                <div class="text-center">
-                  <CyberButton
-                    left-icon="mdi:connection"
-                    @click="testConnection"
-                    :loading="testing"
-                    size="lg"
-                  >
-                    {{ testing ? '测试中...' : '开始测试连接' }}
-                  </CyberButton>
-                </div>
-                
-                <div 
-                  v-if="testResult" 
-                  class="p-4 rounded-lg border-2"
-                  :class="{
-                    'border-green-500 bg-green-500/10': testResult.success,
-                    'border-red-500 bg-red-500/10': !testResult.success
-                  }"
-                >
-                  <div class="flex items-start space-x-3">
-                    <Icon 
-                      :icon="testResult.success ? 'mdi:check-circle' : 'mdi:alert-circle'" 
-                      class="w-6 h-6 flex-shrink-0"
-                      :class="testResult.success ? 'text-green-400' : 'text-red-400'"
-                    />
-                    <div class="flex-1">
-                      <h4 
-                        class="font-semibold mb-1"
-                        :class="testResult.success ? 'text-green-400' : 'text-red-400'"
-                      >
-                        {{ testResult.success ? '测试成功' : '测试失败' }}
-                      </h4>
-                      <p class="text-sm text-gray-300">{{ testResult.message }}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="flex justify-end space-x-2 pt-2">
-                  <CyberButton
-                    variant="outline"
-                    @click="prevStep"
-                  >
-                    上一步
-                  </CyberButton>
-                  <CyberButton
-                    @click="saveCompleteConfig"
-                    :loading="saving"
-                    :disabled="!testResult?.success && !testResult"
-                  >
-                    保存配置
-                  </CyberButton>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Detail Content -->
-          <div class="p-6 space-y-6">
+                <!-- 详细配置面板 -->
+                <TabPanel>
+                  <div class="space-y-6">
             <!-- API Configuration -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Base URL -->
@@ -653,6 +667,10 @@
                 <p>暂无API密钥，请点击"添加密钥"按钮</p>
               </div>
             </div>
+                  </div>
+                </TabPanel>
+              </TabPanels>
+            </TabGroup>
           </div>
         </div>
       </div>
@@ -748,6 +766,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
 import { aiProviderAPI, aiModelAPI, aiApiKeyAPI } from '@/api'
 
@@ -1265,5 +1284,20 @@ onMounted(() => {
 <style scoped>
 .cyber-input {
   @apply w-full px-4 py-2 bg-glass-white/10 backdrop-blur-xl border border-gray-700/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyber-purple focus:ring-1 focus:ring-cyber-purple transition-all duration-300;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
 }
 </style>
