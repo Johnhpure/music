@@ -13,25 +13,26 @@ export class AIApiLog {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true, comment: '日志ID' })
   id: number;
 
-  @Column({ type: 'int', unsigned: true, comment: '供应商ID' })
+  @Column({ name: 'provider_id', type: 'int', unsigned: true, comment: '供应商ID' })
   providerId: number;
 
-  @Column({ type: 'int', unsigned: true, nullable: true, comment: '模型ID' })
+  @Column({ name: 'model_id', type: 'int', unsigned: true, nullable: true, comment: '模型ID' })
   modelId: number;
 
-  @Column({ type: 'int', unsigned: true, comment: '使用的密钥ID' })
+  @Column({ name: 'key_id', type: 'int', unsigned: true, comment: '使用的密钥ID' })
   keyId: number;
 
-  @Column({ type: 'int', unsigned: true, nullable: true, comment: '用户ID' })
+  @Column({ name: 'user_id', type: 'int', unsigned: true, nullable: true, comment: '用户ID' })
   userId: number;
 
-  @Column({ length: 50, comment: '请求类型' })
+  @Column({ name: 'request_type', length: 50, comment: '请求类型' })
   requestType: string;
 
-  @Column({ length: 100, comment: '使用的模型代码' })
+  @Column({ name: 'model_code', length: 100, comment: '使用的模型代码' })
   modelCode: string;
 
   @Column({
+    name: 'prompt_tokens',
     type: 'int',
     unsigned: true,
     default: 0,
@@ -39,25 +40,26 @@ export class AIApiLog {
   })
   promptTokens: number;
 
-  @Column({ type: 'int', unsigned: true, default: 0, comment: '完成Token数量' })
+  @Column({ name: 'completion_tokens', type: 'int', unsigned: true, default: 0, comment: '完成Token数量' })
   completionTokens: number;
 
-  @Column({ type: 'int', unsigned: true, default: 0, comment: '总Token数量' })
+  @Column({ name: 'total_tokens', type: 'int', unsigned: true, default: 0, comment: '总Token数量' })
   totalTokens: number;
 
-  @Column({ type: 'json', nullable: true, comment: '请求参数(仅保存关键信息)' })
+  @Column({ name: 'request_payload', type: 'json', nullable: true, comment: '请求参数(仅保存关键信息)' })
   requestPayload: any;
 
-  @Column({ type: 'text', nullable: true, comment: '响应摘要' })
+  @Column({ name: 'response_summary', type: 'text', nullable: true, comment: '响应摘要' })
   responseSummary: string;
 
-  @Column({ length: 50, nullable: true, comment: '错误码' })
+  @Column({ name: 'error_code', length: 50, nullable: true, comment: '错误码' })
   errorCode: string;
 
-  @Column({ type: 'text', nullable: true, comment: '错误信息' })
+  @Column({ name: 'error_message', type: 'text', nullable: true, comment: '错误信息' })
   errorMessage: string;
 
   @Column({
+    name: 'latency_ms',
     type: 'int',
     unsigned: true,
     nullable: true,
@@ -72,12 +74,12 @@ export class AIApiLog {
   })
   status: string;
 
-  @Column({ length: 50, nullable: true, comment: '请求IP' })
+  @Column({ name: 'ip_address', length: 50, nullable: true, comment: '请求IP' })
   ipAddress: string;
 
-  @Column({ length: 500, nullable: true, comment: 'User Agent' })
+  @Column({ name: 'user_agent', length: 500, nullable: true, comment: 'User Agent' })
   userAgent: string;
 
-  @CreateDateColumn({ comment: '创建时间' })
+  @CreateDateColumn({ name: 'created_at', comment: '创建时间' })
   createdAt: Date;
 }

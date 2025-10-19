@@ -14,31 +14,32 @@ export class AIUsageStat {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true, comment: '统计ID' })
   id: number;
 
-  @Column({ type: 'int', unsigned: true, comment: '供应商ID' })
+  @Column({ name: 'provider_id', type: 'int', unsigned: true, comment: '供应商ID' })
   providerId: number;
 
-  @Column({ type: 'int', unsigned: true, comment: '密钥ID' })
+  @Column({ name: 'key_id', type: 'int', unsigned: true, comment: '密钥ID' })
   keyId: number;
 
-  @Column({ type: 'date', comment: '统计日期' })
+  @Column({ name: 'stat_date', type: 'date', comment: '统计日期' })
   statDate: Date;
 
-  @Column({ type: 'int', unsigned: true, default: 0, comment: '总请求数' })
+  @Column({ name: 'total_requests', type: 'int', unsigned: true, default: 0, comment: '总请求数' })
   totalRequests: number;
 
-  @Column({ type: 'int', unsigned: true, default: 0, comment: '成功次数' })
+  @Column({ name: 'success_count', type: 'int', unsigned: true, default: 0, comment: '成功次数' })
   successCount: number;
 
-  @Column({ type: 'int', unsigned: true, default: 0, comment: '错误次数' })
+  @Column({ name: 'error_count', type: 'int', unsigned: true, default: 0, comment: '错误次数' })
   errorCount: number;
 
-  @Column({ type: 'int', unsigned: true, default: 0, comment: '限流次数' })
+  @Column({ name: 'rate_limited_count', type: 'int', unsigned: true, default: 0, comment: '限流次数' })
   rateLimitedCount: number;
 
-  @Column({ type: 'bigint', unsigned: true, default: 0, comment: '总Token数' })
+  @Column({ name: 'total_tokens', type: 'bigint', unsigned: true, default: 0, comment: '总Token数' })
   totalTokens: number;
 
   @Column({
+    name: 'prompt_tokens',
     type: 'bigint',
     unsigned: true,
     default: 0,
@@ -47,6 +48,7 @@ export class AIUsageStat {
   promptTokens: number;
 
   @Column({
+    name: 'completion_tokens',
     type: 'bigint',
     unsigned: true,
     default: 0,
@@ -55,6 +57,7 @@ export class AIUsageStat {
   completionTokens: number;
 
   @Column({
+    name: 'total_cost',
     type: 'decimal',
     precision: 12,
     scale: 6,
@@ -64,6 +67,7 @@ export class AIUsageStat {
   totalCost: number;
 
   @Column({
+    name: 'avg_latency_ms',
     type: 'int',
     unsigned: true,
     nullable: true,
@@ -71,9 +75,9 @@ export class AIUsageStat {
   })
   avgLatencyMs: number;
 
-  @CreateDateColumn({ comment: '创建时间' })
+  @CreateDateColumn({ name: 'created_at', comment: '创建时间' })
   createdAt: Date;
 
-  @UpdateDateColumn({ comment: '更新时间' })
+  @UpdateDateColumn({ name: 'updated_at', comment: '更新时间' })
   updatedAt: Date;
 }
