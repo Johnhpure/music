@@ -38,6 +38,7 @@
 				<!-- Gemini AI按钮 -->
 				<button 
 					class="gemini-ai-btn"
+					style="margin-left: 0rpx;margin-right: 0rpx;"
 					:disabled="aiExpanding || !inspiration.trim()"
 					@click="handleAIExpand"
 				>
@@ -70,6 +71,22 @@
 			<!-- 跑马灯容器 -->
 			<view class="marquee-container">
 				<view class="marquee-track">
+					<view 
+						class="theme-card"
+						v-for="(theme, index) in doubledThemes"
+						:key="'theme-' + index"
+						:style="{ background: cardColors[index % cardColors.length] }"
+						@click="selectTheme(index)"
+					>
+						<view class="card-glow"></view>
+						<view class="card-content">
+							<view class="theme-emoji">{{ theme.emoji }}</view>
+							<view class="theme-title">{{ theme.title }}</view>
+							<view class="theme-desc">{{ theme.description }}</view>
+						</view>
+					</view>
+				</view>
+				<view class="marquee-track marquee-track-reverse">
 					<view 
 						class="theme-card"
 						v-for="(theme, index) in doubledThemes"
@@ -537,7 +554,9 @@ export default {
 	overflow: hidden;
 	position: relative;
 	padding: 30rpx 0;
-	
+	display: flex;
+	flex-direction: column;
+    gap: 30rpx;	
 	&::before,
 	&::after {
 		content: '';
@@ -579,11 +598,24 @@ export default {
 	}
 }
 
+.marquee-track-reverse {
+	animation: marquee-scroll-reverse 30s linear infinite;
+}
+
+@keyframes marquee-scroll-reverse {
+	0% {
+		transform: translateX(-50%);
+	}
+	100% {
+		transform: translateX(0);
+	}
+}
+
 // 主题卡片
 .theme-card {
 	flex-shrink: 0;
-	width: 420rpx;
-	min-height: 280rpx;
+	width: 300rpx;
+	min-height: 180rpx;
 	border-radius: 30rpx;
 	padding: 40rpx 30rpx;
 	box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.6),
@@ -688,13 +720,13 @@ export default {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	gap: 20rpx;
+	gap: 5rpx;
 	position: relative;
 	z-index: 1;
 }
 
 .theme-emoji {
-	font-size: 80rpx;
+	font-size: 20rpx;
 	filter: drop-shadow(0 4rpx 12rpx rgba(0, 0, 0, 0.4));
 	animation: emoji-float 3s ease-in-out infinite;
 }
@@ -730,6 +762,7 @@ export default {
 
 // 生成按钮区域
 .generate-section {
+	z-index: 999;
 	position: fixed;
 	bottom: 0;
 	left: 0;
