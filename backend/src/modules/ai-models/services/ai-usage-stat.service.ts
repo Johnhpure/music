@@ -56,15 +56,6 @@ export class AIUsageStatService {
       })
       .getRawOne();
 
-    // 更新或创建统计记录
-    const existing = await this.statRepo.findOne({
-      where: {
-        providerId,
-        keyId,
-        statDate,
-      },
-    });
-
     const statData = {
       providerId,
       keyId,
@@ -77,14 +68,11 @@ export class AIUsageStatService {
       promptTokens: parseInt(stats.promptTokens) || 0,
       completionTokens: parseInt(stats.completionTokens) || 0,
       avgLatencyMs: parseInt(stats.avgLatencyMs) || 0,
-      totalCost: 0, // 需要根据模型计算
+      totalCost: 0,
     };
 
-    if (existing) {
-      await this.statRepo.update(existing.id, statData);
-    } else {
-      await this.statRepo.save(statData);
-    }
+    // 使用 upsert 避免并发冲突
+    await this.statRepo.upsert(statData, ['providerId', 'keyId', 'statDate']);
 
     this.logger.debug(
       `Updated stats for provider ${providerId}, key ${keyId}, date ${statDate.toISOString()}`,
