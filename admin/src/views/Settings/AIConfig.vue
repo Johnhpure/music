@@ -39,10 +39,18 @@
           <div class="flex items-start justify-between mb-6">
             <div class="flex items-center space-x-4">
               <div 
-                class="w-16 h-16 rounded-xl flex items-center justify-center"
+                class="w-16 h-16 rounded-xl flex items-center justify-center p-2"
                 :class="provider.isActive ? 'bg-cyber-purple/20' : 'bg-gray-700/50'"
               >
+                <img 
+                  v-if="provider.configJson?.logoUrl"
+                  :src="provider.configJson.logoUrl" 
+                  :alt="`${provider.providerName} Logo`"
+                  class="w-full h-full object-contain"
+                  @error="handleImageError"
+                />
                 <Icon 
+                  v-else
                   :icon="getProviderIcon(provider.providerCode)" 
                   class="w-10 h-10"
                   :class="provider.isActive ? 'text-cyber-purple' : 'text-gray-400'"
@@ -74,6 +82,18 @@
             <p class="text-gray-300 text-sm line-clamp-2 min-h-[2.5rem]">
               {{ provider.description || '暂无描述' }}
             </p>
+            
+            <!-- API信息 -->
+            <div class="text-xs text-gray-500 space-y-1">
+              <div class="flex items-center space-x-2">
+                <Icon icon="mdi:api" class="w-3 h-3" />
+                <span class="font-mono truncate">{{ provider.baseUrl }}</span>
+              </div>
+              <div v-if="provider.configJson?.rateLimit" class="flex items-center space-x-2">
+                <Icon icon="mdi:speedometer" class="w-3 h-3" />
+                <span>{{ provider.configJson.rateLimit.rpm }} RPM / {{ provider.configJson.rateLimit.rpd }} RPD</span>
+              </div>
+            </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div class="bg-glass-white/5 rounded-lg p-3">
@@ -121,10 +141,17 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-4">
                 <div 
-                  class="w-12 h-12 rounded-lg flex items-center justify-center"
+                  class="w-12 h-12 rounded-lg flex items-center justify-center p-2"
                   :class="selectedProvider?.isActive ? 'bg-cyber-purple/20' : 'bg-gray-700/50'"
                 >
+                  <img 
+                    v-if="selectedProvider?.configJson?.logoUrl"
+                    :src="selectedProvider.configJson.logoUrl" 
+                    :alt="`${selectedProvider.providerName} Logo`"
+                    class="w-full h-full object-contain"
+                  />
                   <Icon 
+                    v-else
                     :icon="getProviderIcon(selectedProvider?.providerCode)" 
                     class="w-8 h-8"
                     :class="selectedProvider?.isActive ? 'text-cyber-purple' : 'text-gray-400'"
@@ -147,13 +174,85 @@
 
           <!-- Detail Content -->
           <div class="p-6 space-y-6">
-            <!-- Base URL -->
-            <div class="bg-glass-white/5 rounded-lg p-4">
-              <div class="flex items-center space-x-2 mb-2">
-                <Icon icon="mdi:web" class="w-5 h-5 text-gray-400" />
-                <span class="text-sm text-gray-400">API地址</span>
+            <!-- API Configuration -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Base URL -->
+              <div class="bg-glass-white/5 rounded-lg p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <Icon icon="mdi:web" class="w-5 h-5 text-gray-400" />
+                  <span class="text-sm text-gray-400">API地址</span>
+                </div>
+                <p class="text-white font-mono text-sm break-all">{{ selectedProvider?.baseUrl }}</p>
               </div>
-              <p class="text-white font-mono text-sm">{{ selectedProvider?.baseUrl }}</p>
+
+              <!-- API Docs -->
+              <div v-if="selectedProvider?.configJson?.apiDocs" class="bg-glass-white/5 rounded-lg p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <Icon icon="mdi:book-open-variant" class="w-5 h-5 text-gray-400" />
+                  <span class="text-sm text-gray-400">官方文档</span>
+                </div>
+                <a 
+                  :href="selectedProvider.configJson.apiDocs" 
+                  target="_blank"
+                  class="text-cyber-purple hover:text-cyber-purple/80 text-sm break-all"
+                >
+                  {{ selectedProvider.configJson.apiDocs }}
+                  <Icon icon="mdi:open-in-new" class="inline w-3 h-3 ml-1" />
+                </a>
+              </div>
+
+              <!-- Auth Header -->
+              <div v-if="selectedProvider?.configJson?.authHeader" class="bg-glass-white/5 rounded-lg p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <Icon icon="mdi:key" class="w-5 h-5 text-gray-400" />
+                  <span class="text-sm text-gray-400">认证方式</span>
+                </div>
+                <p class="text-white font-mono text-sm">{{ selectedProvider.configJson.authHeader }}</p>
+              </div>
+
+              <!-- Rate Limit -->
+              <div v-if="selectedProvider?.configJson?.rateLimit" class="bg-glass-white/5 rounded-lg p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <Icon icon="mdi:speedometer" class="w-5 h-5 text-gray-400" />
+                  <span class="text-sm text-gray-400">速率限制</span>
+                </div>
+                <div class="text-white text-sm space-y-1">
+                  <div>RPM: {{ selectedProvider.configJson.rateLimit.rpm }}</div>
+                  <div>TPM: {{ selectedProvider.configJson.rateLimit.tpm?.toLocaleString() }}</div>
+                  <div>RPD: {{ selectedProvider.configJson.rateLimit.rpd?.toLocaleString() }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Default Parameters -->
+            <div v-if="selectedProvider?.configJson?.defaultParams" class="bg-glass-white/5 rounded-lg p-4">
+              <div class="flex items-center space-x-2 mb-3">
+                <Icon icon="mdi:tune" class="w-5 h-5 text-gray-400" />
+                <span class="text-sm font-semibold text-white">默认参数</span>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div v-for="(value, key) in selectedProvider.configJson.defaultParams" :key="key">
+                  <span class="text-xs text-gray-400">{{ key }}</span>
+                  <p class="text-white text-sm font-mono">{{ value }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Supported Features -->
+            <div v-if="selectedProvider?.configJson?.supportedFeatures" class="bg-glass-white/5 rounded-lg p-4">
+              <div class="flex items-center space-x-2 mb-3">
+                <Icon icon="mdi:feature-search" class="w-5 h-5 text-gray-400" />
+                <span class="text-sm font-semibold text-white">支持功能</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span 
+                  v-for="feature in selectedProvider.configJson.supportedFeatures" 
+                  :key="feature"
+                  class="px-3 py-1 text-xs bg-cyber-purple/20 text-cyber-purple rounded-full"
+                >
+                  {{ feature }}
+                </span>
+              </div>
             </div>
 
             <!-- Models Section -->
@@ -720,6 +819,14 @@ const getProviderIcon = (providerCode: string): string => {
     'gemini': 'simple-icons:google'
   }
   return iconMap[providerCode] || 'mdi:robot'
+}
+
+const handleImageError = (event: Event) => {
+  console.warn('Logo image failed to load')
+  const img = event.target as HTMLImageElement
+  if (img && img.parentElement) {
+    img.style.display = 'none'
+  }
 }
 
 // Lifecycle

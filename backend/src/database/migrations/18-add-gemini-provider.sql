@@ -4,8 +4,9 @@
 -- =====================================================
 
 -- 插入Gemini Provider (如果不存在)
-INSERT INTO `t_ai_providers` (`provider_code`, `provider_name`, `base_url`, `is_active`, `sort_order`, `description`) 
-SELECT 'gemini', 'Google Gemini', 'https://generativelanguage.googleapis.com', 1, 70, 'Google Gemini系列模型，强大的多模态AI'
+INSERT INTO `t_ai_providers` (`provider_code`, `provider_name`, `base_url`, `is_active`, `sort_order`, `description`, `config_json`) 
+SELECT 'gemini', 'Google Gemini', 'https://generativelanguage.googleapis.com', 1, 70, 'Google Gemini系列模型，强大的多模态AI',
+'{"logoUrl": "https://cdn.simpleicons.org/googlegemini/8E75B2", "apiDocs": "https://ai.google.dev/gemini-api/docs", "authHeader": "x-goog-api-key", "defaultParams": {"temperature": 0.9, "top_p": 0.95, "top_k": 40, "max_output_tokens": 8192}, "rateLimit": {"rpm": 15, "tpm": 1000000, "rpd": 1500}, "supportedFeatures": ["streaming", "function_calling", "vision", "google_search", "code_execution"]}'
 WHERE NOT EXISTS (
   SELECT 1 FROM `t_ai_providers` WHERE `provider_code` = 'gemini'
 );

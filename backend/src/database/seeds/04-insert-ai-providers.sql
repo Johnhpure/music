@@ -6,12 +6,19 @@
 -- TRUNCATE TABLE t_ai_api_keys;
 -- TRUNCATE TABLE t_ai_providers;
 
--- 1. 插入AI供应商
-INSERT INTO `t_ai_providers` (`provider_code`, `provider_name`, `base_url`, `is_active`, `sort_order`, `description`) VALUES
-('openai', 'OpenAI', 'https://api.openai.com/v1', 1, 100, 'OpenAI GPT系列模型，包括GPT-4o、GPT-4 Turbo等'),
-('anthropic', 'Anthropic Claude', 'https://api.anthropic.com', 1, 90, 'Anthropic Claude系列模型，包括Claude 3.5 Sonnet等'),
-('deepseek', 'DeepSeek', 'https://api.deepseek.com', 1, 80, 'DeepSeek系列模型，高性价比的中文大模型'),
-('gemini', 'Google Gemini', 'https://generativelanguage.googleapis.com', 1, 70, 'Google Gemini系列模型，强大的多模态AI');
+-- 1. 插入AI供应商（带详细配置和LOGO）
+INSERT INTO `t_ai_providers` (`provider_code`, `provider_name`, `base_url`, `is_active`, `sort_order`, `description`, `config_json`) VALUES
+('openai', 'OpenAI', 'https://api.openai.com/v1', 1, 100, 'OpenAI GPT系列模型，包括GPT-4o、GPT-4 Turbo等', 
+'{"logoUrl": "https://cdn.simpleicons.org/openai/412991", "apiDocs": "https://platform.openai.com/docs/api-reference", "authHeader": "Authorization: Bearer", "defaultParams": {"temperature": 0.7, "top_p": 1.0, "max_tokens": 2048, "stream": false}, "rateLimit": {"rpm": 3500, "tpm": 350000, "rpd": 10000}, "supportedFeatures": ["streaming", "function_calling", "vision", "json_mode"]}'),
+
+('anthropic', 'Anthropic Claude', 'https://api.anthropic.com', 1, 90, 'Anthropic Claude系列模型，包括Claude 3.5 Sonnet等',
+'{"logoUrl": "https://cdn.simpleicons.org/anthropic/191919", "apiDocs": "https://docs.anthropic.com/", "authHeader": "x-api-key", "defaultParams": {"temperature": 1.0, "top_p": 1.0, "top_k": 40, "max_tokens": 4096}, "rateLimit": {"rpm": 4000, "tpm": 400000, "rpd": 10000}, "supportedFeatures": ["streaming", "function_calling", "vision", "thinking", "web_search"]}'),
+
+('deepseek', 'DeepSeek', 'https://api.deepseek.com', 1, 80, 'DeepSeek系列模型，高性价比的中文大模型',
+'{"logoUrl": "https://api.iconify.design/simple-icons:deepseek.svg?color=%23000000", "apiDocs": "https://api-docs.deepseek.com/", "authHeader": "Authorization: Bearer", "defaultParams": {"temperature": 1.0, "top_p": 1.0, "max_tokens": 4096, "frequency_penalty": 0, "presence_penalty": 0}, "rateLimit": {"rpm": 10000, "tpm": 1000000, "rpd": 50000}, "supportedFeatures": ["streaming", "function_calling", "json_mode", "reasoning"]}'),
+
+('gemini', 'Google Gemini', 'https://generativelanguage.googleapis.com', 1, 70, 'Google Gemini系列模型，强大的多模态AI',
+'{"logoUrl": "https://cdn.simpleicons.org/googlegemini/8E75B2", "apiDocs": "https://ai.google.dev/gemini-api/docs", "authHeader": "x-goog-api-key", "defaultParams": {"temperature": 0.9, "top_p": 0.95, "top_k": 40, "max_output_tokens": 8192}, "rateLimit": {"rpm": 15, "tpm": 1000000, "rpd": 1500}, "supportedFeatures": ["streaming", "function_calling", "vision", "google_search", "code_execution"]}');
 
 -- 2. 插入OpenAI模型
 INSERT INTO `t_ai_models` (`provider_id`, `model_code`, `model_name`, `model_type`, `max_input_tokens`, `max_output_tokens`, `supports_streaming`, `supports_function_call`, `supports_vision`, `cost_per_1k_prompt_tokens`, `cost_per_1k_completion_tokens`, `is_active`, `is_default`, `sort_order`, `description`) 
