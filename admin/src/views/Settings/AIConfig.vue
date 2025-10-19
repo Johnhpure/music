@@ -182,6 +182,11 @@
       </div>
     </div>
 
+    <!-- Gemini Key Group Management Section -->
+    <div class="mt-12">
+      <GeminiKeyGroupManager />
+    </div>
+
     <!-- Provider Detail Modal (Centered) -->
     <Teleport to="body">
       <div 
@@ -837,6 +842,7 @@ import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import CyberButton from '@/components/UI/CyberButton.vue'
+import GeminiKeyGroupManager from '@/components/GeminiKeyGroupManager.vue'
 import { aiProviderAPI, aiModelAPI, aiApiKeyAPI } from '@/api'
 
 // State

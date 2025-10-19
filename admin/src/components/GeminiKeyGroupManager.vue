@@ -288,7 +288,7 @@ const loadKeyGroups = async () => {
   loading.value = true
   try {
     const response = await geminiKeyGroupAPI.getAllKeyGroups()
-    if (response.success) {
+    if (response && response.data) {
       keyGroups.value = response.data
     }
   } catch (error: any) {
