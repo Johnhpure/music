@@ -380,13 +380,15 @@
 						temperature: 0.8
 					});
 					
-					console.log('AI接口响应:', JSON.stringify(res));
+					console.log('AI接口响应 - code:', res.code);
+					console.log('AI接口响应 - data存在:', !!res.data);
+					console.log('AI接口响应 - data.content存在:', !!res.data?.content);
+					console.log('AI接口响应 - data.content长度:', res.data?.content?.length || 0);
+					console.log('AI接口响应 - 数据结构:', Object.keys(res.data || {}));
+					console.log('AI接口响应 - content前100字符:', res.data?.content?.substring(0, 100) || '无内容');
 					
 					if (res.code === 200 && res.data) {
 						const lyricsContent = res.data.content || '';
-						
-						console.log('提取的歌词内容:', lyricsContent);
-						console.log('响应数据结构:', Object.keys(res.data));
 						
 						if (!lyricsContent) {
 							throw new Error('生成的歌词内容为空，响应: ' + JSON.stringify(res.data));

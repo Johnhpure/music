@@ -28,6 +28,7 @@ export class AIChatController {
    * 四个模型（Claude、OpenAI、Gemini、DeepSeek）中每次只有一个处于开启状态
    */
   @Post('prompt-completion')
+
   async promptCompletion(
     @Body() dto: PromptCompletionDto,
     @Request() req,
@@ -81,13 +82,9 @@ export class AIChatController {
         userAgent,
       );
 
-      console.log('[prompt-completion] AI响应:', {
-        hasContent: !!response.content,
-        contentLength: response.content?.length || 0,
-        model: response.model,
-      });
+      console.log('[prompt-completion] AI响应 response对象:', JSON.stringify(response));
 
-      return {
+      const result = {
         code: 200,
         data: {
           ...response,
@@ -97,6 +94,10 @@ export class AIChatController {
           },
         },
       };
+
+      console.log('[prompt-completion] 最终返回 result:', JSON.stringify(result));
+
+      return result;
     } catch (error) {
       console.error('[prompt-completion] 错误:', error);
       return {
