@@ -133,7 +133,7 @@
         @click.self="closeDetailDrawer"
       >
         <div 
-          class="w-full max-w-3xl max-h-[90vh] bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col"
+          class="w-full max-w-5xl max-h-[90vh] bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col"
           @click.stop
         >
           <!-- Detail Header -->
