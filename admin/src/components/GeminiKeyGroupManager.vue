@@ -82,10 +82,28 @@
 
             <!-- Keys Preview -->
             <div class="mt-4">
-              <div class="text-xs text-gray-400 mb-2">密钥列表（{{ group.keys.length }}个）</div>
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-xs text-gray-400">
+                  密钥列表（{{ group.keys.length }}个）
+                  <span v-if="group.keys.length > 20 && !expandedGroups[group.id]" class="text-gray-500">
+                    - 显示前20个
+                  </span>
+                </div>
+                <button
+                  v-if="group.keys.length > 20"
+                  @click="toggleGroupExpand(group.id)"
+                  class="text-xs text-cyber-purple hover:text-cyber-purple/80 flex items-center space-x-1 transition-colors"
+                >
+                  <span>{{ expandedGroups[group.id] ? '收起' : `显示全部 (${group.keys.length})` }}</span>
+                  <Icon 
+                    :icon="expandedGroups[group.id] ? 'mdi:chevron-up' : 'mdi:chevron-down'" 
+                    class="w-4 h-4"
+                  />
+                </button>
+              </div>
               <div class="space-y-2">
                 <div
-                  v-for="(key, index) in group.keys"
+                  v-for="(key, index) in getDisplayedKeys(group)"
                   :key="index"
                   class="flex items-center justify-between bg-glass-white/5 rounded-lg p-2 text-xs"
                 >
@@ -273,6 +291,7 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingGroupId = ref<number | null>(null)
 const apiKeysText = ref('')
+const expandedGroups = ref<Record<number, boolean>>({})
 
 // Form Data
 const formData = ref({
@@ -284,6 +303,18 @@ const formData = ref({
 })
 
 // Methods
+const getDisplayedKeys = (group: any) => {
+  const maxDisplay = 20
+  if (expandedGroups.value[group.id] || group.keys.length <= maxDisplay) {
+    return group.keys
+  }
+  return group.keys.slice(0, maxDisplay)
+}
+
+const toggleGroupExpand = (groupId: number) => {
+  expandedGroups.value[groupId] = !expandedGroups.value[groupId]
+}
+
 const loadKeyGroups = async () => {
   loading.value = true
   try {
