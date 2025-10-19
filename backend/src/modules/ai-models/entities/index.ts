@@ -3,3 +3,4 @@ export * from './ai-model.entity';
 export * from './ai-api-key.entity';
 export * from './ai-api-log.entity';
 export * from './ai-usage-stat.entity';
+export * from './gemini-key-group.entity';

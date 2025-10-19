@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -194,13 +195,24 @@ export class AIProviderController {
   }
 
   @Post('keys/:id/validate')
+  @HttpCode(200) // 明确设置HTTP状态码为200
   async validateKey(@Param('id') id: number) {
-    const isValid = await this.providerService.validateKey(id);
-    return {
-      code: 200,
-      data: { isValid },
-      message: isValid ? 'API Key is valid' : 'API Key is invalid',
-    };
+    try {
+      const isValid = await this.providerService.validateKey(id);
+      return {
+        code: 200,
+        data: { isValid },
+        message: isValid ? 'API Key is valid' : 'API Key is invalid',
+      };
+    } catch (error) {
+      // 如果是解密错误或其他严重错误，返回详细信息
+      return {
+        code: 500,
+        data: { isValid: false },
+        message: error.message || 'Validation failed',
+        error: error.name || 'ValidationError',
+      };
+    }
   }
 
   @Post('keys/:id/reset-stats')
@@ -218,18 +230,23 @@ export class AIProviderController {
   // ========== 模型同步 ==========
 
   @Post(':id/sync-models')
+  @HttpCode(200) // 明确设置HTTP状态码
   async syncModels(@Param('id') id: number) {
     try {
       const count = await this.providerService.syncProviderModels(id);
-      return {
+      const result = {
         code: 200,
         message: `Synced ${count} models`,
         data: { count },
       };
+      console.log('🔄 Sync Models Result:', result);
+      return result;
     } catch (error) {
+      console.error('❌ Sync Models Error:', error);
       return {
         code: 500,
         message: `Failed to sync models: ${error.message}`,
+        data: { count: 0 },
       };
     }
   }

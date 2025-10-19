@@ -277,4 +277,140 @@ export class AIClientManagerService {
 
     return 'error';
   }
+
+  /**
+   * 使用Gemini KEY组创建聊天完成
+   * 支持多KEY轮询策略
+   */
+  async createChatCompletionWithKeyGroup(
+    keyGroupId: number,
+    request: ChatCompletionRequest,
+    userId?: number,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<ChatCompletionResponse> {
+    const startTime = Date.now();
+    const { GeminiKeyGroupService } = await import(
+      './gemini-key-group.service'
+    );
+    const { GeminiKeyGroupClient } = await import(
+      '../clients/gemini-keygroup-client'
+    );
+    const { GeminiKeyGroup } = await import(
+      '../entities/gemini-key-group.entity'
+    );
+
+    // 注入 GeminiKeyGroupService
+    const keyGroupRepo =
+      this.providerService.providerRepo.manager.connection.getRepository(
+        GeminiKeyGroup,
+      );
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const encryptionService = require('@common/services/encryption.service');
+    const keyGroupService = new GeminiKeyGroupService(
+      keyGroupRepo,
+      encryptionService,
+    );
+
+    try {
+      // 获取KEY组信息
+      const keyGroup = await keyGroupService.findOne(keyGroupId);
+
+      if (!keyGroup.isActive) {
+        throw new Error(`Gemini key group ${keyGroupId} is not active`);
+      }
+
+      this.logger.log(
+        `Calling Gemini API with KeyGroup ${keyGroupId} (strategy: ${keyGroup.rotationStrategy})`,
+      );
+
+      // 创建KEY组客户端
+      const client = new GeminiKeyGroupClient(
+        keyGroupId,
+        keyGroupService,
+        keyGroup.baseUrl,
+      );
+
+      // 调用AI API
+      const response = await client.createChatCompletion(request);
+
+      const latencyMs = Date.now() - startTime;
+
+      // 记录API调用日志
+      await this.logService.logApiCall({
+        providerId: 0,
+        keyId: keyGroupId,
+        userId,
+        requestType: 'chat_completion_keygroup',
+        modelCode: response.model,
+        promptTokens: response.usage.promptTokens,
+        completionTokens: response.usage.completionTokens,
+        totalTokens: response.usage.totalTokens,
+        requestPayload: {
+          messages: request.messages.map((msg) => ({
+            role: msg.role,
+            content:
+              msg.content.length > 500
+                ? msg.content.substring(0, 500) + '...'
+                : msg.content,
+          })),
+          model: request.model,
+          maxTokens: request.maxTokens,
+          keyGroupId,
+          rotationStrategy: keyGroup.rotationStrategy,
+        },
+        responseSummary:
+          response.content.length > 200
+            ? response.content.substring(0, 200) + '...'
+            : response.content,
+        latencyMs,
+        status: 'success',
+        ipAddress,
+        userAgent,
+      });
+
+      this.logger.log(
+        `Gemini KeyGroup ${keyGroupId} API call successful in ${latencyMs}ms, tokens: ${response.usage.totalTokens}`,
+      );
+
+      return response;
+    } catch (error) {
+      const latencyMs = Date.now() - startTime;
+
+      this.logger.error(
+        `Gemini KeyGroup ${keyGroupId} API call failed: ${error.message}`,
+        error.stack,
+      );
+
+      // 记录错误日志
+      await this.logService.logApiCall({
+        providerId: 0,
+        keyId: keyGroupId,
+        userId,
+        requestType: 'chat_completion_keygroup',
+        modelCode: request.model || 'unknown',
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        requestPayload: {
+          messages: request.messages.map((msg) => ({
+            role: msg.role,
+            content:
+              msg.content.length > 500
+                ? msg.content.substring(0, 500) + '...'
+                : msg.content,
+          })),
+          keyGroupId,
+        },
+        errorCode: error.code || 'UNKNOWN_ERROR',
+        errorMessage: error.message,
+        latencyMs,
+        status: this.categorizeError(error),
+        ipAddress,
+        userAgent,
+      });
+
+      throw error;
+    }
+  }
 }

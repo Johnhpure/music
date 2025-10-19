@@ -79,37 +79,112 @@ export class ClaudeClient extends BaseAIClient {
   }
 
   async listModels(): Promise<ModelInfo[]> {
-    // Claude没有提供列出模型的API
-    // 返回已知的Claude模型列表
-    return [
-      {
-        id: 'claude-3-5-sonnet-latest',
-        name: 'Claude 3.5 Sonnet (Latest)',
-        maxTokens: 200000,
-        supportsStreaming: true,
-        supportsFunctionCall: true,
-        costPer1kPromptTokens: 0.003,
-        costPer1kCompletionTokens: 0.015,
-      },
-      {
-        id: 'claude-3-5-haiku-latest',
-        name: 'Claude 3.5 Haiku (Latest)',
-        maxTokens: 200000,
-        supportsStreaming: true,
-        supportsFunctionCall: true,
-        costPer1kPromptTokens: 0.0008,
-        costPer1kCompletionTokens: 0.004,
-      },
-      {
-        id: 'claude-3-opus-latest',
-        name: 'Claude 3 Opus (Latest)',
-        maxTokens: 200000,
-        supportsStreaming: true,
-        supportsFunctionCall: true,
-        costPer1kPromptTokens: 0.015,
-        costPer1kCompletionTokens: 0.075,
-      },
-    ];
+    try {
+      // 使用Anthropic官方Models API获取模型列表
+      const response = await this.client.models.list();
+
+      // 转换为统一的ModelInfo格式
+      const models: ModelInfo[] = [];
+
+      for await (const model of response) {
+        models.push({
+          id: model.id,
+          name: model.display_name || model.id,
+          maxTokens: 200000, // Claude模型默认上下文窗口
+          supportsStreaming: true,
+          supportsFunctionCall: true,
+          // 根据模型ID设置成本
+          costPer1kPromptTokens: this.getModelCost(model.id, 'prompt'),
+          costPer1kCompletionTokens: this.getModelCost(model.id, 'completion'),
+        });
+      }
+
+      return models;
+    } catch (error) {
+      // 如果API调用失败，返回已知的主要模型作为后备
+      console.warn(
+        'Failed to fetch models from Anthropic API, using fallback list:',
+        error,
+      );
+      return [
+        {
+          id: 'claude-3-5-sonnet-latest',
+          name: 'Claude 3.5 Sonnet (Latest)',
+          maxTokens: 200000,
+          supportsStreaming: true,
+          supportsFunctionCall: true,
+          costPer1kPromptTokens: 0.003,
+          costPer1kCompletionTokens: 0.015,
+        },
+        {
+          id: 'claude-3-5-haiku-latest',
+          name: 'Claude 3.5 Haiku (Latest)',
+          maxTokens: 200000,
+          supportsStreaming: true,
+          supportsFunctionCall: true,
+          costPer1kPromptTokens: 0.0008,
+          costPer1kCompletionTokens: 0.004,
+        },
+        {
+          id: 'claude-3-opus-latest',
+          name: 'Claude 3 Opus (Latest)',
+          maxTokens: 200000,
+          supportsStreaming: true,
+          supportsFunctionCall: true,
+          costPer1kPromptTokens: 0.015,
+          costPer1kCompletionTokens: 0.075,
+        },
+      ];
+    }
+  }
+
+  /**
+   * 根据模型ID获取定价信息
+   * 参考：https://docs.anthropic.com/en/docs/about-claude/models
+   */
+  private getModelCost(modelId: string, type: 'prompt' | 'completion'): number {
+    const costs: Record<string, { prompt: number; completion: number }> = {
+      // Claude 3.5 Sonnet系列
+      'claude-3-5-sonnet-20241022': { prompt: 0.003, completion: 0.015 },
+      'claude-3-5-sonnet-20240620': { prompt: 0.003, completion: 0.015 },
+      'claude-3-5-sonnet-latest': { prompt: 0.003, completion: 0.015 },
+
+      // Claude 3.5 Haiku系列
+      'claude-3-5-haiku-20241022': { prompt: 0.0008, completion: 0.004 },
+      'claude-3-5-haiku-latest': { prompt: 0.0008, completion: 0.004 },
+
+      // Claude 3 Opus系列
+      'claude-3-opus-20240229': { prompt: 0.015, completion: 0.075 },
+      'claude-3-opus-latest': { prompt: 0.015, completion: 0.075 },
+
+      // Claude 3 Sonnet系列
+      'claude-3-sonnet-20240229': { prompt: 0.003, completion: 0.015 },
+
+      // Claude 3 Haiku系列
+      'claude-3-haiku-20240307': { prompt: 0.00025, completion: 0.00125 },
+    };
+
+    // 尝试精确匹配
+    if (costs[modelId]) {
+      return costs[modelId][type];
+    }
+
+    // 尝试模糊匹配（根据模型名称推断）
+    if (modelId.includes('opus')) {
+      return type === 'prompt' ? 0.015 : 0.075;
+    } else if (modelId.includes('sonnet')) {
+      return type === 'prompt' ? 0.003 : 0.015;
+    } else if (modelId.includes('haiku')) {
+      // 区分3.5和3.0版本
+      if (modelId.includes('3-5')) {
+        return type === 'prompt' ? 0.0008 : 0.004;
+      } else {
+        return type === 'prompt' ? 0.00025 : 0.00125;
+      }
+    }
+
+    // 默认返回中等定价
+    return type === 'prompt' ? 0.003 : 0.015;
   }
 
   async countTokens(text: string, model?: string): Promise<number> {
@@ -121,7 +196,7 @@ export class ClaudeClient extends BaseAIClient {
       });
 
       return count.input_tokens;
-    } catch (error) {
+    } catch {
       // 如果API不可用,使用估算
       this.logger.warn(
         `Claude token counting API unavailable, using estimation`,

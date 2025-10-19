@@ -703,6 +703,58 @@ export const aiApiKeyAPI = {
     apiRequest.post(`/admin/ai-providers/keys/${id}/reset-stats`, {})
 }
 
+
+/**
+ * Gemini Key Group API - Gemini密钥组管理
+ */
+export const geminiKeyGroupAPI = {
+  // 获取所有KEY组列表
+  getAllKeyGroups: (): Promise<ApiResponse<any[]>> =>
+    apiRequest.get('/ai/gemini-key-groups'),
+
+  // 获取指定KEY组详情
+  getKeyGroup: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.get(`/ai/gemini-key-groups/${id}`),
+
+  // 创建KEY组
+  createKeyGroup: (data: {
+    groupName: string
+    rotationStrategy: 'sequential' | 'failover'
+    apiKeys: string[]
+    baseUrl?: string
+    description?: string
+    isActive?: boolean
+  }): Promise<ApiResponse<any>> =>
+    apiRequest.post('/ai/gemini-key-groups', data),
+
+  // 更新KEY组
+  updateKeyGroup: (id: number, data: {
+    groupName?: string
+    rotationStrategy?: 'sequential' | 'failover'
+    apiKeys?: string[]
+    baseUrl?: string
+    description?: string
+    isActive?: boolean
+  }): Promise<ApiResponse<any>> =>
+    apiRequest.put(`/ai/gemini-key-groups/${id}`, data),
+
+  // 删除KEY组
+  deleteKeyGroup: (id: number): Promise<ApiResponse<void>> =>
+    apiRequest.delete(`/ai/gemini-key-groups/${id}`),
+
+  // 添加密钥到KEY组
+  addKeysToGroup: (id: number, apiKeys: string[]): Promise<ApiResponse<any>> =>
+    apiRequest.post(`/ai/gemini-key-groups/${id}/keys`, { apiKeys }),
+
+  // 从KEY组移除密钥
+  removeKeyFromGroup: (id: number, keyIndex: number): Promise<ApiResponse<any>> =>
+    apiRequest.delete(`/ai/gemini-key-groups/${id}/keys/${keyIndex}`),
+
+  // 重置KEY组状态
+  resetKeyGroupStatus: (id: number): Promise<ApiResponse<any>> =>
+    apiRequest.post(`/ai/gemini-key-groups/${id}/reset`, {})
+}
+
 export const requestQueue = new RequestQueue()
 
 // Export utility functions

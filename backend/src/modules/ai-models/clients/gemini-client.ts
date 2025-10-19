@@ -93,7 +93,7 @@ export class GeminiClient extends BaseAIClient {
       );
 
       const models: ModelInfo[] = [];
-      
+
       if (response.data && response.data.models) {
         for (const model of response.data.models) {
           // 只包含支持generateContent的模型
@@ -102,10 +102,19 @@ export class GeminiClient extends BaseAIClient {
               id: model.baseModelId || model.name?.replace('models/', ''),
               name: model.displayName || model.name,
               maxTokens: model.inputTokenLimit || 1048576,
-              supportsStreaming: model.supportedGenerationMethods?.includes('streamGenerateContent') || false,
+              supportsStreaming:
+                model.supportedGenerationMethods?.includes(
+                  'streamGenerateContent',
+                ) || false,
               supportsFunctionCall: true,
-              costPer1kPromptTokens: this.getModelCost(model.baseModelId, 'prompt'),
-              costPer1kCompletionTokens: this.getModelCost(model.baseModelId, 'completion'),
+              costPer1kPromptTokens: this.getModelCost(
+                model.baseModelId,
+                'prompt',
+              ),
+              costPer1kCompletionTokens: this.getModelCost(
+                model.baseModelId,
+                'completion',
+              ),
             });
           }
         }
@@ -114,7 +123,9 @@ export class GeminiClient extends BaseAIClient {
       this.logger.log(`Retrieved ${models.length} models from Gemini API`);
       return models.length > 0 ? models : this.getFallbackModels();
     } catch (error) {
-      this.logger.warn(`Failed to fetch models from Gemini API: ${error.message}, using fallback list`);
+      this.logger.warn(
+        `Failed to fetch models from Gemini API: ${error.message}, using fallback list`,
+      );
       return this.getFallbackModels();
     }
   }
@@ -229,7 +240,7 @@ export class GeminiClient extends BaseAIClient {
       return response.status === 200 && response.data && response.data.models;
     } catch (err: any) {
       this.logger.warn(`Gemini API key validation error: ${err.message}`);
-      
+
       // 检查是否是API key错误
       if (
         err.response?.status === 400 ||
@@ -239,7 +250,7 @@ export class GeminiClient extends BaseAIClient {
       ) {
         return false;
       }
-      
+
       // 其他错误（网络问题等）也认为验证失败，但记录详细错误
       this.logger.error(`Gemini validation failed with error: ${err.message}`);
       throw err;
