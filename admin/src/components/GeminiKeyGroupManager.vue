@@ -288,8 +288,10 @@ const loadKeyGroups = async () => {
   loading.value = true
   try {
     const response = await geminiKeyGroupAPI.getAllKeyGroups()
+    // 后端返回的数据是嵌套的: { data: { success: true, data: [] } }
     if (response && response.data) {
-      keyGroups.value = response.data
+      const responseData = response.data as any
+      keyGroups.value = responseData.data || []
     }
   } catch (error: any) {
     console.error('Failed to load key groups:', error)
