@@ -172,6 +172,242 @@
             </div>
           </div>
 
+
+          <!-- 配置向导区域 -->
+          <div class="bg-glass-white/5 border-b border-gray-700 px-6 py-4">
+            <!-- 步骤指示器 -->
+            <div class="flex items-center justify-center mb-4">
+              <div class="flex items-center space-x-4">
+                <div 
+                  v-for="step in 3" 
+                  :key="step"
+                  class="flex items-center"
+                >
+                  <div 
+                    class="flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all"
+                    :class="{
+                      'border-cyber-purple bg-cyber-purple text-white': configStep >= step,
+                      'border-gray-600 bg-gray-800 text-gray-400': configStep < step
+                    }"
+                  >
+                    <Icon 
+                      v-if="configStep > step"
+                      icon="mdi:check" 
+                      class="w-5 h-5" 
+                    />
+                    <span v-else class="text-sm font-bold">{{ step }}</span>
+                  </div>
+                  <div 
+                    v-if="step < 3"
+                    class="w-16 h-0.5 mx-2"
+                    :class="configStep > step ? 'bg-cyber-purple' : 'bg-gray-600'"
+                  ></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 步骤标题 -->
+            <div class="text-center mb-4">
+              <h3 class="text-lg font-semibold text-white">
+                <span v-if="configStep === 1">步骤 1: 配置API密钥</span>
+                <span v-else-if="configStep === 2">步骤 2: 选择模型</span>
+                <span v-else>步骤 3: 测试连接</span>
+              </h3>
+              <p class="text-sm text-gray-400 mt-1">
+                <span v-if="configStep === 1">添加并选择一个API密钥</span>
+                <span v-else-if="configStep === 2">同步并选择要使用的模型</span>
+                <span v-else>测试API连接是否正常</span>
+              </p>
+            </div>
+
+            <!-- 步骤内容 -->
+            <div class="space-y-4">
+              <!-- 步骤1: 配置KEY -->
+              <div v-if="configStep === 1" class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-300">选择或添加API密钥</span>
+                  <CyberButton
+                    left-icon="mdi:plus"
+                    @click="openAddKeyDialog"
+                    size="sm"
+                  >
+                    添加密钥
+                  </CyberButton>
+                </div>
+                
+                <div v-if="apiKeys.length > 0" class="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+                  <div 
+                    v-for="key in apiKeys" 
+                    :key="key.id"
+                    @click="selectApiKey(key.id)"
+                    class="p-3 rounded-lg border-2 cursor-pointer transition-all"
+                    :class="{
+                      'border-cyber-purple bg-cyber-purple/10': selectedKeyId === key.id,
+                      'border-gray-700 bg-gray-800/50 hover:border-gray-600': selectedKeyId !== key.id
+                    }"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1">
+                        <h4 class="text-white font-medium text-sm">{{ key.keyName }}</h4>
+                        <p class="text-xs text-gray-400 font-mono mt-1">{{ key.apiKey }}</p>
+                      </div>
+                      <Icon 
+                        v-if="selectedKeyId === key.id"
+                        icon="mdi:check-circle" 
+                        class="w-5 h-5 text-cyber-purple" 
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-else class="text-center py-6 text-gray-500">
+                  <Icon icon="mdi:key-variant" class="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p class="text-sm">暂无API密钥，请点击"添加密钥"按钮</p>
+                </div>
+                
+                <div class="flex justify-end space-x-2 pt-2">
+                  <CyberButton
+                    variant="outline"
+                    @click="closeDetailDrawer"
+                  >
+                    取消
+                  </CyberButton>
+                  <CyberButton
+                    @click="nextStep"
+                    :disabled="!selectedKeyId"
+                  >
+                    下一步
+                  </CyberButton>
+                </div>
+              </div>
+
+              <!-- 步骤2: 选择模型 -->
+              <div v-if="configStep === 2" class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-300">选择一个模型</span>
+                  <CyberButton
+                    variant="outline"
+                    left-icon="mdi:sync"
+                    @click="syncModels"
+                    :loading="syncing"
+                    size="sm"
+                  >
+                    同步模型
+                  </CyberButton>
+                </div>
+                
+                <div v-if="models.length > 0" class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+                  <div 
+                    v-for="model in models.filter(m => m.isActive)" 
+                    :key="model.id"
+                    @click="selectModel(model.id)"
+                    class="p-3 rounded-lg border-2 cursor-pointer transition-all"
+                    :class="{
+                      'border-cyber-purple bg-cyber-purple/10': selectedModelId === model.id,
+                      'border-gray-700 bg-gray-800/50 hover:border-gray-600': selectedModelId !== model.id
+                    }"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1">
+                        <div class="flex items-center space-x-2">
+                          <h4 class="text-white font-medium text-sm">{{ model.modelName }}</h4>
+                          <span 
+                            v-if="model.isDefault"
+                            class="px-2 py-0.5 text-xs bg-cyber-purple/20 text-cyber-purple rounded"
+                          >
+                            默认
+                          </span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">{{ model.modelCode }}</p>
+                      </div>
+                      <Icon 
+                        v-if="selectedModelId === model.id"
+                        icon="mdi:check-circle" 
+                        class="w-5 h-5 text-cyber-purple" 
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-else class="text-center py-6 text-gray-500">
+                  <Icon icon="mdi:package-variant" class="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p class="text-sm">暂无模型，请点击"同步模型"按钮</p>
+                </div>
+                
+                <div class="flex justify-end space-x-2 pt-2">
+                  <CyberButton
+                    variant="outline"
+                    @click="prevStep"
+                  >
+                    上一步
+                  </CyberButton>
+                  <CyberButton
+                    @click="nextStep"
+                    :disabled="!selectedModelId"
+                  >
+                    下一步
+                  </CyberButton>
+                </div>
+              </div>
+
+              <!-- 步骤3: 测试连接 -->
+              <div v-if="configStep === 3" class="space-y-4">
+                <div class="text-center">
+                  <CyberButton
+                    left-icon="mdi:connection"
+                    @click="testConnection"
+                    :loading="testing"
+                    size="lg"
+                  >
+                    {{ testing ? '测试中...' : '开始测试连接' }}
+                  </CyberButton>
+                </div>
+                
+                <div 
+                  v-if="testResult" 
+                  class="p-4 rounded-lg border-2"
+                  :class="{
+                    'border-green-500 bg-green-500/10': testResult.success,
+                    'border-red-500 bg-red-500/10': !testResult.success
+                  }"
+                >
+                  <div class="flex items-start space-x-3">
+                    <Icon 
+                      :icon="testResult.success ? 'mdi:check-circle' : 'mdi:alert-circle'" 
+                      class="w-6 h-6 flex-shrink-0"
+                      :class="testResult.success ? 'text-green-400' : 'text-red-400'"
+                    />
+                    <div class="flex-1">
+                      <h4 
+                        class="font-semibold mb-1"
+                        :class="testResult.success ? 'text-green-400' : 'text-red-400'"
+                      >
+                        {{ testResult.success ? '测试成功' : '测试失败' }}
+                      </h4>
+                      <p class="text-sm text-gray-300">{{ testResult.message }}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex justify-end space-x-2 pt-2">
+                  <CyberButton
+                    variant="outline"
+                    @click="prevStep"
+                  >
+                    上一步
+                  </CyberButton>
+                  <CyberButton
+                    @click="saveCompleteConfig"
+                    :loading="saving"
+                    :disabled="!testResult?.success && !testResult"
+                  >
+                    保存配置
+                  </CyberButton>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Detail Content -->
           <div class="p-6 space-y-6">
             <!-- API Configuration -->
@@ -529,12 +765,21 @@ import { aiProviderAPI, aiModelAPI, aiApiKeyAPI } from '@/api'
 const loading = ref(false)
 const syncing = ref(false)
 const saving = ref(false)
+const testing = ref(false)
 
 // Data
 const providers = ref<any[]>([])
 const selectedProvider = ref<any>(null)
 const models = ref<any[]>([])
 const apiKeys = ref<any[]>([])
+
+
+// 配置流程状态
+const configStep = ref(1) // 1-配置KEY, 2-选择模型, 3-测试连接
+const selectedKeyId = ref<number | null>(null)
+const selectedModelId = ref<number | null>(null)
+const testResult = ref<{ success: boolean; message: string } | null>(null)
+const hasUnsavedChanges = ref(false)
 
 // Drawer & Dialogs
 const showDetailDrawer = ref(false)
@@ -603,10 +848,14 @@ const openProviderDetail = async (provider: any) => {
 }
 
 const closeDetailDrawer = () => {
+  if (hasUnsavedChanges.value && !confirm('有未保存的更改，确定要关闭吗？')) {
+    return
+  }
   showDetailDrawer.value = false
   selectedProvider.value = null
   models.value = []
   apiKeys.value = []
+  resetConfigState()
 }
 
 const toggleProviderActive = async (provider: any) => {
@@ -844,6 +1093,126 @@ const handleImageError = (event: Event) => {
     img.style.display = 'none'
   }
 }
+
+// 重置配置流程状态
+const resetConfigState = () => {
+  configStep.value = 1
+  selectedKeyId.value = null
+  selectedModelId.value = null
+  testResult.value = null
+  hasUnsavedChanges.value = false
+}
+
+// 进入下一步
+const nextStep = () => {
+  if (configStep.value < 3) {
+    configStep.value++
+  }
+}
+
+// 返回上一步
+const prevStep = () => {
+  if (configStep.value > 1) {
+    configStep.value--
+  }
+}
+
+// 选择API Key
+const selectApiKey = (keyId: number) => {
+  selectedKeyId.value = keyId
+  hasUnsavedChanges.value = true
+}
+
+// 选择模型
+const selectModel = (modelId: number) => {
+  selectedModelId.value = modelId
+  hasUnsavedChanges.value = true
+}
+
+// 测试连接
+const testConnection = async () => {
+  if (!selectedKeyId.value) {
+    alert('请先选择API密钥')
+    return
+  }
+  
+  testing.value = true
+  testResult.value = null
+  
+  try {
+    const response = await aiApiKeyAPI.validateKey(selectedKeyId.value)
+    if (response.code === 200 && response.data.isValid) {
+      testResult.value = {
+        success: true,
+        message: '连接测试成功！密钥有效且可用。'
+      }
+    } else {
+      testResult.value = {
+        success: false,
+        message: '连接测试失败：密钥无效或不可用。'
+      }
+    }
+  } catch (error: any) {
+    console.error('测试连接失败:', error)
+    testResult.value = {
+      success: false,
+      message: `连接测试失败: ${error.message || '未知错误'}`
+    }
+  } finally {
+    testing.value = false
+  }
+}
+
+// 保存完整配置
+const saveCompleteConfig = async () => {
+  if (!selectedProvider.value) {
+    alert('未选择Provider')
+    return
+  }
+  
+  if (!selectedKeyId.value) {
+    alert('请先配置并选择API密钥')
+    return
+  }
+  
+  if (!selectedModelId.value) {
+    alert('请选择一个模型')
+    return
+  }
+  
+  if (!testResult.value?.success) {
+    if (!confirm('连接测试未通过或未测试，确定要保存吗？')) {
+      return
+    }
+  }
+  
+  saving.value = true
+  try {
+    // 1. 激活选中的API Key
+    await aiApiKeyAPI.updateKey(selectedKeyId.value, { isActive: true })
+    
+    // 2. 设置选中的模型为默认模型
+    await aiModelAPI.setDefault(selectedModelId.value)
+    
+    // 3. 激活Provider
+    await aiProviderAPI.updateProvider(selectedProvider.value.id, { 
+      isActive: true 
+    })
+    
+    alert('配置保存成功！')
+    hasUnsavedChanges.value = false
+    
+    // 刷新数据
+    await loadAllData()
+    closeDetailDrawer()
+  } catch (error: any) {
+    console.error('保存配置失败:', error)
+    alert(`保存失败: ${error.message || '未知错误'}`)
+  } finally {
+    saving.value = false
+  }
+}
+
 
 // Lifecycle
 onMounted(() => {
