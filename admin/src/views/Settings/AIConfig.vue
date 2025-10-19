@@ -832,7 +832,7 @@ const getProviderIcon = (providerCode: string): string => {
     'anthropic': 'simple-icons:anthropic',
     'claude': 'simple-icons:anthropic',
     'deepseek': 'mdi:brain',
-    'gemini': 'simple-icons:google'
+    'gemini': 'simple-icons:googlegemini'
   }
   return iconMap[providerCode] || 'mdi:robot'
 }
