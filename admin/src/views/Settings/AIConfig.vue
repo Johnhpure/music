@@ -566,12 +566,24 @@ const loadProviders = async () => {
   try {
     const response = await aiProviderAPI.getProviders()
     console.log('🔍 Providers API Response:', response)
+    console.log('🔍 Response data type:', typeof response.data, Array.isArray(response.data))
+    console.log('🔍 Response data:', response.data)
+    
     if (response.code === 200) {
-      providers.value = response.data
+      // 检查data是直接数组还是嵌套在data.data中
+      const providersList = Array.isArray(response.data) ? response.data : (response.data?.data || [])
+      providers.value = providersList
       console.log('✅ Providers loaded:', providers.value.length, 'items')
-      console.log('📦 First provider configJson:', providers.value[0]?.configJson)
+      if (providers.value.length > 0) {
+        console.log('📦 First provider:', providers.value[0])
+        console.log('📦 First provider configJson:', providers.value[0]?.configJson)
+      }
     }
   } catch (error) {
+    console.error('❌ Failed to load providers:', error)
+    throw error
+  }
+} catch (error) {
     console.error('❌ Failed to load providers:', error)
     throw error
   }
