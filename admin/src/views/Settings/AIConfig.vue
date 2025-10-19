@@ -941,8 +941,8 @@ const loadApiKeys = async (providerId: number) => {
         console.log('🔑 First key:', apiKeys.value[0])
       }
       
-      // 自动验证所有密钥状态
-      await validateAllKeys()
+      // ❌ 已移除自动验证：每次加载都验证会造成不必要的API调用
+      // 用户可以通过"测试连接"按钮手动验证
     }
   } catch (error) {
     console.error('Failed to load API keys:', error)
@@ -950,7 +950,7 @@ const loadApiKeys = async (providerId: number) => {
   }
 }
 
-// 验证所有密钥状态
+// 验证所有密钥状态（当前未使用，保留以备后续批量验证需求）
 const validateAllKeys = async () => {
   if (apiKeys.value.length === 0) return
   
@@ -964,10 +964,12 @@ const validateAllKeys = async () => {
     try {
       const response = await aiApiKeyAPI.validateKey(key.id)
       if (response.code === 200 && response.data) {
+        // 兼容嵌套的data结构
+        const isValid = response.data?.data?.isValid ?? response.data?.isValid
         // 更新key的状态
         const keyIndex = apiKeys.value.findIndex(k => k.id === key.id)
         if (keyIndex !== -1) {
-          apiKeys.value[keyIndex].status = response.data.isValid ? 'normal' : 'error'
+          apiKeys.value[keyIndex].status = isValid ? 'normal' : 'error'
         }
       }
     } catch (error) {
@@ -1013,8 +1015,19 @@ const syncModels = async () => {
   syncing.value = true
   try {
     const response = await aiProviderAPI.syncModels(selectedProvider.value.id)
+    console.log('🔄 Sync Models Response:', response)
+    console.log('🔄 Response.data:', response.data)
+    console.log('🔄 Response.data.data:', response.data?.data)
+    console.log('🔄 Count paths:', {
+      'data.data.count': response.data?.data?.count,
+      'data.count': response.data?.count,
+      'raw response': response
+    })
+    
     if (response.code === 200) {
-      alert(`成功同步 ${response.data.count} 个模型`)
+      // 处理嵌套的data结构（TransformInterceptor包装）
+      const count = response.data?.data?.count || response.data?.count || 0
+      alert(`成功同步 ${count} 个模型`)
       await loadModels(selectedProvider.value.id)
     }
   } catch (error: any) {
@@ -1190,7 +1203,9 @@ const validateKey = async (keyId: number) => {
   try {
     const response = await aiApiKeyAPI.validateKey(keyId)
     if (response.code === 200) {
-      alert(response.data.isValid ? '密钥验证通过' : '密钥无效')
+      // 兼容嵌套的data结构：response.data.data.isValid 或 response.data.isValid
+      const isValid = response.data?.data?.isValid ?? response.data?.isValid
+      alert(isValid ? '密钥验证通过' : '密钥无效')
     }
   } catch (error: any) {
     console.error('Failed to validate key:', error)
@@ -1274,7 +1289,10 @@ const testConnection = async () => {
   
   try {
     const response = await aiApiKeyAPI.validateKey(selectedKeyId.value)
-    if (response.code === 200 && response.data.isValid) {
+    // 兼容嵌套的data结构：response.data.data.isValid 或 response.data.isValid
+    const isValid = response.data?.data?.isValid ?? response.data?.isValid
+    
+    if (response.code === 200 && isValid) {
       testResult.value = {
         success: true,
         message: '连接测试成功！密钥有效且可用。'
